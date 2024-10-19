@@ -1,0 +1,9 @@
+dashboard/public/assets/images/satisfactory/map/** filter=lfs diff=lfs merge=lfs -text
+dashboard/public/assets/images/satisfactory/map.png filter=lfs diff=lfs merge=lfs -text
+dashboard/public/assets/images/satisfactory/map-light.png filter=lfs diff=lfs merge=lfs -text
+scripts/scrape_images/output/** filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.html filter=lfs diff=lfs merge=lfs -text
