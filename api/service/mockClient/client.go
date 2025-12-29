@@ -67,6 +67,28 @@ func (c *Client) GetSatisfactoryApiStatus(_ context.Context) (*models.Satisfacto
 	}, nil
 }
 
+func (c *Client) GetSessionInfo(_ context.Context) (*models.SessionInfo, error) {
+	time.Sleep(time.Duration(rand.Float64()*50) * time.Millisecond)
+	return &models.SessionInfo{
+		SessionName:                "Mock Session",
+		IsPaused:                   false,
+		DayLength:                  50,
+		NightLength:                10,
+		PassedDays:                 rand.Intn(1000) + 100,
+		NumberOfDaysSinceLastDeath: rand.Intn(100),
+		Hours:                      rand.Intn(24),
+		Minutes:                    rand.Intn(60),
+		Seconds:                    rand.Float64() * 60,
+		IsDay:                      rand.Float64() > 0.3,
+		TotalPlayDuration:          rand.Intn(1000000) + 100000,
+		TotalPlayDurationText:      fmt.Sprintf("%d:%02d:%02d", rand.Intn(1000)+100, rand.Intn(60), rand.Intn(60)),
+	}, nil
+}
+
+func (c *Client) GetAddress() string {
+	return "mock://localhost"
+}
+
 func (c *Client) ListCircuits(_ context.Context) ([]models.Circuit, error) {
 	time.Sleep(time.Duration(rand.Float64()*50) * time.Millisecond)
 	return []models.Circuit{

@@ -16,6 +16,7 @@ const (
 	SatisfactoryEventDrones         SatisfactoryEventType = "drones"
 	SatisfactoryEventDroneStations  SatisfactoryEventType = "droneStations"
 	SatisfactoryEventDroneSetup     SatisfactoryEventType = "droneSetup"
+	SatisfactoryEventSessionUpdate  SatisfactoryEventType = "sessionUpdate"
 
 	SatisfactoryEventKey string = "satisfactory_events"
 )

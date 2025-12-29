@@ -5,6 +5,7 @@ type MachineEfficiency struct {
 	MachinesIdle         int `json:"machinesIdle"`
 	MachinesPaused       int `json:"machinesPaused"`
 	MachinesUnconfigured int `json:"machinesUnconfigured"`
+	MachinesUnknown      int `json:"machinesUnknown"`
 }
 
 type FactoryStats struct {

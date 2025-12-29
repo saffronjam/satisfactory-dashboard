@@ -64,16 +64,25 @@ func AddClientMessageCount(client *Client) {
 	}
 }
 
-// StartEventsSSE godoc
-// @Summary Stream events
-// @Description Stream events from the server
-// @Tags Events
+// StartSessionEventsSSE godoc
+// @Summary Stream events for a session
+// @Description Stream events from a specific session
+// @Tags Sessions
 // @Accept json
 // @Produce json
-// @Success 500 {object} models.ErrorResponse "Internal Server Error"
-// @Router /v1/circuits [get]
-func StartEventsSSE(ginContext *gin.Context) {
+// @Param id path string true "Session ID"
+// @Success 200 "SSE stream"
+// @Failure 400 {object} models.ErrorResponse "Bad Request"
+// @Failure 500 {object} models.ErrorResponse "Internal Server Error"
+// @Router /v1/sessions/{id}/events [get]
+func StartSessionEventsSSE(ginContext *gin.Context) {
 	requestContext := NewRequestContext(ginContext)
+
+	sessionID := ginContext.Param("id")
+	if sessionID == "" {
+		requestContext.UserError("Session ID is required")
+		return
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -84,7 +93,11 @@ func StartEventsSSE(ginContext *gin.Context) {
 	client := CreateNewClient()
 	defer RemoveClient(client)
 
-	err := key_value.New().AddListener(ctx, models.SatisfactoryEventKey, func(value string) {
+	// Subscribe to session-specific channel
+	channelKey := fmt.Sprintf("%s:%s", models.SatisfactoryEventKey, sessionID)
+	log.Debugf("SSE client subscribing to channel: %s", channelKey)
+
+	err := key_value.New().AddListener(ctx, channelKey, func(value string) {
 		parsed := models.SatisfactoryEvent{}
 		err := json.Unmarshal([]byte(value), &parsed)
 		if err != nil {

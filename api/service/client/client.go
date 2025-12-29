@@ -9,6 +9,7 @@ type Client interface {
 	SetupEventStream(ctx context.Context, onEvent func(*models.SatisfactoryEvent)) error
 
 	GetSatisfactoryApiStatus(ctx context.Context) (*models.SatisfactoryApiStatus, error)
+	GetSessionInfo(ctx context.Context) (*models.SessionInfo, error)
 
 	GetFactoryStats(ctx context.Context) (*models.FactoryStats, error)
 	GetProdStats(ctx context.Context) (*models.ProdStats, error)
@@ -21,4 +22,7 @@ type Client interface {
 	ListTrains(ctx context.Context) ([]models.Train, error)
 	ListTrainStations(ctx context.Context) ([]models.TrainStation, error)
 	ListDroneStations(ctx context.Context) ([]models.DroneStation, error)
+
+	// GetAddress returns the API URL this client is connected to
+	GetAddress() string
 }

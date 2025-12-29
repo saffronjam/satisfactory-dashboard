@@ -34,32 +34,39 @@ type RawIngredient struct {
 }
 
 type RawExtractor struct {
-	Name         string          `json:"Name"`
-	IsProducing  bool            `json:"IsProducing"`
-	IsPaused     bool            `json:"IsPaused"`
-	IsConfigured bool            `json:"IsConfigured"`
-	Location     Location        `json:"location"`
-	PowerInfo    PowerInfo       `json:"PowerInfo"`
-	Production   []RawProduction `json:"production"`
+	Name                string          `json:"Name"`
+	IsProducing         bool            `json:"IsProducing"`
+	IsPaused            bool            `json:"IsPaused"`
+	IsConfigured        bool            `json:"IsConfigured"`
+	IsFullSpeed         bool            `json:"IsFullSpeed"`
+	CanStart            bool            `json:"CanStart"`
+	BaseProd            float64         `json:"BaseProd"`
+	DynamicProdCapacity float64         `json:"DynamicProdCapacity"`
+	Location            Location        `json:"location"`
+	PowerInfo           PowerInfo       `json:"PowerInfo"`
+	Production          []RawProduction `json:"production"`
 }
 
 type RawFactoryMachine struct {
-	Name         string          `json:"Name"`
-	IsProducing  bool            `json:"IsProducing"`
-	IsPaused     bool            `json:"IsPaused"`
-	IsConfigured bool            `json:"IsConfigured"`
-	Location     Location        `json:"location"`
-	PowerInfo    PowerInfo       `json:"PowerInfo"`
-	Ingredients  []RawIngredient `json:"ingredients"`
-	Production   []RawProduction `json:"production"`
+	Name                string          `json:"Name"`
+	IsProducing         bool            `json:"IsProducing"`
+	IsPaused            bool            `json:"IsPaused"`
+	IsConfigured        bool            `json:"IsConfigured"`
+	IsFullSpeed         bool            `json:"IsFullSpeed"`
+	CanStart            bool            `json:"CanStart"`
+	BaseProd            float64         `json:"BaseProd"`
+	DynamicProdCapacity float64         `json:"DynamicProdCapacity"`
+	Location            Location        `json:"location"`
+	PowerInfo           PowerInfo       `json:"PowerInfo"`
+	Ingredients         []RawIngredient `json:"ingredients"`
+	Production          []RawProduction `json:"production"`
 }
 
 type RawGenerator struct {
-	Name                     string   `json:"Name"`
-	Location                 Location `json:"location"`
-	PowerProduction          float64  `json:"PowerProduction"`          // Current actual
-	PowerProductionPotential float64  `json:"PowerProductionPotential"` // Max possible
-	RegulatedDemandProd      float64  `json:"RegulatedDemandProd"`      // Used for some types
+	Name                string   `json:"Name"`
+	Location            Location `json:"location"`
+	RegulatedDemandProd float64  `json:"RegulatedDemandProd"` // Current power production (MW) - used for most generators
+	ProductionCapacity  float64  `json:"ProductionCapacity"`  // Power capacity (MW) - used for geothermal
 }
 
 type RawCircuit struct {

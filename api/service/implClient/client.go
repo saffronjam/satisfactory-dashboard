@@ -30,7 +30,7 @@ type Client struct {
 	apiUrl        string
 }
 
-// NewClient creates a new Satisfactory API service instance
+// NewClient creates a new Satisfactory API service instance using the config URL
 func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{
@@ -39,6 +39,28 @@ func NewClient() *Client {
 		apiIsUp: false,
 		apiUrl:  config.Config.SatisfactoryAPI.URL,
 	}
+}
+
+// NewClientWithAddress creates a new Satisfactory API service instance with a custom URL
+func NewClientWithAddress(address string) *Client {
+	// Ensure the address has a protocol prefix
+	apiUrl := address
+	if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
+		apiUrl = "http://" + address
+	}
+
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: apiTimeout,
+		},
+		apiIsUp: false,
+		apiUrl:  apiUrl,
+	}
+}
+
+// GetAddress returns the API URL this client is connected to
+func (client *Client) GetAddress() string {
+	return client.apiUrl
 }
 
 func (client *Client) isApiUp() bool {
@@ -192,6 +214,13 @@ func (client *Client) SetupEventStream(ctx context.Context, callback func(*model
 						callback(&models.SatisfactoryEvent{Type: endpoint.Type, Data: data})
 					} else {
 						log.PrettyError(fmt.Errorf("failed to fetch %s data. details: %w", endpoint.Type, err))
+						// For API status endpoint, send a "down" status event on failure
+						if endpoint.Type == models.SatisfactoryEventApiStatus {
+							callback(&models.SatisfactoryEvent{
+								Type: models.SatisfactoryEventApiStatus,
+								Data: &models.SatisfactoryApiStatus{Running: false},
+							})
+						}
 					}
 				case <-ctx.Done():
 					log.Printf("Stopping event listener for: %s client", endpoint.Type)
@@ -278,18 +307,22 @@ func (client *Client) GetFactoryStats(ctx context.Context) (*models.FactoryStats
 	var mu sync.Mutex
 	var firstError error
 
-	// Helper to determine machine status
-	machineStatus := func(isProducing, isPaused, isConfigured bool) models.MachineStatus {
-		if isProducing {
+	// Helper to determine machine status based on production capacity
+	machineStatus := func(baseProd, dynamicProdCapacity float64, isFullSpeed, canStart bool) models.MachineStatus {
+		// Operating: BaseProd == DynamicProdCapacity (both non-zero and equal)
+		if baseProd > 0 && baseProd == dynamicProdCapacity {
 			return models.MachineStatusOperating
 		}
-		if isPaused {
+		// Paused: BaseProd > 0 and DynamicProdCapacity == 0
+		if baseProd > 0 && dynamicProdCapacity == 0 {
 			return models.MachineStatusPaused
 		}
-		if !isConfigured {
-			return models.MachineStatusUnconfigured
+		// Idle: IsFullSpeed == false and CanStart == true
+		if !isFullSpeed && canStart {
+			return models.MachineStatusIdle
 		}
-		return models.MachineStatusIdle
+		// Fallback to unknown for tracing unexpected states
+		return models.MachineStatusUnknown
 	}
 
 	// Fetch Extractors
@@ -313,10 +346,10 @@ func (client *Client) GetFactoryStats(ctx context.Context) (*models.FactoryStats
 			machine := models.Machine{
 				Type:     models.MachineType(raw.Name),
 				Category: models.MachineCategoryExtractor,
-				Status:   machineStatus(raw.IsProducing, raw.IsPaused, raw.IsConfigured),
+				Status:   machineStatus(raw.BaseProd, raw.DynamicProdCapacity, raw.IsFullSpeed, raw.CanStart),
 				Location: models.Location{X: raw.Location.X, Y: raw.Location.Y, Z: raw.Location.Z, Rotation: raw.Location.Rotation},
 				Input: []models.MachineProdStats{
-					{Name: "Power", Current: raw.PowerInfo.PowerConsumed, Max: raw.PowerInfo.MaxPowerConsumed},
+					{Name: "Power", Current: raw.PowerInfo.PowerConsumed * 1_000_000, Max: raw.PowerInfo.MaxPowerConsumed * 1_000_000}, // MW to W
 				},
 				Output: make([]models.MachineProdStats, len(raw.Production)),
 			}
@@ -352,7 +385,7 @@ func (client *Client) GetFactoryStats(ctx context.Context) (*models.FactoryStats
 		mu.Lock()
 		defer mu.Unlock()
 		for _, raw := range rawFactories {
-			status := machineStatus(raw.IsProducing, raw.IsPaused, raw.IsConfigured)
+			status := machineStatus(raw.BaseProd, raw.DynamicProdCapacity, raw.IsFullSpeed, raw.CanStart)
 
 			stats.TotalMachines++ // Only count factory machines for totals
 			switch status {
@@ -362,8 +395,8 @@ func (client *Client) GetFactoryStats(ctx context.Context) (*models.FactoryStats
 				stats.Efficiency.MachinesIdle++
 			case models.MachineStatusPaused:
 				stats.Efficiency.MachinesPaused++
-			case models.MachineStatusUnconfigured:
-				stats.Efficiency.MachinesUnconfigured++
+			case models.MachineStatusUnknown:
+				stats.Efficiency.MachinesUnknown++
 			}
 
 			machine := models.Machine{
@@ -372,7 +405,7 @@ func (client *Client) GetFactoryStats(ctx context.Context) (*models.FactoryStats
 				Status:   status,
 				Location: models.Location{X: raw.Location.X, Y: raw.Location.Y, Z: raw.Location.Z, Rotation: raw.Location.Rotation},
 				Input: []models.MachineProdStats{
-					{Name: "Power", Current: raw.PowerInfo.PowerConsumed, Max: raw.PowerInfo.MaxPowerConsumed},
+					{Name: "Power", Current: raw.PowerInfo.PowerConsumed * 1_000_000, Max: raw.PowerInfo.MaxPowerConsumed * 1_000_000}, // MW to W
 				},
 				Output: make([]models.MachineProdStats, len(raw.Production)),
 			}
@@ -583,20 +616,12 @@ func (client *Client) GetGeneratorStats(ctx context.Context) (*models.GeneratorS
 		Machines: make([]models.Machine, 0, len(rawGenerators)),
 	}
 
-	// Helper to get power based on type logic from TS
+	// Helper to get power - geothermal uses ProductionCapacity, others use RegulatedDemandProd
 	powerByType := func(gen *RawGenerator, genType models.PowerType) float64 {
-		switch genType {
-		case models.PowerTypeBiomass, models.PowerTypeCoal, models.PowerTypeFuel, models.PowerTypeNuclear:
-			// Check if RegulatedDemandProd exists/is applicable, otherwise fallback?
-			// Assuming RegulatedDemandProd is the correct value for these as per TS
-			return gen.RegulatedDemandProd * 1_000_000 // MW to W
-		case models.PowerTypeGeothermal:
-			// Using PowerProductionPotential for Geothermal as per TS
-			return gen.PowerProductionPotential * 1_000_000 // MW to W
-		default:
-			// Fallback or default if type is unknown or logic differs
-			return gen.PowerProduction * 1_000_000 // Current Production MW to W
+		if genType == models.PowerTypeGeothermal {
+			return gen.ProductionCapacity * 1_000_000 // MW to W
 		}
+		return gen.RegulatedDemandProd * 1_000_000 // MW to W
 	}
 
 	for _, raw := range rawGenerators {
@@ -623,24 +648,20 @@ func (client *Client) GetGeneratorStats(ctx context.Context) (*models.GeneratorS
 		// Create Machine representation
 		// TODO: Determine actual status (Operating, Idle, etc.) if API provides it
 		// Assuming 'Operating' for now as TS code did.
-		// TODO: Add Input fuels if the API provides that info for generators.
+		// TODO: Add Input fuels if the API provides that info for generators, not yet implemented in FRM
 		machine := models.Machine{
 			Type:     models.MachineType(raw.Name),
 			Category: models.MachineCategoryGenerator,
 			Status:   models.MachineStatusOperating, // Placeholder status
 			Location: models.Location{X: raw.Location.X, Y: raw.Location.Y, Z: raw.Location.Z, Rotation: raw.Location.Rotation},
-			Input:    []models.MachineProdStats{}, // Add fuel inputs if available
+			Input:    []models.MachineProdStats{}, // Add fuel inputs when available
 			Output: []models.MachineProdStats{
 				{
-					Name:       "Power",
-					Current:    raw.PowerProduction * 1_000_000,          // Current Production (W)
-					Max:        raw.PowerProductionPotential * 1_000_000, // Potential Production (W)
-					Efficiency: 0,                                        // Calculate if possible (Current/Potential), handle division by zero
+					Name:    "Power",
+					Current: power, // Already converted to W by powerByType
+					Max:     power, // Same as current (no potential info available)
 				},
 			},
-		}
-		if raw.PowerProductionPotential > 0 {
-			machine.Output[0].Efficiency = raw.PowerProduction / raw.PowerProductionPotential // Already factors MW/MW
 		}
 
 		stats.Machines = append(stats.Machines, machine)
@@ -887,6 +908,16 @@ func (client *Client) ListDroneStations(ctx context.Context) ([]models.DroneStat
 		}
 	}
 	return stations, nil
+}
+
+// GetSessionInfo fetches session information from the Satisfactory API
+func (client *Client) GetSessionInfo(ctx context.Context) (*models.SessionInfo, error) {
+	var raw models.SessionInfoRaw
+	err := client.makeSatisfactoryCall(ctx, "/getSessionInfo", &raw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get session info: %w", err)
+	}
+	return raw.ToDTO(), nil
 }
 
 // GetSatisfactoryApiStatus checks if the API root endpoint is reachable
