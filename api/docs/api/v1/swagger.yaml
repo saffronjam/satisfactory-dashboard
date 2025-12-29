@@ -4,10 +4,10 @@ paths:
   /v1/circuits:
     get:
       consumes:
-      - application/json
+        - application/json
       description: List all circuits
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: List of circuits
@@ -17,5 +17,5 @@ paths:
             type: array
       summary: List Circuits
       tags:
-      - Circuits
+        - Circuits
 swagger: "2.0"

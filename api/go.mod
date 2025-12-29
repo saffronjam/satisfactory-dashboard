@@ -7,6 +7,7 @@ require (
 	github.com/gin-contrib/zap v1.1.5
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/validator/v10 v10.26.0
+	github.com/google/uuid v1.6.0
 	github.com/penglongli/gin-metrics v0.1.13
 	github.com/redis/go-redis/v9 v9.7.3
 	github.com/swaggo/files/v2 v2.0.2

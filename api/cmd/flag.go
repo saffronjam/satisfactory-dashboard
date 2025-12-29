@@ -95,10 +95,10 @@ func GetFlags() FlagDefinitionList {
 			Name:         "publisher",
 			ValueType:    "bool",
 			FlagType:     FlagTypeWorker,
-			Description:  "Start the publisher worker",
+			Description:  "Start the session manager (multi-session publisher)",
 			DefaultValue: false,
 			Run: func(ctx context.Context, cancel context.CancelFunc) {
-				worker.Publisher(ctx)
+				worker.SessionManagerWorker(ctx)
 			},
 		},
 	}
