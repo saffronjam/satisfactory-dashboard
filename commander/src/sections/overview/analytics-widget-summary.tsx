@@ -181,11 +181,13 @@ export function AnalyticsWidgetSummary({
       <Box sx={{ mt: 0, width: '100%' }}>
         <SparkLineChart
           data={chart.series}
-          height={56}
+          height={66}
           curve="natural"
           color={chartColor}
           showTooltip
           showHighlight
+          margin={{ top: 10, bottom: 10, left: 0, right: 0 }}
+          disableClipping
           valueFormatter={(value) => (value !== null ? fNumber(value) : '')}
         />
       </Box>

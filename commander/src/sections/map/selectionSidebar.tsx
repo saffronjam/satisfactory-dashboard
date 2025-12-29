@@ -18,6 +18,14 @@ import { useContextSelector } from 'use-context-selector';
 
 type SidebarView = 'items' | 'buildings' | 'power' | 'vehicles';
 
+// Format camelCase machine type to readable name (e.g., "coalGenerator" → "Coal Generator")
+const formatMachineType = (type: string): string => {
+  return type
+    .replace(/([A-Z])/g, ' $1')
+    .trim()
+    .replace(/^./, (str) => str.toUpperCase());
+};
+
 // Helper functions to determine docked trains/drones
 const getDockedTrains = (station: TrainStation, trains: Train[]): Train[] => {
   return trains.filter(
@@ -334,7 +342,9 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                     marginBottom: 1,
                   }}
                 >
-                  <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{type}</Box>
+                  <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
+                    {formatMachineType(type)}
+                  </Box>
                   <Box sx={{ fontWeight: 'bold' }}>{count}</Box>
                 </Box>
               ))
@@ -397,7 +407,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                     }}
                   >
                     <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                      {type} ({data.count})
+                      {formatMachineType(type)} ({data.count})
                     </Box>
                     <Box sx={{ fontWeight: 'bold' }}>
                       {fShortenNumber(data.production, WattUnits)}
@@ -508,7 +518,11 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                             }}
                           >
                             <Typography variant="caption">{drone.name}</Typography>
-                            <Chip label={drone.status} size="small" color="info" />
+                            <Chip
+                              label={formatMachineType(drone.status)}
+                              size="small"
+                              color="info"
+                            />
                           </Box>
                         ))
                       ) : (
@@ -767,7 +781,9 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                     marginBottom: 1,
                   }}
                 >
-                  <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{type}</Box>
+                  <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
+                    {formatMachineType(type)}
+                  </Box>
                   <Box sx={{ fontWeight: 'bold' }}>{count}</Box>
                 </Box>
               ))
@@ -826,7 +842,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                     }}
                   >
                     <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                      {type} ({data.count})
+                      {formatMachineType(type)} ({data.count})
                     </Box>
                     <Box sx={{ fontWeight: 'bold' }}>
                       {fShortenNumber(data.production, WattUnits)}
@@ -910,7 +926,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                       <Typography variant="body2" fontWeight="bold">
                         {drone.name}
                       </Typography>
-                      <Chip label={drone.status} size="small" color="info" />
+                      <Chip label={formatMachineType(drone.status)} size="small" color="info" />
                     </Box>
                     <Typography variant="caption" color="textSecondary">
                       Speed: {drone.speed.toFixed(0)} km/h
@@ -1043,7 +1059,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                   {drone.name}
                 </Typography>
                 <Chip
-                  label={drone.status}
+                  label={formatMachineType(drone.status)}
                   size="small"
                   color={drone.status === 'flying' ? 'success' : 'info'}
                 />
@@ -1279,7 +1295,9 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                     marginBottom: 1,
                   }}
                 >
-                  <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{type}</Box>
+                  <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
+                    {formatMachineType(type)}
+                  </Box>
                   <Box sx={{ fontWeight: 'bold' }}>{count}</Box>
                 </Box>
               ))
@@ -1338,7 +1356,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                     }}
                   >
                     <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                      {type} ({data.count})
+                      {formatMachineType(type)} ({data.count})
                     </Box>
                     <Box sx={{ fontWeight: 'bold' }}>
                       {fShortenNumber(data.production, WattUnits)}
@@ -1449,7 +1467,11 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                               }}
                             >
                               <Typography variant="caption">{drone.name}</Typography>
-                              <Chip label={drone.status} size="small" color="info" />
+                              <Chip
+                                label={formatMachineType(drone.status)}
+                                size="small"
+                                color="info"
+                              />
                             </Box>
                           ))
                         ) : (
