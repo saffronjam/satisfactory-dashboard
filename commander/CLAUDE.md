@@ -26,62 +26,45 @@ React-based dashboard for monitoring Satisfactory factory operations. Features r
 
 ```
 commander/src/
-├── pages/                    # Page components
-│   ├── home.tsx             # Dashboard home
-│   ├── map.tsx              # Factory map view
-│   ├── production.tsx       # Production stats
-│   ├── power.tsx            # Power/circuit monitoring
-│   ├── trains.tsx           # Train tracking
-│   ├── drones.tsx           # Drone monitoring
-│   ├── players.tsx          # Player management
-│   ├── settings.tsx         # App settings
-│   └── page-not-found.tsx   # 404 page
-├── components/              # Reusable components
-│   ├── chart/              # Chart components (MUI X Charts)
-│   ├── color-utils/        # Color picker and preview
-│   ├── iconify/            # Iconify icon integration
-│   ├── label/              # Label/badge components
-│   ├── logo/               # App logo component
-│   ├── scrollbar/          # Custom scrollbar
-│   ├── session-selector/   # Session dropdown selector
-│   ├── session-dialog/     # Add session dialog
-│   ├── welcome/            # Welcome screen for new users
-│   └── svg-color/          # SVG color utilities
-├── layouts/                 # Layout components
-│   ├── dashboard/          # Main dashboard layout
-│   │   ├── layout.tsx      # Layout wrapper
-│   │   ├── nav.tsx         # Sidebar navigation
-│   │   └── main.tsx        # Main content area
-│   ├── core/               # Core layout utilities
-│   └── simple/             # Simple layouts (no sidebar)
-├── routes/                  # Routing configuration
-│   ├── sections.tsx        # Route definitions
-│   ├── components/         # Route-level components
-│   └── hooks/              # Routing hooks
-├── sections/               # Feature sections (page-specific components)
-├── services/               # API services
-│   └── sessionApi.ts       # Session CRUD operations
-├── contexts/               # React Context
-│   ├── api/                # API data provider (SSE streaming)
-│   └── sessions/           # Session management context
-├── theme/                  # Material-UI theme
-│   ├── core/               # Theme configuration
-│   │   ├── palette.ts      # Color palette
-│   │   ├── typography.ts   # Typography settings
-│   │   └── shadows.ts      # Shadow definitions
-│   ├── styles/             # Global and mixin styles
-│   └── colors.json         # Color definitions
-├── hooks/                  # Custom React hooks
-│   ├── use-settings.ts     # Settings hook
-│   └── use-scroll-to-top.ts
-├── utils/                  # Utility functions
-│   ├── abbreviations.ts    # Unit abbreviations
-│   ├── format-number.ts    # Number formatting
-│   └── format-time.ts      # Time formatting
-├── apiTypes.ts             # Auto-generated types from backend
-├── types.ts                # Frontend-specific types
-├── config-global.ts        # Global configuration
-└── main.tsx                # Application entry point
+├── pages/                    # Page components (home, map, production, power, trains, drones, players, settings)
+├── components/               # Reusable components
+│   ├── color-utils/         # Color picker and preview
+│   ├── iconify/             # Iconify icon integration
+│   ├── label/               # Label/badge components
+│   ├── logo/                # App logo component
+│   ├── scrollbar/           # Custom scrollbar
+│   ├── session-dialog/      # Add session dialog
+│   ├── session-selector/    # Session dropdown selector
+│   ├── session-status-bar/  # Session status indicator
+│   ├── svg-color/           # SVG color utilities
+│   └── welcome/             # Welcome screen for new users
+├── contexts/                 # React Context
+│   ├── api/                 # API data provider (SSE streaming)
+│   └── sessions/            # Session management context
+├── layouts/                  # Layout components
+│   ├── components/          # Layout components
+│   ├── core/                # Core layout utilities
+│   ├── dashboard/           # Main dashboard layout
+│   └── simple/              # Simple layouts (no sidebar)
+├── routes/                   # Routing configuration
+│   ├── components/          # Route-level components
+│   └── hooks/               # Routing hooks
+├── sections/                 # Feature sections (page-specific components)
+│   ├── drones/              # Drone views
+│   ├── error/               # Error pages
+│   ├── map/                 # Map views
+│   ├── overview/            # Overview/dashboard views
+│   ├── players/             # Player views
+│   ├── power/               # Power circuit views
+│   ├── production/          # Production views
+│   ├── settings/            # Settings views
+│   └── trains/              # Train views
+├── services/                 # API services (session CRUD)
+├── theme/                    # Material-UI theme
+│   ├── core/                # Theme configuration (palette, typography, shadows)
+│   └── styles/              # Global and mixin styles
+├── hooks/                    # Custom React hooks
+└── utils/                    # Utility functions (formatting, abbreviations)
 ```
 
 ## Development Workflow
@@ -127,7 +110,7 @@ interface Props {
 }
 ```
 
-Types generated by `tygo` from Go structs. Run `cd ../api && tygo generate` after backend model changes.
+Types generated by `tygo` from Go structs. Run `make generate` from project root after backend model changes.
 
 ### Session Context
 

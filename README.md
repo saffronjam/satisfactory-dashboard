@@ -45,3 +45,7 @@ make build     # Build for production
 - **Frontend:** React, TypeScript, Material-UI, Vite, Bun
 - **Backend:** Go, Gin, Redis
 - **Real-time:** Server-Sent Events (SSE)
+
+## Note on Repository Size
+
+This repository includes all assets (map tiles, images, etc.) and does not rely on third-party hosting. This makes the repo self-contained but relatively large.

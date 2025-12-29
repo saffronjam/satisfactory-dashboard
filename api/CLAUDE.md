@@ -48,68 +48,28 @@ Follow idiomatic Go practices:
 
 ```
 api/
-├── main.go                    # Application entry point
-├── cmd/
-│   ├── app.go                # Application factory and lifecycle
-│   └── flag.go               # CLI flag parsing
-├── routers/
-│   ├── router.go             # Router setup, middleware stack
+├── cmd/                       # App initialization and CLI flags
+├── routers/                   # HTTP routing
 │   ├── api/v1/               # Endpoint handlers
-│   │   ├── status.go
-│   │   ├── state.go
-│   │   ├── circuits.go
-│   │   ├── drones.go
-│   │   ├── trains.go
-│   │   ├── players.go
-│   │   ├── stats.go
-│   │   ├── events_sse.go
-│   │   ├── request_context.go
-│   │   └── middleware/
-│   └── routes/               # Route group interface implementations
-│       ├── routes.go         # RoutingGroup interface
-│       ├── status.go
-│       ├── state.go
-│       ├── circuits.go
-│       ├── drones.go
-│       ├── trains.go
-│       ├── players.go
-│       ├── stats.go
-│       └── sse.go
-├── models/
-│   └── models/               # Domain models
-│       ├── drone.go
-│       ├── drone_station.go
-│       ├── train.go
-│       ├── train_station.go
-│       ├── player.go
-│       ├── circuit.go
-│       ├── machine.go
-│       ├── location.go
-│       ├── state.go
-│       ├── factory_stats.go
-│       ├── generator_stats.go
-│       ├── item_stats.go
-│       ├── prod_stats.go
-│       ├── sink_stats.go
-│       ├── satisfactory_event.go
-│       ├── api_status.go
-│       ├── dto.go
-│       └── error.go
-├── service/
-│   ├── service.go            # Service factory
+│   │   └── middleware/       # SSE and other middleware
+│   └── routes/               # Route group definitions (interface pattern)
+├── models/                    # Data models and DTOs
+│   ├── mode/                 # Run mode definitions
+│   └── models/               # Domain models (drone, train, circuit, etc.)
+├── service/                   # Satisfactory API client
 │   ├── client/               # Client interface
-│   ├── implClient/           # Real Satisfactory API client
-│   └── mockClient/           # Mock client for testing
-├── pkg/
+│   ├── implClient/           # Real client implementation
+│   ├── mockClient/           # Mock client for testing
+│   └── session/              # Session management
+├── pkg/                       # Shared packages
 │   ├── config/               # YAML configuration
 │   ├── db/                   # Redis setup and KV store
 │   ├── log/                  # Zap structured logging
 │   └── metrics/              # Prometheus metrics
-├── worker/
-│   └── publisher.go          # Event publisher (polls Satisfactory → Redis)
+├── worker/                    # Background workers (event publisher)
 ├── docs/                      # Generated Swagger docs
-├── config.local.yml
-└── config.docker.yml
+├── export/                    # Tygo configuration for type generation
+└── utils/                     # Utility functions
 ```
 
 ## Development Workflow
@@ -155,27 +115,27 @@ Each route group implements a consistent interface:
 ```go
 // routes/routes.go
 type RoutingGroup interface {
-    Register(group *gin.RouterGroup)
+    PublicRoutes() []Route
+    PrivateRoutes() []Route
+    HookRoutes() []Route
 }
 
 // Usage in routes/circuits.go
-type CircuitRoutes struct {
-    service *service.Service
-}
+type CircuitsRoutingGroup struct{ RoutingGroupBase }
 
-func (r *CircuitRoutes) Register(group *gin.RouterGroup) {
-    circuits := group.Group("/circuits")
-    {
-        circuits.GET("", v1.GetCircuits(r.service))
-        circuits.GET("/:id", v1.GetCircuit(r.service))
+func CircuitRoutes() *CircuitsRoutingGroup { return &CircuitsRoutingGroup{} }
+
+func (group *CircuitsRoutingGroup) PublicRoutes() []Route {
+    return []Route{
+        {Method: "GET", Pattern: "/v1/circuits", HandlerFunc: v1.ListCircuits},
     }
 }
 
 // Registration in routes/routes.go
-func RoutingGroups(svc *service.Service) []RoutingGroup {
+func RoutingGroups() []RoutingGroup {
     return []RoutingGroup{
-        &StatusRoutes{svc},
-        &CircuitRoutes{svc},
+        SessionRoutes(),
+        CircuitRoutes(),
         // ...
     }
 }
@@ -318,14 +278,13 @@ type Config struct {
 5. **Create route group** in `routers/routes/`:
 
    ```go
-   type EntityRoutes struct {
-       service *service.Service
-   }
+   type EntitiesRoutingGroup struct{ RoutingGroupBase }
 
-   func (r *EntityRoutes) Register(group *gin.RouterGroup) {
-       entities := group.Group("/entities")
-       {
-           entities.GET("", v1.GetNewEntities(r.service))
+   func EntityRoutes() *EntitiesRoutingGroup { return &EntitiesRoutingGroup{} }
+
+   func (group *EntitiesRoutingGroup) PublicRoutes() []Route {
+       return []Route{
+           {Method: "GET", Pattern: "/v1/entities", HandlerFunc: v1.GetNewEntities},
        }
    }
    ```
@@ -333,10 +292,10 @@ type Config struct {
 6. **Register** in `routes/routes.go`:
 
    ```go
-   func RoutingGroups(svc *service.Service) []RoutingGroup {
+   func RoutingGroups() []RoutingGroup {
        return []RoutingGroup{
            // ... existing routes
-           &EntityRoutes{svc},
+           EntityRoutes(),
        }
    }
    ```
