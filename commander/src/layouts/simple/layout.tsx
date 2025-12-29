@@ -1,15 +1,15 @@
-import type { Theme, SxProps, Breakpoint } from '@mui/material/styles';
+import type { Theme, SxProps, Breakpoint } from "@mui/material/styles";
 
-import Link from '@mui/material/Link';
-import Alert from '@mui/material/Alert';
+import Link from "@mui/material/Link";
+import Alert from "@mui/material/Alert";
 
-import { RouterLink } from 'src/routes/components';
+import { RouterLink } from "src/routes/components";
 
-import { Logo } from 'src/components/logo';
+import { Logo } from "src/components/logo";
 
-import { Main, CompactContent } from './main';
-import { LayoutSection } from '../core/layout-section';
-import { HeaderSection } from '../core/header-section';
+import { Main, CompactContent } from "./main";
+import { LayoutSection } from "../core/layout-section";
+import { HeaderSection } from "../core/header-section";
 
 // ----------------------------------------------------------------------
 
@@ -25,7 +25,7 @@ export type SimpleLayoutProps = {
 };
 
 export function SimpleLayout({ sx, children, header, content }: SimpleLayoutProps) {
-  const layoutQuery: Breakpoint = 'md';
+  const layoutQuery: Breakpoint = "md";
 
   return (
     <LayoutSection
@@ -39,7 +39,7 @@ export function SimpleLayout({ sx, children, header, content }: SimpleLayoutProp
           sx={header?.sx}
           slots={{
             topArea: (
-              <Alert severity="info" sx={{ display: 'none', borderRadius: 0 }}>
+              <Alert severity="info" sx={{ display: "none", borderRadius: 0 }}>
                 This is an info Alert.
               </Alert>
             ),
@@ -49,7 +49,7 @@ export function SimpleLayout({ sx, children, header, content }: SimpleLayoutProp
                 href="#"
                 component={RouterLink}
                 color="inherit"
-                sx={{ typography: 'subtitle2' }}
+                sx={{ typography: "subtitle2" }}
               >
                 Need help?
               </Link>
@@ -65,7 +65,7 @@ export function SimpleLayout({ sx, children, header, content }: SimpleLayoutProp
        * Style
        *************************************** */
       cssVars={{
-        '--layout-simple-content-compact-width': '448px',
+        "--layout-simple-content-compact-width": "448px",
       }}
       sx={sx}
     >

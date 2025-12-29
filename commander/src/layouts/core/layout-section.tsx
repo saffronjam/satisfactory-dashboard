@@ -1,11 +1,11 @@
-import type { Theme, SxProps, CSSObject } from '@mui/material/styles';
+import type { Theme, SxProps, CSSObject } from "@mui/material/styles";
 
-import Box from '@mui/material/Box';
-import { useTheme } from '@mui/material/styles';
-import GlobalStyles from '@mui/material/GlobalStyles';
+import Box from "@mui/material/Box";
+import { useTheme } from "@mui/material/styles";
+import GlobalStyles from "@mui/material/GlobalStyles";
 
-import { baseVars } from '../config-vars';
-import { layoutClasses } from '../classes';
+import { baseVars } from "../config-vars";
+import { layoutClasses } from "../classes";
 
 // ----------------------------------------------------------------------
 
@@ -31,6 +31,9 @@ export function LayoutSection({
   const inputGlobalStyles = (
     <GlobalStyles
       styles={{
+        html: {
+          scrollbarGutter: "stable",
+        },
         body: {
           ...baseVars(theme),
           ...cssVars,

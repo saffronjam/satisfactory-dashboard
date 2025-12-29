@@ -1,21 +1,21 @@
-import type { Theme, SxProps, Breakpoint } from '@mui/material/styles';
+import type { Theme, SxProps, Breakpoint } from "@mui/material/styles";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
-import Box from '@mui/material/Box';
-import ListItem from '@mui/material/ListItem';
-import { useTheme } from '@mui/material/styles';
-import ListItemButton from '@mui/material/ListItemButton';
-import Drawer, { drawerClasses } from '@mui/material/Drawer';
+import Box from "@mui/material/Box";
+import ListItem from "@mui/material/ListItem";
+import { useTheme } from "@mui/material/styles";
+import ListItemButton from "@mui/material/ListItemButton";
+import Drawer, { drawerClasses } from "@mui/material/Drawer";
 
-import { usePathname } from 'src/routes/hooks';
-import { RouterLink } from 'src/routes/components';
+import { usePathname } from "src/routes/hooks";
+import { RouterLink } from "src/routes/components";
 
-import { varAlpha } from 'src/theme/styles';
+import { varAlpha } from "src/theme/styles";
 
-import { Logo } from 'src/components/logo';
-import { Scrollbar } from 'src/components/scrollbar';
-import { Divider } from '@mui/material';
+import { Logo } from "src/components/logo";
+import { Scrollbar } from "src/components/scrollbar";
+import { Divider } from "@mui/material";
 
 // ----------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ export type NavContentProps = {
     path: string;
     title: string;
     icon: React.ReactNode;
-    group: 'main' | 'sub';
+    group: "main" | "sub";
     info?: React.ReactNode;
   }[];
   slots?: {
@@ -50,15 +50,15 @@ export function NavDesktop({
         top: 0,
         left: 0,
         height: 1,
-        display: 'none',
-        position: 'fixed',
-        flexDirection: 'column',
-        bgcolor: 'var(--layout-nav-bg)',
-        zIndex: 'var(--layout-nav-zIndex)',
-        width: 'var(--layout-nav-vertical-width)',
-        borderRight: `1px solid var(--layout-nav-border-color, ${varAlpha(theme.vars.palette.grey['500Channel'], 0.12)})`,
+        display: "none",
+        position: "fixed",
+        flexDirection: "column",
+        bgcolor: "var(--layout-nav-bg)",
+        zIndex: "var(--layout-nav-zIndex)",
+        width: "var(--layout-nav-vertical-width)",
+        borderRight: `1px solid var(--layout-nav-border-color, ${varAlpha(theme.vars.palette.grey["500Channel"], 0.12)})`,
         [theme.breakpoints.up(layoutQuery)]: {
-          display: 'flex',
+          display: "flex",
         },
         ...sx,
       }}
@@ -83,7 +83,6 @@ export function NavMobile({
     if (open) {
       onClose();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   return (
@@ -94,10 +93,10 @@ export function NavMobile({
         [`& .${drawerClasses.paper}`]: {
           pt: 2.5,
           px: 2.5,
-          overflow: 'unset',
-          bgcolor: 'var(--layout-nav-bg)',
-          width: 'var(--layout-nav-mobile-width)',
-          boxShadow: 'none',
+          overflow: "unset",
+          bgcolor: "var(--layout-nav-bg)",
+          width: "var(--layout-nav-mobile-width)",
+          boxShadow: "none",
           ...sx,
         },
       }}
@@ -113,25 +112,25 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
   const pathname = usePathname();
   const theme = useTheme();
 
-  // Separate the data into main and sub groups
-  const mainItems = data.filter((item) => item.group === 'main');
-  const subItems = data.filter((item) => item.group === 'sub');
+  // Separate the data into main and subgroups
+  const mainItems = data.filter((item) => item.group === "main");
+  const subItems = data.filter((item) => item.group === "sub");
 
   return (
     <>
-      <Logo sx={{ display: 'none' }} />
+      <Logo sx={{ display: "none" }} />
 
       {slots?.topArea}
 
-      <Scrollbar fillContent>
+      <Scrollbar fillContent sx={{ mt: 2 }}>
         {/* Separator */}
-        <Box sx={{ mb: 10 }} />
+        <Box sx={{ mb: 4 }} />
 
         <Box component="nav" display="flex" flex="1 1 auto" flexDirection="column" sx={sx}>
           <Box component="ul" gap={1.5} display="flex" flexDirection="column">
             {/* Render main items */}
             {mainItems.map((item) => {
-              const isActived = item.path === pathname;
+              const isActive = item.path === pathname;
 
               return (
                 <ListItem disableGutters disablePadding key={item.title}>
@@ -145,20 +144,20 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
                       gap: 2,
                       pr: 1.5,
                       borderRadius: 2,
-                      typography: 'body2',
-                      fontWeight: 'fontWeightMedium',
-                      minHeight: 'var(--layout-nav-item-height)',
-                      ...(!isActived && {
-                        color: 'text.primary',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
+                      typography: "body2",
+                      fontWeight: "fontWeightMedium",
+                      minHeight: "var(--layout-nav-item-height)",
+                      ...(!isActive && {
+                        color: "text.primary",
+                        "&:hover": {
+                          bgcolor: "action.hover",
                         },
                       }),
-                      ...(isActived && {
-                        fontWeight: 'fontWeightSemiBold',
+                      ...(isActive && {
+                        fontWeight: "fontWeightSemiBold",
                         bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.66),
                         color: theme.palette.primary.contrastText,
-                        '&:hover': {
+                        "&:hover": {
                           bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.86),
                         },
                       }),
@@ -183,7 +182,7 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
 
             {/* Render sub items */}
             {subItems.map((item) => {
-              const isActived = item.path === pathname;
+              const isActive = item.path === pathname;
 
               return (
                 <ListItem disableGutters disablePadding key={item.title}>
@@ -197,20 +196,20 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
                       gap: 2,
                       pr: 1.5,
                       borderRadius: 2,
-                      typography: 'body2',
-                      fontWeight: 'fontWeightMedium',
-                      minHeight: 'var(--layout-nav-item-height)',
-                      ...(!isActived && {
-                        color: 'text.primary',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
+                      typography: "body2",
+                      fontWeight: "fontWeightMedium",
+                      minHeight: "var(--layout-nav-item-height)",
+                      ...(!isActive && {
+                        color: "text.primary",
+                        "&:hover": {
+                          bgcolor: "action.hover",
                         },
                       }),
-                      ...(isActived && {
-                        fontWeight: 'fontWeightSemiBold',
+                      ...(isActive && {
+                        fontWeight: "fontWeightSemiBold",
                         bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.66),
                         color: theme.palette.primary.contrastText,
-                        '&:hover': {
+                        "&:hover": {
                           bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.86),
                         },
                       }),

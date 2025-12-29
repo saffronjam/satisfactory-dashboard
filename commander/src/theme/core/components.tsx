@@ -1,23 +1,23 @@
-import type { Theme, Components } from '@mui/material/styles';
+import type { Theme, Components } from "@mui/material/styles";
 
-import SvgIcon from '@mui/material/SvgIcon';
+import SvgIcon from "@mui/material/SvgIcon";
 
-import { varAlpha } from '../styles';
+import { varAlpha } from "../styles";
 
 // ----------------------------------------------------------------------
 
-const MuiBackdrop: Components<Theme>['MuiBackdrop'] = {
+const MuiBackdrop: Components<Theme>["MuiBackdrop"] = {
   styleOverrides: {
     root: ({ theme }) => ({
-      backgroundColor: varAlpha(theme.vars.palette.grey['900Channel'], 0.8),
+      backgroundColor: varAlpha(theme.vars.palette.grey["900Channel"], 0.8),
     }),
     invisible: {
-      background: 'transparent',
+      background: "transparent",
     },
   },
 };
 
-const MuiButton: Components<Theme>['MuiButton'] = {
+const MuiButton: Components<Theme>["MuiButton"] = {
   defaultProps: {
     disableElevation: true,
   },
@@ -27,12 +27,12 @@ const MuiButton: Components<Theme>['MuiButton'] = {
     },
     contained: ({ theme }) => ({
       backgroundColor: theme.palette.primary.dark,
-      '&:hover': {
+      "&:hover": {
         backgroundColor: varAlpha(theme.palette.primary.darkChannel, 0.8),
       },
     }),
     text: ({ theme }) => ({
-      '&:hover': {
+      "&:hover": {
         backgroundColor: varAlpha(theme.palette.primary.darkChannel, 0.12),
       },
     }),
@@ -42,22 +42,22 @@ const MuiButton: Components<Theme>['MuiButton'] = {
   },
 };
 
-const MuiCard: Components<Theme>['MuiCard'] = {
+const MuiCard: Components<Theme>["MuiCard"] = {
   styleOverrides: {
     root: ({ theme }) => ({
       margin: 10,
       zIndex: 0,
-      position: 'relative',
+      position: "relative",
       boxShadow: theme.customShadows.card,
       borderRadius: theme.shape.borderRadius * 2,
     }),
   },
 };
 
-const MuiCardHeader: Components<Theme>['MuiCardHeader'] = {
+const MuiCardHeader: Components<Theme>["MuiCardHeader"] = {
   defaultProps: {
-    titleTypographyProps: { variant: 'h6' },
-    subheaderTypographyProps: { variant: 'body2' },
+    titleTypographyProps: { variant: "h6" },
+    subheaderTypographyProps: { variant: "body2" },
   },
   styleOverrides: {
     root: ({ theme }) => ({
@@ -66,27 +66,27 @@ const MuiCardHeader: Components<Theme>['MuiCardHeader'] = {
   },
 };
 
-const MuiOutlinedInput: Components<Theme>['MuiOutlinedInput'] = {
+const MuiOutlinedInput: Components<Theme>["MuiOutlinedInput"] = {
   styleOverrides: {
     notchedOutline: ({ theme }) => ({
-      borderColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.2),
+      borderColor: varAlpha(theme.vars.palette.grey["500Channel"], 0.2),
     }),
   },
 };
 
-const MuiPaper: Components<Theme>['MuiPaper'] = {
+const MuiPaper: Components<Theme>["MuiPaper"] = {
   defaultProps: {
     elevation: 0,
   },
   styleOverrides: {
-    root: { backgroundImage: 'none' },
+    root: { backgroundImage: "none" },
     outlined: ({ theme }) => ({
-      borderColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.16),
+      borderColor: varAlpha(theme.vars.palette.grey["500Channel"], 0.16),
     }),
   },
 };
 
-const MuiTableCell: Components<Theme>['MuiTableCell'] = {
+const MuiTableCell: Components<Theme>["MuiTableCell"] = {
   styleOverrides: {
     head: ({ theme }) => ({
       fontSize: theme.typography.pxToRem(14),
@@ -97,20 +97,20 @@ const MuiTableCell: Components<Theme>['MuiTableCell'] = {
   },
 };
 
-const MuiMenuItem: Components<Theme>['MuiMenuItem'] = {
+const MuiMenuItem: Components<Theme>["MuiMenuItem"] = {
   styleOverrides: {
     root: ({ theme }) => ({
-      boxShadow: '0',
+      boxShadow: "0",
       ...theme.typography.body2,
     }),
   },
 };
 
-const MuiLink: Components<Theme>['MuiLink'] = {
-  defaultProps: { underline: 'hover' },
+const MuiLink: Components<Theme>["MuiLink"] = {
+  defaultProps: { underline: "hover" },
 };
 
-const MuiFormControlLabel: Components<Theme>['MuiFormControlLabel'] = {
+const MuiFormControlLabel: Components<Theme>["MuiFormControlLabel"] = {
   styleOverrides: {
     label: ({ theme }) => ({
       ...theme.typography.body2,
@@ -118,9 +118,9 @@ const MuiFormControlLabel: Components<Theme>['MuiFormControlLabel'] = {
   },
 };
 
-const MuiCheckbox: Components<Theme>['MuiCheckbox'] = {
+const MuiCheckbox: Components<Theme>["MuiCheckbox"] = {
   defaultProps: {
-    size: 'small',
+    size: "small",
     icon: (
       <SvgIcon>
         <path d="M17.9 2.318A5 5 0 0 1 22.895 7.1l.005.217v10a5 5 0 0 1-4.783 4.995l-.217.005h-10a5 5 0 0 1-4.995-4.783l-.005-.217v-10a5 5 0 0 1 4.783-4.996l.217-.004h10Zm-.5 1.5h-9a4 4 0 0 0-4 4v9a4 4 0 0 0 4 4h9a4 4 0 0 0 4-4v-9a4 4 0 0 0-4-4Z" />
@@ -139,19 +139,19 @@ const MuiCheckbox: Components<Theme>['MuiCheckbox'] = {
   },
   styleOverrides: {
     root: ({ theme }) => ({
-      '&.Mui-checked': {
+      "&.Mui-checked": {
         color: theme.palette.grey[700],
       },
-      '&.MuiCheckbox-indeterminate': {
+      "&.MuiCheckbox-indeterminate": {
         color: theme.palette.grey[700],
       },
     }),
   },
 };
 
-const MuiRadio: Components<Theme>['MuiRadio'] = {
+const MuiRadio: Components<Theme>["MuiRadio"] = {
   defaultProps: {
-    size: 'small',
+    size: "small",
     icon: (
       <SvgIcon>
         <path
@@ -173,18 +173,18 @@ const MuiRadio: Components<Theme>['MuiRadio'] = {
   },
 };
 
-const MuiDialog: Components<Theme>['MuiDialog'] = {
+const MuiDialog: Components<Theme>["MuiDialog"] = {
   styleOverrides: {
     paper: ({ theme }) => ({
       borderRadius: 20,
-      boxShadow: 'none',
+      boxShadow: "none",
       backgroundColor: theme.vars.palette.background.paper,
       color: theme.vars.palette.text.secondary, // Set the font color
     }),
   },
 };
 
-const MuiDialogTitle: Components<Theme>['MuiDialogTitle'] = {
+const MuiDialogTitle: Components<Theme>["MuiDialogTitle"] = {
   styleOverrides: {
     root: ({ theme }) => ({
       color: theme.vars.palette.text.primary,
@@ -192,7 +192,7 @@ const MuiDialogTitle: Components<Theme>['MuiDialogTitle'] = {
   },
 };
 
-const MuiDialogContentText: Components<Theme>['MuiDialogContentText'] = {
+const MuiDialogContentText: Components<Theme>["MuiDialogContentText"] = {
   styleOverrides: {
     root: ({ theme }) => ({
       color: varAlpha(theme.vars.palette.text.primaryChannel, 0.6),
@@ -200,27 +200,27 @@ const MuiDialogContentText: Components<Theme>['MuiDialogContentText'] = {
   },
 };
 
-const MuiTextField: Components<Theme>['MuiTextField'] = {
+const MuiTextField: Components<Theme>["MuiTextField"] = {
   styleOverrides: {
     root: ({ theme }) => ({
-      '& .MuiOutlinedInput-root': {
+      "& .MuiOutlinedInput-root": {
         borderRadius: 20,
-        '&:not(.Mui-disabled) fieldset': {
-          borderColor: theme.vars.palette.grey['800'],
+        "&:not(.Mui-disabled) fieldset": {
+          borderColor: theme.vars.palette.grey["800"],
         },
-        '&:hover:not(.Mui-disabled) fieldset': {
-          borderColor: theme.vars.palette.grey['800'],
+        "&:hover:not(.Mui-disabled) fieldset": {
+          borderColor: theme.vars.palette.grey["800"],
         },
-        '&.Mui-focused fieldset': {
-          borderColor: theme.vars.palette.grey['800'],
+        "&.Mui-focused fieldset": {
+          borderColor: theme.vars.palette.grey["800"],
         },
-        '& input': {
+        "& input": {
           color: theme.vars.palette.text.primary,
         },
       },
-      '& .MuiInputLabel-root': {
+      "& .MuiInputLabel-root": {
         color: theme.vars.palette.text.primary,
-        '&.Mui-focused': {
+        "&.Mui-focused": {
           color: varAlpha(theme.vars.palette.text.primaryChannel, 0.6), // Maintain primary color when focused
         },
       },
@@ -228,7 +228,7 @@ const MuiTextField: Components<Theme>['MuiTextField'] = {
   },
 };
 
-const MuiSelect: Components<Theme>['MuiSelect'] = {
+const MuiSelect: Components<Theme>["MuiSelect"] = {
   styleOverrides: {
     root: {
       borderRadius: 20,
