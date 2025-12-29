@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { config } from 'src/config';
 import { Settings } from 'src/types';
 
 const defaultSettings: Settings = {
-  apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:3002',
+  apiUrl: config.apiUrl,
   productionView: {
     includeMinable: true,
     includeItems: true,

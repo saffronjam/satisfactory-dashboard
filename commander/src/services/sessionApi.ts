@@ -1,6 +1,7 @@
 import { CreateSessionRequest, Session, SessionInfo } from 'src/apiTypes';
+import { config } from 'src/config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/v1';
+const API_URL = config.apiUrl;
 
 export interface SessionPreviewResult {
   sessionInfo: SessionInfo;

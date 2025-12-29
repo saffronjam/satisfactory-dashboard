@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as API from 'src/apiTypes';
+import { config } from 'src/config';
 import { ApiContext, ApiData } from './useApi';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/v1';
+const API_URL = config.apiUrl;
 
 const DEFAULT_DATA: ApiData = {
   isLoading: true,
