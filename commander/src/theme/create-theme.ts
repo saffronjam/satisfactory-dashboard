@@ -25,6 +25,7 @@ export function createTheme(): Theme {
 
 // ----------------------------------------------------------------------
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function shouldSkipGeneratingVar(keys: string[], value: string | number): boolean {
   const skipGlobalKeys = [
     'mixins',

@@ -166,7 +166,7 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
                       {item.title}
                     </Box>
 
-                    {item.info && item.info}
+                    {item.info ? item.info : null}
                   </ListItemButton>
                 </ListItem>
               );
@@ -218,7 +218,7 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
                       {item.title}
                     </Box>
 
-                    {item.info && item.info}
+                    {item.info ? item.info : null}
                   </ListItemButton>
                 </ListItem>
               );

@@ -8,12 +8,12 @@ type GroupableEntity =
   | { type: 'droneStation'; data: DroneStation; x: number; y: number };
 
 class UnionFind {
-  private parent: number[];
-  private rank: number[];
+  private readonly parent: number[];
+  private readonly rank: number[];
 
   constructor(size: number) {
     this.parent = Array.from({ length: size }, (_, i) => i);
-    this.rank = new Array(size).fill(0);
+    this.rank = Array.from({ length: size }, () => 0);
   }
 
   find(x: number): number {
@@ -38,40 +38,6 @@ class UnionFind {
     }
   }
 }
-
-export function groupMachines(nodes: Machine[], distance: number): Machine[][] {
-  const n = nodes.length;
-  const uf = new UnionFind(n);
-
-  // Helper to calculate Euclidean distance
-  const euclideanDistance = (a: Machine, b: Machine): number =>
-    Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-
-  // Compare every pair of nodes (brute force for simplicity)
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      if (euclideanDistance(nodes[i], nodes[j]) < distance) {
-        uf.union(i, j);
-      }
-    }
-  }
-
-  // Group nodes by their connected components
-  const groups: Map<number, Machine[]> = new Map();
-  for (let i = 0; i < n; i++) {
-    const root = uf.find(i);
-    if (!groups.has(root)) {
-      groups.set(root, []);
-    }
-    groups.get(root)!.push(nodes[i]);
-  }
-
-  return Array.from(groups.values());
-}
-
-export const computeMachineGroups = (machines: Machine[], groupDistance: number) => {
-  return computeUnifiedGroups(machines, [], [], groupDistance);
-};
 
 // Unified grouping function that groups machines, train stations, and drone stations together
 export const computeUnifiedGroups = (

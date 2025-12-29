@@ -15,7 +15,6 @@ type Props = CardProps & {
   subheader?: string;
   available: number;
   progress: number;
-  color?: string;
 };
 
 export function AnalyticsCouponsProgress({
@@ -23,7 +22,6 @@ export function AnalyticsCouponsProgress({
   subheader,
   available,
   progress,
-  color = 'primary',
   ...other
 }: Props) {
   const theme = useTheme();

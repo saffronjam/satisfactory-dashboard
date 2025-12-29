@@ -290,13 +290,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
   );
 };
 
-export function DroneList({
-  drones,
-  droneStations,
-}: {
-  drones: Drone[];
-  droneStations: DroneStation[];
-}) {
+export function DroneList({ drones }: { drones: Drone[]; droneStations: DroneStation[] }) {
   return (
     <>
       {drones.map((drone, index) => (

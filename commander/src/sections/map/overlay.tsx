@@ -2,26 +2,17 @@ import L from 'leaflet';
 import { useEffect, useState } from 'react';
 import { Marker, Rectangle, useMapEvents } from 'react-leaflet';
 import {
-  Drone,
   MachineCategory,
   MachineCategoryExtractor,
   MachineCategoryFactory,
   MachineCategoryGenerator,
-  Train,
 } from 'src/apiTypes';
 import { MachineGroup, SelectedMapItem } from 'src/types';
 import { ConvertToMapCoords2 } from './bounds';
 
 export type FilterCategory = 'production' | 'power' | 'resource' | 'train' | 'drone';
 
-type IconProps = {
-  size: number;
-  color: string;
-  backgroundColor: string;
-  padding: string;
-};
-
-// Category-based colors (vibrant palette for visibility on bright map)
+// Category-based colors
 const categoryColors: Record<MachineCategory, string> = {
   [MachineCategoryFactory]: '#4056A1', // Deep blue for Production
   [MachineCategoryExtractor]: '#C97B2A', // Rich amber for Resource
@@ -61,88 +52,18 @@ const iconifyDroneStation = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 
 const trainStationColor = '#5A5A5A'; // Dark warm grey
 const droneStationColor = '#4A5A6A'; // Dark cool grey
 
-const MultiIcon = (svgs: string[], { size, color, backgroundColor, padding }: IconProps) => {
-  const width = (() => {
-    if (svgs.length === 1) return size;
-    if (svgs.length === 2) return size * 1.2;
-    if (svgs.length === 3) return size * 1.4;
-    return 0;
-  })();
-
-  const iconHtml = `
-    <div color="${color}" style="background-color: ${backgroundColor}; border-radius: 50%; padding: ${padding}; width: ${width}px; height: ${size}; display: flex; justify-content: center; align-items: center;">
-      ${svgs.join('')}
-    </div>`;
-  return L.divIcon({
-    className: 'custom-icon',
-    html: iconHtml,
-    iconAnchor: [12, 24],
-  });
-};
-
-const iconFromCategories = (categories: MachineCategory[], props: IconProps) => {
-  const svgs: string[] = [];
-
-  if (categories.includes(MachineCategoryExtractor)) {
-    svgs.push(iconifyMiner);
-  }
-  if (categories.includes(MachineCategoryFactory)) {
-    svgs.push(iconifyFactory);
-  }
-  if (categories.includes(MachineCategoryGenerator)) {
-    svgs.push(iconifyGenerator);
-  }
-
-  return MultiIcon(svgs, props);
-};
-
-// Create a single icon for stations
-const createStationIcon = (svg: string, backgroundColor: string) => {
-  const iconHtml = `
-    <div style="background-color: ${backgroundColor}; border-radius: 50%; padding: 7px; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center;">
-      ${svg}
-    </div>`;
-  return L.divIcon({
-    className: 'custom-icon',
-    html: iconHtml,
-    iconAnchor: [12, 24],
-  });
-};
-
-// Create an icon for station groups with count badge
-const createStationGroupIcon = (svg: string, backgroundColor: string, count: number) => {
-  const showBadge = count > 1;
-  const iconHtml = `
-    <div style="position: relative; background-color: ${backgroundColor}; border-radius: 50%; padding: 7px; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center;">
-      ${svg}
-      ${
-        showBadge
-          ? `<div style="position: absolute; top: -6px; right: -6px; background-color: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; justify-content: center; align-items: center;">${count}</div>`
-          : ''
-      }
-    </div>`;
-  return L.divIcon({
-    className: 'custom-icon',
-    html: iconHtml,
-    iconAnchor: [12, 24],
-  });
-};
-
 type OverlayProps = {
   machineGroups: MachineGroup[];
-  trains: Train[];
-  drones: Drone[];
   onSelectItem: (item: SelectedMapItem | null) => void;
   onZoomEnd: (zoom: number) => void;
 };
 
-export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd }: OverlayProps) {
+export function Overlay({ machineGroups, onSelectItem, onZoomEnd }: OverlayProps) {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
     start: L.LatLng;
     end: L.LatLng;
   } | null>(null);
-  const [ctrlPressed, setCtrlPressed] = useState(false);
 
   const map = useMapEvents({
     zoomend: () => {
@@ -190,13 +111,11 @@ export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control' || e.key === 'Meta') {
-        setCtrlPressed(true);
         map.getContainer().style.cursor = 'crosshair';
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Control' || e.key === 'Meta') {
-        setCtrlPressed(false);
         map.getContainer().style.cursor = '';
       }
     };

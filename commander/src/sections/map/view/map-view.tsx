@@ -392,8 +392,6 @@ export function MapView() {
             />
             <Overlay
               machineGroups={machineGroups}
-              trains={api.trains}
-              drones={api.drones}
               onSelectItem={handleSelectItem}
               onZoomEnd={setZoom}
             />

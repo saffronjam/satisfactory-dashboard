@@ -1,7 +1,6 @@
 import Alert from '@mui/material/Alert';
 import type { Breakpoint, SxProps, Theme } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
-import { useNotifications } from '@toolpad/core';
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AddSessionDialog } from 'src/components/session-dialog';
@@ -39,7 +38,6 @@ export type Notification = {
 export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) {
   const theme = useTheme();
   const location = useLocation();
-  const { show, close } = useNotifications();
   const { sessions, isLoading: sessionsLoading } = useSession();
 
   const [navOpen, setNavOpen] = useState(false);

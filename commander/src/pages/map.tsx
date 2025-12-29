@@ -1,4 +1,3 @@
-import { LeafletContext } from '@react-leaflet/core';
 import { Helmet } from 'react-helmet-async';
 
 import { CONFIG } from 'src/config-global';

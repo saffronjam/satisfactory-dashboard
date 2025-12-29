@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Session, SessionInfo } from 'src/apiTypes';
 import { sessionApi } from 'src/services/sessionApi';
 import { SessionContext, SessionContextType } from './SessionContext';

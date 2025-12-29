@@ -8,8 +8,6 @@ import { useTheme } from '@mui/material/styles';
 import type { ToolbarProps } from '@mui/material/Toolbar';
 import Toolbar from '@mui/material/Toolbar';
 
-import { bgBlur, varAlpha } from 'src/theme/styles';
-
 import { layoutClasses } from '../classes';
 
 // ----------------------------------------------------------------------

@@ -271,13 +271,7 @@ const TrainCard = ({ train }: { train: Train }) => {
   );
 };
 
-export function TrainList({
-  trains,
-  trainStations,
-}: {
-  trains: Train[];
-  trainStations: TrainStation[];
-}) {
+export function TrainList({ trains }: { trains: Train[]; trainStations: TrainStation[] }) {
   return (
     <>
       {trains.map((train, index) => (
