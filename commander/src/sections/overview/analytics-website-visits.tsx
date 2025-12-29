@@ -1,10 +1,9 @@
-import type { CardProps } from "@mui/material/Card";
-
-import Card from "@mui/material/Card";
-import CardHeader from "@mui/material/CardHeader";
-import { useTheme, alpha as hexAlpha } from "@mui/material/styles";
-import Box from "@mui/material/Box";
-import { BarChart } from "@mui/x-charts/BarChart";
+import Box from '@mui/material/Box';
+import type { CardProps } from '@mui/material/Card';
+import Card from '@mui/material/Card';
+import CardHeader from '@mui/material/CardHeader';
+import { alpha as hexAlpha, useTheme } from '@mui/material/styles';
+import { BarChart } from '@mui/x-charts/BarChart';
 
 // ----------------------------------------------------------------------
 
@@ -45,14 +44,14 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, ...other }: Pr
           xAxis={[
             {
               data: chart.categories ?? [],
-              scaleType: "band",
+              scaleType: 'band',
             },
           ]}
           height={364}
           slotProps={{
             legend: {
-              direction: "horizontal",
-              position: { vertical: "top", horizontal: "end" },
+              direction: 'horizontal',
+              position: { vertical: 'top', horizontal: 'end' },
             },
           }}
         />

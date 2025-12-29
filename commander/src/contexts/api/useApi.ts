@@ -1,4 +1,3 @@
-import { createContext } from "use-context-selector";
 import {
   Circuit,
   Drone,
@@ -10,7 +9,8 @@ import {
   SinkStats,
   Train,
   TrainStation,
-} from "src/apiTypes";
+} from 'src/apiTypes';
+import { createContext } from 'use-context-selector';
 
 export type ApiData = {
   isLoading: boolean;

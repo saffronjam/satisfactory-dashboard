@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useRef } from "react";
-import { useNotifications } from "@toolpad/core";
-import { useSession } from "src/contexts/sessions";
-import { ApiProvider } from "./ApiProvider";
-import { Session } from "src/apiTypes";
+import { useNotifications } from '@toolpad/core';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Session } from 'src/apiTypes';
+import { useSession } from 'src/contexts/sessions';
+import { ApiProvider } from './ApiProvider';
 
 interface SessionAwareApiProviderProps {
   children: React.ReactNode;
@@ -32,14 +32,14 @@ export const SessionAwareApiProvider: React.FC<SessionAwareApiProviderProps> = (
         prevSessionRef.current.sessionName !== session.sessionName
       ) {
         show(`Save changed: ${prevSessionRef.current.sessionName} → ${session.sessionName}`, {
-          severity: "info",
+          severity: 'info',
           autoHideDuration: 5000,
         });
       }
       prevSessionRef.current = session;
       updateSessionFromEvent(session);
     },
-    [updateSessionFromEvent, show],
+    [updateSessionFromEvent, show]
   );
 
   return (

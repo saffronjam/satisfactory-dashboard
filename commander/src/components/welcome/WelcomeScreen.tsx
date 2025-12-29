@@ -1,8 +1,8 @@
-import React from "react";
-import { Box, Button, Card, CardContent, Typography, useTheme } from "@mui/material";
-import { Iconify } from "src/components/iconify";
-import { useSession } from "src/contexts/sessions";
-import { varAlpha } from "src/theme/styles";
+import { Box, Button, Card, CardContent, Typography, useTheme } from '@mui/material';
+import React from 'react';
+import { Iconify } from 'src/components/iconify';
+import { useSession } from 'src/contexts/sessions';
+import { varAlpha } from 'src/theme/styles';
 
 interface WelcomeScreenProps {
   onAddSession: () => void;
@@ -14,9 +14,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
 
   const handleTryDemo = async () => {
     try {
-      await createMockSession("Demo Session");
+      await createMockSession('Demo Session');
     } catch (err) {
-      console.error("Failed to create mock session:", err);
+      console.error('Failed to create mock session:', err);
     }
   };
 
@@ -27,20 +27,20 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
   return (
     <Box
       sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        bgcolor: "background.default",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        bgcolor: 'background.default',
         p: 3,
       }}
     >
       <Card
         sx={{
           maxWidth: 480,
-          width: "100%",
-          textAlign: "center",
-          boxShadow: varAlpha(theme.palette.grey["500Channel"], 0.16),
+          width: '100%',
+          textAlign: 'center',
+          boxShadow: varAlpha(theme.palette.grey['500Channel'], 0.16),
         }}
       >
         <CardContent sx={{ py: 5, px: 4 }}>
@@ -48,16 +48,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
             sx={{
               width: 80,
               height: 80,
-              borderRadius: "50%",
+              borderRadius: '50%',
               bgcolor: varAlpha(theme.palette.primary.mainChannel, 0.12),
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              mx: "auto",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
               mb: 3,
             }}
           >
-            <Iconify icon="material-symbols:factory" width={40} sx={{ color: "primary.main" }} />
+            <Iconify icon="material-symbols:factory" width={40} sx={{ color: 'primary.main' }} />
           </Box>
 
           <Typography variant="h4" sx={{ mb: 1 }}>
@@ -69,7 +69,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
             monitoring your factory.
           </Typography>
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Button
               variant="contained"
               size="large"
@@ -91,7 +91,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
             )}
           </Box>
 
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 3 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 3 }}>
             Sessions are shared across all users of this Commander instance
           </Typography>
         </CardContent>

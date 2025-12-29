@@ -1,14 +1,12 @@
-import type { CardProps } from "@mui/material/Card";
-import type { ColorType } from "src/theme/core/palette";
-
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import { useTheme } from "@mui/material/styles";
-import Typography from "@mui/material/Typography";
-import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
-
-import { fNumber, fShortenNumber } from "src/utils/format-number";
-import { varAlpha } from "src/theme/styles";
+import Box from '@mui/material/Box';
+import type { CardProps } from '@mui/material/Card';
+import Card from '@mui/material/Card';
+import { useTheme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
+import type { ColorType } from 'src/theme/core/palette';
+import { varAlpha } from 'src/theme/styles';
+import { fNumber, fShortenNumber } from 'src/utils/format-number';
 
 // ----------------------------------------------------------------------
 
@@ -31,7 +29,7 @@ export function AnalyticsWidgetSummary({
   total,
   chart,
   units,
-  color = "primary",
+  color = 'primary',
   sx,
   ...other
 }: Props) {
@@ -65,16 +63,16 @@ export function AnalyticsWidgetSummary({
             sx={{
               flexGrow: 1,
               minWidth: 112,
-              display: "flex",
-              position: "relative",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: 'flex',
+              position: 'relative',
+              justifyContent: 'space-between',
+              alignItems: 'center',
             }}
           >
             {/* Left number */}
-            <Box sx={{ flex: 1, textAlign: "center" }}>
+            <Box sx={{ flex: 1, textAlign: 'center' }}>
               <Typography
-                sx={{ color: theme.palette.primary.contrastText, textAlign: "right", mr: 2 }}
+                sx={{ color: theme.palette.primary.contrastText, textAlign: 'right', mr: 2 }}
                 variant="h5"
               >
                 {leftNumber}
@@ -84,9 +82,9 @@ export function AnalyticsWidgetSummary({
             {/* Separator in the center */}
             <Box
               sx={{
-                position: "absolute",
-                left: "50%",
-                transform: "translateX(-50%)",
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
               }}
             >
               <Typography variant="body2" sx={{ fontSize: 25 }}>
@@ -95,9 +93,9 @@ export function AnalyticsWidgetSummary({
             </Box>
 
             {/* Right number */}
-            <Box sx={{ flex: 1, textAlign: "center" }}>
+            <Box sx={{ flex: 1, textAlign: 'center' }}>
               <Typography
-                sx={{ color: theme.palette.primary.contrastText, textAlign: "left", ml: 2 }}
+                sx={{ color: theme.palette.primary.contrastText, textAlign: 'left', ml: 2 }}
                 variant="h5"
               >
                 {rightNumber}
@@ -108,9 +106,9 @@ export function AnalyticsWidgetSummary({
       }
     }
 
-    if (typeof value === "number") {
+    if (typeof value === 'number') {
       return (
-        <Box sx={{ flexGrow: 1, minWidth: 112, textAlign: "center" }}>
+        <Box sx={{ flexGrow: 1, minWidth: 112, textAlign: 'center' }}>
           <Typography sx={{ color: theme.palette.primary.contrastText }} variant="h4">
             {formatNumber(value, { decimals: 1 })}
           </Typography>
@@ -118,14 +116,14 @@ export function AnalyticsWidgetSummary({
       );
     }
 
-    if (typeof value === "string") {
-      const newLineSplit = value.split("\n");
+    if (typeof value === 'string') {
+      const newLineSplit = value.split('\n');
       return (
         <Box sx={{ flexGrow: 1, minWidth: 112, color: theme.palette.primary.contrastText }}>
           {newLineSplit.map((line, index) => (
             <Box
               key={index}
-              sx={{ typography: "h4", fontFamily: "'DM Mono', 'Roboto Mono', monospace" }}
+              sx={{ typography: 'h4', fontFamily: "'DM Mono', 'Roboto Mono', monospace" }}
             >
               {line}
             </Box>
@@ -144,35 +142,35 @@ export function AnalyticsWidgetSummary({
         p: 3,
         mt: 0,
         mb: 0,
-        position: "relative",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
         ...sx,
       }}
       {...other}
     >
-      <Box sx={{ width: 38, height: 38, my: 2, mb: 5, mx: "auto" }}>{icon}</Box>
+      <Box sx={{ width: 38, height: 38, my: 2, mb: 5, mx: 'auto' }}>{icon}</Box>
 
       {/* Main content area */}
       <Box
         sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
           flexGrow: 1,
           minHeight: 100,
         }}
       >
-        <Box sx={{ mb: 1, typography: "overline" }}>{title}</Box>
+        <Box sx={{ mb: 1, typography: 'overline' }}>{title}</Box>
 
         {/* Bigger numbers and centered */}
         <Box
           sx={{
-            typography: "h2",
-            display: "flex",
-            justifyContent: "center",
-            width: "100%",
+            typography: 'h2',
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
           }}
         >
           {genContent(total)}
@@ -180,7 +178,7 @@ export function AnalyticsWidgetSummary({
       </Box>
 
       {/* Wider chart at the bottom */}
-      <Box sx={{ mt: 0, width: "100%" }}>
+      <Box sx={{ mt: 0, width: '100%' }}>
         <SparkLineChart
           data={chart.series}
           height={56}
@@ -188,7 +186,7 @@ export function AnalyticsWidgetSummary({
           color={chartColor}
           showTooltip
           showHighlight
-          valueFormatter={(value) => (value !== null ? fNumber(value) : "")}
+          valueFormatter={(value) => (value !== null ? fNumber(value) : '')}
         />
       </Box>
     </Card>

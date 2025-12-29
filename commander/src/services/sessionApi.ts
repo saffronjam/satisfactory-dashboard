@@ -1,6 +1,6 @@
-import { Session, SessionInfo, CreateSessionRequest } from "src/apiTypes";
+import { CreateSessionRequest, Session, SessionInfo } from 'src/apiTypes';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8081/v1";
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/v1';
 
 export interface SessionPreviewResult {
   sessionInfo: SessionInfo;
@@ -13,7 +13,7 @@ export const sessionApi = {
   list: async (): Promise<Session[]> => {
     const response = await fetch(`${API_URL}/sessions`);
     if (!response.ok) {
-      throw new Error("Failed to fetch sessions");
+      throw new Error('Failed to fetch sessions');
     }
     return response.json();
   },
@@ -24,7 +24,7 @@ export const sessionApi = {
   get: async (id: string): Promise<Session> => {
     const response = await fetch(`${API_URL}/sessions/${id}`);
     if (!response.ok) {
-      throw new Error("Failed to fetch session");
+      throw new Error('Failed to fetch session');
     }
     return response.json();
   },
@@ -35,13 +35,13 @@ export const sessionApi = {
   create: async (name: string, address: string): Promise<Session> => {
     const body: CreateSessionRequest = { name, address, isMock: false };
     const response = await fetch(`${API_URL}/sessions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to create session" }));
-      throw new Error(error.errors?.[0]?.msg || error.message || "Failed to create session");
+      const error = await response.json().catch(() => ({ message: 'Failed to create session' }));
+      throw new Error(error.errors?.[0]?.msg || error.message || 'Failed to create session');
     }
     return response.json();
   },
@@ -50,17 +50,17 @@ export const sessionApi = {
    * Create a mock session
    */
   createMock: async (name: string): Promise<Session> => {
-    const body: CreateSessionRequest = { name, address: "", isMock: true };
+    const body: CreateSessionRequest = { name, address: '', isMock: true };
     const response = await fetch(`${API_URL}/sessions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     if (!response.ok) {
       const error = await response
         .json()
-        .catch(() => ({ message: "Failed to create mock session" }));
-      throw new Error(error.errors?.[0]?.msg || error.message || "Failed to create mock session");
+        .catch(() => ({ message: 'Failed to create mock session' }));
+      throw new Error(error.errors?.[0]?.msg || error.message || 'Failed to create mock session');
     }
     return response.json();
   },
@@ -70,28 +70,25 @@ export const sessionApi = {
    */
   delete: async (id: string): Promise<void> => {
     const response = await fetch(`${API_URL}/sessions/${id}`, {
-      method: "DELETE",
+      method: 'DELETE',
     });
     if (!response.ok) {
-      throw new Error("Failed to delete session");
+      throw new Error('Failed to delete session');
     }
   },
 
   /**
    * Update a session (name and/or paused state)
    */
-  update: async (
-    id: string,
-    updates: { name?: string; isPaused?: boolean },
-  ): Promise<Session> => {
+  update: async (id: string, updates: { name?: string; isPaused?: boolean }): Promise<Session> => {
     const response = await fetch(`${API_URL}/sessions/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to update session" }));
-      throw new Error(error.errors?.[0]?.msg || error.message || "Failed to update session");
+      const error = await response.json().catch(() => ({ message: 'Failed to update session' }));
+      throw new Error(error.errors?.[0]?.msg || error.message || 'Failed to update session');
     }
     return response.json();
   },
@@ -102,7 +99,7 @@ export const sessionApi = {
   validate: async (id: string): Promise<SessionInfo> => {
     const response = await fetch(`${API_URL}/sessions/${id}/validate`);
     if (!response.ok) {
-      throw new Error("Failed to validate session");
+      throw new Error('Failed to validate session');
     }
     return response.json();
   },
@@ -112,11 +109,11 @@ export const sessionApi = {
    */
   preview: async (address: string): Promise<SessionPreviewResult> => {
     const response = await fetch(
-      `${API_URL}/sessions/preview?address=${encodeURIComponent(address)}`,
+      `${API_URL}/sessions/preview?address=${encodeURIComponent(address)}`
     );
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to connect to server" }));
-      throw new Error(error.errors?.[0]?.msg || error.message || "Failed to connect to server");
+      const error = await response.json().catch(() => ({ message: 'Failed to connect to server' }));
+      throw new Error(error.errors?.[0]?.msg || error.message || 'Failed to connect to server');
     }
     return response.json();
   },
@@ -127,7 +124,7 @@ export const sessionApi = {
   getClientIP: async (): Promise<string> => {
     const response = await fetch(`${API_URL}/client-ip`);
     if (!response.ok) {
-      throw new Error("Failed to get client IP");
+      throw new Error('Failed to get client IP');
     }
     const data = await response.json();
     return data.ip;

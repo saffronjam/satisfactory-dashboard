@@ -1,1 +1,1 @@
-export * from "./trains-view";
+export * from './trains-view';

@@ -1,9 +1,5 @@
-import { MapContainer, TileLayer } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import { CRS } from "leaflet";
-import { DashboardContent } from "src/layouts/dashboard";
-import { useContextSelector } from "use-context-selector";
-import { ApiContext } from "src/contexts/api/useApi";
+import { MapContainer, TileLayer } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   Backdrop,
   Box,
@@ -17,38 +13,42 @@ import {
   Slider,
   Typography,
   useTheme,
-} from "@mui/material";
-import { Iconify } from "src/components/iconify";
-import { varAlpha } from "src/theme/styles";
-import { Overlay, FilterCategory } from "../overlay";
-import { MapBounds } from "../bounds";
-import { MachineGroup, SelectedMapItem } from "src/types";
-import { useEffect, useState } from "react";
-import { SelectionSidebar } from "../selectionSidebar";
-import { computeUnifiedGroups, zoomToGroupDistance } from "../utils";
+} from '@mui/material';
+import { CRS } from 'leaflet';
+import { useEffect, useState } from 'react';
 import {
   MachineCategoryExtractor,
   MachineCategoryFactory,
   MachineCategoryGenerator,
-} from "src/apiTypes";
+} from 'src/apiTypes';
+import { Iconify } from 'src/components/iconify';
+import { ApiContext } from 'src/contexts/api/useApi';
+import { DashboardContent } from 'src/layouts/dashboard';
+import { varAlpha } from 'src/theme/styles';
+import { MachineGroup, SelectedMapItem } from 'src/types';
+import { useContextSelector } from 'use-context-selector';
+import { MapBounds } from '../bounds';
+import { FilterCategory, Overlay } from '../overlay';
+import { SelectionSidebar } from '../selectionSidebar';
+import { computeUnifiedGroups, zoomToGroupDistance } from '../utils';
 
 // Predefined slider steps for grouping distance
 const groupingMarks = [
-  { value: 0, label: "None" },
-  { value: 100, label: "100" },
-  { value: 1000, label: "1K" },
-  { value: 4000, label: "4K" },
-  { value: 8000, label: "8K" },
-  { value: 12000, label: "12K" },
+  { value: 0, label: 'None' },
+  { value: 100, label: '100' },
+  { value: 1000, label: '1K' },
+  { value: 4000, label: '4K' },
+  { value: 8000, label: '8K' },
+  { value: 12000, label: '12K' },
 ];
 
 // Filter categories
 const filterCategories: { key: FilterCategory; label: string }[] = [
-  { key: "production", label: "Production" },
-  { key: "power", label: "Power" },
-  { key: "resource", label: "Resource" },
-  { key: "train", label: "Trains" },
-  { key: "drone", label: "Drones" },
+  { key: 'production', label: 'Production' },
+  { key: 'power', label: 'Power' },
+  { key: 'resource', label: 'Resource' },
+  { key: 'train', label: 'Trains' },
+  { key: 'drone', label: 'Drones' },
 ];
 
 export function MapView() {
@@ -71,7 +71,7 @@ export function MapView() {
   const [autoGroup, setAutoGroup] = useState(true);
   const [manualGroupDistance, setManualGroupDistance] = useState(4000);
   const [visibleCategories, setVisibleCategories] = useState<Set<FilterCategory>>(
-    new Set(["production", "power", "resource", "train", "drone"]),
+    new Set(['production', 'power', 'resource', 'train', 'drone'])
   );
   const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
   const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null);
@@ -100,33 +100,33 @@ export function MapView() {
         ...(api.generatorStats?.machines || []),
       ];
       const filteredMachines = allMachines.filter((m) => {
-        if (m.category === MachineCategoryFactory && visibleCategories.has("production"))
+        if (m.category === MachineCategoryFactory && visibleCategories.has('production'))
           return true;
-        if (m.category === MachineCategoryGenerator && visibleCategories.has("power")) return true;
-        if (m.category === MachineCategoryExtractor && visibleCategories.has("resource"))
+        if (m.category === MachineCategoryGenerator && visibleCategories.has('power')) return true;
+        if (m.category === MachineCategoryExtractor && visibleCategories.has('resource'))
           return true;
         return false;
       });
 
       // Filter stations based on visible categories
-      const filteredTrainStations = visibleCategories.has("train") ? api.trainStations || [] : [];
-      const filteredDroneStations = visibleCategories.has("drone") ? api.droneStations || [] : [];
+      const filteredTrainStations = visibleCategories.has('train') ? api.trainStations || [] : [];
+      const filteredDroneStations = visibleCategories.has('drone') ? api.droneStations || [] : [];
 
       // Use unified grouping for all entity types
       const groups = computeUnifiedGroups(
         filteredMachines,
         filteredTrainStations,
         filteredDroneStations,
-        groupDistance,
+        groupDistance
       );
       setMachineGroups(groups);
 
       // Update selection if it's a machine group (use functional update to avoid stale closure)
       setSelectedItem((prevSelected) => {
-        if (prevSelected?.type === "machineGroup") {
+        if (prevSelected?.type === 'machineGroup') {
           const newActiveGroup = groups.find((g) => g.hash === prevSelected.data.hash);
           if (newActiveGroup) {
-            return { type: "machineGroup", data: newActiveGroup };
+            return { type: 'machineGroup', data: newActiveGroup };
           }
           // Group no longer exists, keep the selection but with stale data
           // (better UX than clearing it unexpectedly)
@@ -153,10 +153,10 @@ export function MapView() {
       maxWidth={false}
       disablePadding
       sx={{
-        position: "relative",
-        flex: "1 1 auto",
+        position: 'relative',
+        flex: '1 1 auto',
         minHeight: 0,
-        overflow: "hidden",
+        overflow: 'hidden',
       }}
     >
       <Backdrop
@@ -173,9 +173,9 @@ export function MapView() {
       {!api.isLoading && (
         <Box
           sx={{
-            position: "fixed",
+            position: 'fixed',
             top: 16,
-            left: "calc(var(--layout-nav-vertical-width) + 16px)",
+            left: 'calc(var(--layout-nav-vertical-width) + 16px)',
             right: 16,
             bottom: 16,
             zIndex: 1,
@@ -184,11 +184,11 @@ export function MapView() {
           {/* Map Controls Buttons */}
           <Box
             sx={{
-              position: "absolute",
+              position: 'absolute',
               top: 16,
               right: 324, // 300px sidebar + 24px margin
               zIndex: 1000,
-              display: "flex",
+              display: 'flex',
               gap: 1,
             }}
           >
@@ -198,8 +198,8 @@ export function MapView() {
               size="small"
               sx={{
                 backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
-                backdropFilter: "blur(8px)",
-                "&:hover": {
+                backdropFilter: 'blur(8px)',
+                '&:hover': {
                   backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
                 },
               }}
@@ -213,8 +213,8 @@ export function MapView() {
               size="small"
               sx={{
                 backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
-                backdropFilter: "blur(8px)",
-                "&:hover": {
+                backdropFilter: 'blur(8px)',
+                '&:hover': {
                   backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
                 },
               }}
@@ -228,13 +228,13 @@ export function MapView() {
             open={Boolean(helpAnchor)}
             anchorEl={helpAnchor}
             onClose={() => setHelpAnchor(null)}
-            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            transformOrigin={{ vertical: "top", horizontal: "right" }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             slotProps={{
               paper: {
                 sx: {
                   backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
-                  backdropFilter: "blur(8px)",
+                  backdropFilter: 'blur(8px)',
                   mt: 1,
                 },
               },
@@ -244,14 +244,14 @@ export function MapView() {
               <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
                 Controls
               </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 <Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                     <Chip
                       label="Ctrl"
                       size="small"
                       variant="outlined"
-                      sx={{ fontSize: "0.7rem" }}
+                      sx={{ fontSize: '0.7rem' }}
                     />
                     <Typography variant="body2">+ Drag</Typography>
                   </Box>
@@ -260,12 +260,12 @@ export function MapView() {
                   </Typography>
                 </Box>
                 <Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                     <Chip
                       label="Click"
                       size="small"
                       variant="outlined"
-                      sx={{ fontSize: "0.7rem" }}
+                      sx={{ fontSize: '0.7rem' }}
                     />
                   </Box>
                   <Typography variant="caption" color="textSecondary">
@@ -273,12 +273,12 @@ export function MapView() {
                   </Typography>
                 </Box>
                 <Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                     <Chip
                       label="Scroll"
                       size="small"
                       variant="outlined"
-                      sx={{ fontSize: "0.7rem" }}
+                      sx={{ fontSize: '0.7rem' }}
                     />
                   </Box>
                   <Typography variant="caption" color="textSecondary">
@@ -294,13 +294,13 @@ export function MapView() {
             open={Boolean(settingsAnchor)}
             anchorEl={settingsAnchor}
             onClose={() => setSettingsAnchor(null)}
-            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            transformOrigin={{ vertical: "top", horizontal: "right" }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             slotProps={{
               paper: {
                 sx: {
                   backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
-                  backdropFilter: "blur(8px)",
+                  backdropFilter: 'blur(8px)',
                   mt: 1,
                 },
               },
@@ -311,14 +311,14 @@ export function MapView() {
               <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
                 Filters
               </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {filterCategories.map((cat) => (
                   <Chip
                     key={cat.key}
                     label={cat.label}
                     onClick={() => toggleCategory(cat.key)}
-                    color={visibleCategories.has(cat.key) ? "primary" : "default"}
-                    variant={visibleCategories.has(cat.key) ? "filled" : "outlined"}
+                    color={visibleCategories.has(cat.key) ? 'primary' : 'default'}
+                    variant={visibleCategories.has(cat.key) ? 'filled' : 'outlined'}
                     size="small"
                   />
                 ))}
@@ -352,8 +352,8 @@ export function MapView() {
                   size="small"
                   valueLabelDisplay="auto"
                   sx={{
-                    "& .MuiSlider-markLabel": {
-                      fontSize: "0.65rem",
+                    '& .MuiSlider-markLabel': {
+                      fontSize: '0.65rem',
                     },
                   }}
                 />
@@ -374,12 +374,12 @@ export function MapView() {
             zoomDelta={0.25}
             zoomSnap={0.25}
             style={{
-              width: "100%",
-              height: "100%",
-              borderRadius: "10px",
-              backgroundColor: "#0e0e0e",
-              border: "1px solid #1e1e1e",
-              boxShadow: "0 0 15px rgba(0, 0, 0, 0.8)",
+              width: '100%',
+              height: '100%',
+              borderRadius: '10px',
+              backgroundColor: '#0e0e0e',
+              border: '1px solid #1e1e1e',
+              boxShadow: '0 0 15px rgba(0, 0, 0, 0.8)',
               zIndex: 0,
             }}
           >

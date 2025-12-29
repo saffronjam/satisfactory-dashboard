@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Chip, Stack, Typography, useTheme } from "@mui/material";
+import { Box, Card, CardContent, Chip, Stack, Typography, useTheme } from '@mui/material';
 import {
   Train,
   TrainStation,
@@ -7,11 +7,11 @@ import {
   TrainStatusManualDriving,
   TrainStatusParked,
   TrainStatusSelfDriving,
-} from "src/apiTypes";
-import { Iconify } from "src/components/iconify";
-import { varAlpha } from "src/theme/styles";
-import { fNumber } from "src/utils/format-number";
-import { abbreviations } from "../../utils/abbreviations";
+} from 'src/apiTypes';
+import { Iconify } from 'src/components/iconify';
+import { varAlpha } from 'src/theme/styles';
+import { fNumber } from 'src/utils/format-number';
+import { abbreviations } from '../../utils/abbreviations';
 
 const TrainCard = ({ train }: { train: Train }) => {
   const theme = useTheme();
@@ -21,7 +21,7 @@ const TrainCard = ({ train }: { train: Train }) => {
       case TrainStatusSelfDriving:
         return {
           icon: <Iconify icon="mdi:train" />,
-          label: "Self Driving",
+          label: 'Self Driving',
           backgroundColor: theme.palette.success.darkChannel,
           color: theme.palette.primary.contrastTextChannel,
           pulse: false,
@@ -29,7 +29,7 @@ const TrainCard = ({ train }: { train: Train }) => {
       case TrainStatusManualDriving:
         return {
           icon: <Iconify icon="ri:steering-2-fill" />,
-          label: "Manual Driving",
+          label: 'Manual Driving',
           backgroundColor: theme.palette.warning.darkChannel,
           color: theme.palette.warning.contrastTextChannel,
           pulse: false,
@@ -37,7 +37,7 @@ const TrainCard = ({ train }: { train: Train }) => {
       case TrainStatusDocking:
         return {
           icon: <Iconify icon="game-icons:cargo-crate" />,
-          label: "Docking",
+          label: 'Docking',
           backgroundColor: theme.palette.info.darkChannel,
           color: theme.palette.info.contrastTextChannel,
           pulse: true,
@@ -45,7 +45,7 @@ const TrainCard = ({ train }: { train: Train }) => {
       case TrainStatusDerailed:
         return {
           icon: <Iconify icon="mdi:alert" />,
-          label: "Derailed",
+          label: 'Derailed',
           backgroundColor: theme.palette.error.darkChannel,
           color: theme.palette.error.contrastTextChannel,
           pulse: false,
@@ -53,7 +53,7 @@ const TrainCard = ({ train }: { train: Train }) => {
       case TrainStatusParked:
         return {
           icon: <Iconify icon="mdi:train-car" />,
-          label: "Parked",
+          label: 'Parked',
           backgroundColor: theme.palette.info.darkChannel,
           color: theme.palette.info.contrastTextChannel,
           pulse: false,
@@ -76,8 +76,8 @@ const TrainCard = ({ train }: { train: Train }) => {
 
     // Split item codes by "/" and map each to its full item name using abbreviations
     const items = match[1]
-      .replace(/,/g, "/")
-      .split("/")
+      .replace(/,/g, '/')
+      .split('/')
       .map((code) => abbreviations.get(code.trim().toLowerCase()))
       .filter((item) => item);
 
@@ -91,15 +91,15 @@ const TrainCard = ({ train }: { train: Train }) => {
     <Card
       variant="outlined"
       sx={{
-        marginBottom: "15px",
-        padding: "20px",
-        outline: style.label === "Derailed" ? `2px solid ${theme.palette.error.dark}` : "none",
+        marginBottom: '15px',
+        padding: '20px',
+        outline: style.label === 'Derailed' ? `2px solid ${theme.palette.error.dark}` : 'none',
       }}
     >
       <CardContent>
-        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Stack direction="row" spacing={3} sx={{ alignItems: "center" }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
               <Stack direction="row" spacing={3}>
                 <Typography variant="h4">{`${train.name}`}</Typography>
                 <Stack direction="row" spacing={1}>
@@ -130,15 +130,15 @@ const TrainCard = ({ train }: { train: Train }) => {
               color: varAlpha(style.color),
               pl: 0.6,
               ...(style.pulse && {
-                animation: "pulse-animation 2s infinite ease-in-out",
-                "@keyframes pulse-animation": {
-                  "0%": {
+                animation: 'pulse-animation 2s infinite ease-in-out',
+                '@keyframes pulse-animation': {
+                  '0%': {
                     opacity: 1,
                   },
-                  "50%": {
+                  '50%': {
                     opacity: 0.6,
                   },
-                  "100%": {
+                  '100%': {
                     opacity: 1,
                   },
                 },
@@ -150,29 +150,29 @@ const TrainCard = ({ train }: { train: Train }) => {
         {/* Scrollable Timetable Node Graph with Rounded Scrollbar */}
         <Box
           sx={{
-            overflowX: "auto", // Enables horizontal scrolling
+            overflowX: 'auto', // Enables horizontal scrolling
             marginY: 2,
             paddingY: 1,
-            "&::-webkit-scrollbar": {
-              height: "8px", // Scrollbar height for horizontal scroll
+            '&::-webkit-scrollbar': {
+              height: '8px', // Scrollbar height for horizontal scroll
             },
-            "&::-webkit-scrollbar-track": {
-              backgroundColor: "transparent",
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'transparent',
             },
-            "&::-webkit-scrollbar-thumb": {
-              backgroundColor: "grey.500",
-              borderRadius: "4px", // Rounds the scrollbar
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'grey.500',
+              borderRadius: '4px', // Rounds the scrollbar
             },
-            "&::-webkit-scrollbar-thumb:hover": {
-              backgroundColor: "grey.700",
+            '&::-webkit-scrollbar-thumb:hover': {
+              backgroundColor: 'grey.700',
             },
           }}
         >
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
-              minWidth: "100%", // Ensures scrollable space is used
+              display: 'flex',
+              alignItems: 'center',
+              minWidth: '100%', // Ensures scrollable space is used
             }}
           >
             {train.timetable.map((stop, index) => {
@@ -184,38 +184,38 @@ const TrainCard = ({ train }: { train: Train }) => {
               const isWrapping = train.timetableIndex === 0 && train.status !== TrainStatusDocking;
 
               const baseLineProps = {
-                position: "absolute",
-                top: "84%",
-                left: "-85px",
-                width: "170px",
-                height: "2px",
-                backgroundColor: "grey.700",
-                backgroundSize: "50px 100%",
-                backgroundRepeat: "repeat",
+                position: 'absolute',
+                top: '84%',
+                left: '-85px',
+                width: '170px',
+                height: '2px',
+                backgroundColor: 'grey.700',
+                backgroundSize: '50px 100%',
+                backgroundRepeat: 'repeat',
                 zIndex: -1,
               } as any;
 
               const activatedLineProps = {
-                animation: "flow 1.5s linear infinite",
-                "@keyframes flow": {
-                  from: { backgroundPosition: "0 0" },
-                  to: { backgroundPosition: "50px 0" },
+                animation: 'flow 1.5s linear infinite',
+                '@keyframes flow': {
+                  from: { backgroundPosition: '0 0' },
+                  to: { backgroundPosition: '50px 0' },
                 },
-                backgroundColor: "transparent",
+                backgroundColor: 'transparent',
                 backgroundImage: `linear-gradient(to right, transparent 20%, ${theme.palette.primary.main} 20%)`,
-                transition: "background-color 0.6s ease",
+                transition: 'background-color 0.6s ease',
               };
 
               const baseCircleProps = {
-                width: "10px",
-                height: "10px",
-                backgroundColor: "grey.700",
-                borderRadius: "50%",
+                width: '10px',
+                height: '10px',
+                backgroundColor: 'grey.700',
+                borderRadius: '50%',
               } as any;
 
               const activatedCircleProps = {
                 backgroundColor: theme.palette.primary.main,
-                transition: "background-color 0.6s ease",
+                transition: 'background-color 0.6s ease',
               };
 
               const lineProps =
@@ -231,12 +231,12 @@ const TrainCard = ({ train }: { train: Train }) => {
                 <Box
                   key={index}
                   sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    minWidth: "200px", // Space between nodes
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    minWidth: '200px', // Space between nodes
                     mb: 2,
-                    position: "relative",
+                    position: 'relative',
                   }}
                 >
                   {/* Station name directly above each circle */}
@@ -246,10 +246,10 @@ const TrainCard = ({ train }: { train: Train }) => {
 
                   {/* Horizontal connecting line with animation */}
                   {index > 0 && <Box sx={lineProps} />}
-                  {isWrapping && <Box sx={{ ...lineProps, width: "60px", left: "30px" }} />}
+                  {isWrapping && <Box sx={{ ...lineProps, width: '60px', left: '30px' }} />}
                   {isWrapping && isLastStop && (
                     <Box
-                      sx={{ ...baseLineProps, ...activatedLineProps, width: "60px", left: "110px" }}
+                      sx={{ ...baseLineProps, ...activatedLineProps, width: '60px', left: '110px' }}
                     />
                   )}
                   {/* Circular node with conditional highlight */}
@@ -260,9 +260,9 @@ const TrainCard = ({ train }: { train: Train }) => {
           </Box>
         </Box>
 
-        <Box sx={{ display: "flex", alignItems: "center", marginTop: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 2 }}>
           <Typography variant="body2">Speed:</Typography>
-          <Typography variant="h6" sx={{ pl: 0.5, fontWeight: "bold" }}>
+          <Typography variant="h6" sx={{ pl: 0.5, fontWeight: 'bold' }}>
             {fNumber(train.speed, { decimals: 0 })} km/h
           </Typography>
         </Box>

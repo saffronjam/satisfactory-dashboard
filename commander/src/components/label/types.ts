@@ -1,17 +1,17 @@
-import type { BoxProps } from "@mui/material/Box";
+import type { BoxProps } from '@mui/material/Box';
 
 // ----------------------------------------------------------------------
 
 export type LabelColor =
-  | "default"
-  | "primary"
-  | "secondary"
-  | "info"
-  | "success"
-  | "warning"
-  | "error";
+  | 'default'
+  | 'primary'
+  | 'secondary'
+  | 'info'
+  | 'success'
+  | 'warning'
+  | 'error';
 
-export type LabelVariant = "filled" | "outlined" | "soft" | "inverted";
+export type LabelVariant = 'filled' | 'outlined' | 'soft' | 'inverted';
 
 export interface LabelProps extends BoxProps {
   color?: LabelColor;

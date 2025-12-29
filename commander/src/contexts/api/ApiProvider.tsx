@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ApiContext, ApiData } from "./useApi";
-import * as API from "src/apiTypes";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as API from 'src/apiTypes';
+import { ApiContext, ApiData } from './useApi';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8081/v1";
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/v1';
 
 const DEFAULT_DATA: ApiData = {
   isLoading: true,
@@ -69,7 +69,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
         return fetch(`${API_URL}/sessions/${currentSessionId}/state`)
           .then((response) => {
             if (!response.ok) {
-              throw new Error("Failed to get full state");
+              throw new Error('Failed to get full state');
             }
             return response.json() as Promise<API.State>;
           })
@@ -89,7 +89,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             setData({ ...dataRef.current });
           })
           .catch((error) => {
-            console.error("Failed to get full state: ", error);
+            console.error('Failed to get full state: ', error);
             dataRef.current.isOnline = false;
             dataRef.current.isLoading = false;
             setData({ ...dataRef.current });
@@ -174,12 +174,12 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
         });
       }, 1000);
     },
-    [cleanup],
+    [cleanup]
   );
 
   useEffect(() => {
     if (!API_URL) {
-      console.error("API_URL is not defined");
+      console.error('API_URL is not defined');
       return;
     }
 

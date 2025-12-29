@@ -1,8 +1,8 @@
-import { Box, Typography, useTheme } from "@mui/material";
-import { useContextSelector } from "use-context-selector";
-import { ApiContext } from "src/contexts/api/useApi";
-import { Iconify } from "src/components/iconify";
-import { useSession } from "src/contexts/sessions";
+import { Box, Typography, useTheme } from '@mui/material';
+import { Iconify } from 'src/components/iconify';
+import { ApiContext } from 'src/contexts/api/useApi';
+import { useSession } from 'src/contexts/sessions';
+import { useContextSelector } from 'use-context-selector';
 
 export const SessionStatusBar = () => {
   const theme = useTheme();
@@ -20,22 +20,22 @@ export const SessionStatusBar = () => {
   return (
     <Box
       sx={{
-        position: "fixed",
+        position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
         height: 36,
         backgroundColor: theme.palette.error.dark,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         gap: 1,
         zIndex: theme.zIndex.snackbar,
         px: 2,
       }}
     >
-      <Iconify icon="mdi:alert-circle" sx={{ color: "white", width: 18, height: 18 }} />
-      <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+      <Iconify icon="mdi:alert-circle" sx={{ color: 'white', width: 18, height: 18 }} />
+      <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
         Session is offline. Make sure the FRM server is running.
       </Typography>
     </Box>

@@ -1,4 +1,4 @@
-import { LatLngBounds, LatLngExpression } from "leaflet";
+import { LatLngBounds, LatLngExpression } from 'leaflet';
 
 // Bounds found at https://github.dev/AnthorNet/SC-InteractiveMap/tree/dev/src
 export const MapBounds = new LatLngBounds([80, -80], [-240, 240]);

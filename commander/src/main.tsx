@@ -1,18 +1,18 @@
-import ReactDOM from "react-dom/client";
-import { Suspense, StrictMode } from "react";
-import { BrowserRouter } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
+import { StrictMode, Suspense } from 'react';
+import ReactDOM from 'react-dom/client';
+import { HelmetProvider } from 'react-helmet-async';
+import { BrowserRouter } from 'react-router-dom';
 
-import App from "./app";
-import { SessionProvider } from "./contexts/sessions";
-import { SessionAwareApiProvider } from "./contexts/api/SessionAwareApiProvider";
-import "@fontsource/roboto-mono";
-import "@fontsource/dm-mono";
-import { NotificationsProvider } from "@toolpad/core";
+import App from './app';
+import { SessionAwareApiProvider } from './contexts/api/SessionAwareApiProvider';
+import { SessionProvider } from './contexts/sessions';
+import '@fontsource/roboto-mono';
+import '@fontsource/dm-mono';
+import { NotificationsProvider } from '@toolpad/core';
 
 // ----------------------------------------------------------------------
 
-const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
 root.render(
   <StrictMode>
@@ -29,5 +29,5 @@ root.render(
         </Suspense>
       </BrowserRouter>
     </HelmetProvider>
-  </StrictMode>,
+  </StrictMode>
 );

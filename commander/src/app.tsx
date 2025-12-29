@@ -1,11 +1,10 @@
-import "src/global.css";
+import 'src/global.css';
 
-import { Router } from "src/routes/sections";
+import { useScrollToTop } from 'src/hooks/use-scroll-to-top';
+import { Router } from 'src/routes/sections';
 
-import { useScrollToTop } from "src/hooks/use-scroll-to-top";
-
-import { ThemeProvider } from "src/theme/theme-provider";
-import { ConnectionCheckerProvider } from "./contexts/api/ConnectionChecker";
+import { ThemeProvider } from 'src/theme/theme-provider';
+import { ConnectionCheckerProvider } from './contexts/api/ConnectionChecker';
 
 // ----------------------------------------------------------------------
 

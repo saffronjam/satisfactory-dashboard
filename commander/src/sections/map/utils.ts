@@ -1,11 +1,11 @@
-import { DroneStation, Machine, MachineCategoryGenerator, TrainStation } from "src/apiTypes";
-import { MachineGroup } from "src/types";
+import { DroneStation, Machine, MachineCategoryGenerator, TrainStation } from 'src/apiTypes';
+import { MachineGroup } from 'src/types';
 
 // Entity type for unified grouping
 type GroupableEntity =
-  | { type: "machine"; data: Machine; x: number; y: number }
-  | { type: "trainStation"; data: TrainStation; x: number; y: number }
-  | { type: "droneStation"; data: DroneStation; x: number; y: number };
+  | { type: 'machine'; data: Machine; x: number; y: number }
+  | { type: 'trainStation'; data: TrainStation; x: number; y: number }
+  | { type: 'droneStation'; data: DroneStation; x: number; y: number };
 
 class UnionFind {
   private parent: number[];
@@ -78,13 +78,13 @@ export const computeUnifiedGroups = (
   machines: Machine[],
   trainStations: TrainStation[],
   droneStations: DroneStation[],
-  groupDistance: number,
+  groupDistance: number
 ): MachineGroup[] => {
   // Create unified entities array
   const entities: GroupableEntity[] = [
-    ...machines.map((m) => ({ type: "machine" as const, data: m, x: m.x, y: m.y })),
-    ...trainStations.map((s) => ({ type: "trainStation" as const, data: s, x: s.x, y: s.y })),
-    ...droneStations.map((s) => ({ type: "droneStation" as const, data: s, x: s.x, y: s.y })),
+    ...machines.map((m) => ({ type: 'machine' as const, data: m, x: m.x, y: m.y })),
+    ...trainStations.map((s) => ({ type: 'trainStation' as const, data: s, x: s.x, y: s.y })),
+    ...droneStations.map((s) => ({ type: 'droneStation' as const, data: s, x: s.x, y: s.y })),
   ];
 
   if (entities.length === 0) return [];
@@ -95,13 +95,13 @@ export const computeUnifiedGroups = (
   return groups.map((entityGroup) => {
     // Separate entities by type
     const groupMachines = entityGroup
-      .filter((e): e is GroupableEntity & { type: "machine" } => e.type === "machine")
+      .filter((e): e is GroupableEntity & { type: 'machine' } => e.type === 'machine')
       .map((e) => e.data);
     const groupTrainStations = entityGroup
-      .filter((e): e is GroupableEntity & { type: "trainStation" } => e.type === "trainStation")
+      .filter((e): e is GroupableEntity & { type: 'trainStation' } => e.type === 'trainStation')
       .map((e) => e.data);
     const groupDroneStations = entityGroup
-      .filter((e): e is GroupableEntity & { type: "droneStation" } => e.type === "droneStation")
+      .filter((e): e is GroupableEntity & { type: 'droneStation' } => e.type === 'droneStation')
       .map((e) => e.data);
 
     // Calculate center from all entities
@@ -113,11 +113,11 @@ export const computeUnifiedGroups = (
     // Calculate power metrics from machines
     const powerConsumption = groupMachines.reduce((acc, m) => {
       if (m.category === MachineCategoryGenerator) return acc;
-      return acc + (m.input.find((i) => i.name === "Power")?.current || 0);
+      return acc + (m.input.find((i) => i.name === 'Power')?.current || 0);
     }, 0);
     const powerProduction = groupMachines.reduce((acc, m) => {
       if (m.category !== MachineCategoryGenerator) return acc;
-      return acc + (m.output.find((i) => i.name === "Power")?.current || 0);
+      return acc + (m.output.find((i) => i.name === 'Power')?.current || 0);
     }, 0);
 
     const itemProduction: { [key: string]: number } = {};
@@ -125,7 +125,7 @@ export const computeUnifiedGroups = (
 
     groupMachines.forEach((m) => {
       m.output.forEach((p) => {
-        if (p.name === "Power") return;
+        if (p.name === 'Power') return;
         if (itemProduction[p.name] === undefined) {
           itemProduction[p.name] = 0;
         }
@@ -133,7 +133,7 @@ export const computeUnifiedGroups = (
       });
 
       m.input.forEach((i) => {
-        if (i.name === "Power") return;
+        if (i.name === 'Power') return;
         if (itemConsumption[i.name] === undefined) {
           itemConsumption[i.name] = 0;
         }
@@ -148,7 +148,7 @@ export const computeUnifiedGroups = (
       ...groupDroneStations.map((s) => `d:${s.x},${s.y}`),
     ]
       .sort()
-      .join("|");
+      .join('|');
 
     return {
       hash,
@@ -167,7 +167,7 @@ export const computeUnifiedGroups = (
 // Generic grouping for any items with x, y coordinates
 export function groupByDistance<T extends { x: number; y: number }>(
   items: T[],
-  distance: number,
+  distance: number
 ): T[][] {
   if (distance === 0 || items.length === 0) {
     return items.map((item) => [item]);

@@ -1,4 +1,4 @@
-import type { Theme, SxProps } from "@mui/material/styles";
+import type { SxProps, Theme } from '@mui/material/styles';
 
 // ----------------------------------------------------------------------
 
@@ -6,7 +6,7 @@ export type ColorPickerProps = {
   multi?: boolean;
   colors: string[];
   selected: string | string[];
-  limit?: "auto" | number;
+  limit?: 'auto' | number;
   onSelectColor: (color: string | string[]) => void;
   slotProps?: {
     button?: SxProps<Theme>;
@@ -15,5 +15,5 @@ export type ColorPickerProps = {
 
 export type ColorPreviewProps = {
   limit?: number;
-  colors: ColorPickerProps["colors"];
+  colors: ColorPickerProps['colors'];
 };

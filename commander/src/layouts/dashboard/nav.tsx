@@ -1,21 +1,16 @@
-import type { Theme, SxProps, Breakpoint } from "@mui/material/styles";
-
-import { useEffect } from "react";
-
-import Box from "@mui/material/Box";
-import ListItem from "@mui/material/ListItem";
-import { useTheme } from "@mui/material/styles";
-import ListItemButton from "@mui/material/ListItemButton";
-import Drawer, { drawerClasses } from "@mui/material/Drawer";
-
-import { usePathname } from "src/routes/hooks";
-import { RouterLink } from "src/routes/components";
-
-import { varAlpha } from "src/theme/styles";
-
-import { Logo } from "src/components/logo";
-import { Scrollbar } from "src/components/scrollbar";
-import { Divider } from "@mui/material";
+import { Divider } from '@mui/material';
+import Box from '@mui/material/Box';
+import Drawer, { drawerClasses } from '@mui/material/Drawer';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import type { Breakpoint, SxProps, Theme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
+import { useEffect } from 'react';
+import { Logo } from 'src/components/logo';
+import { Scrollbar } from 'src/components/scrollbar';
+import { RouterLink } from 'src/routes/components';
+import { usePathname } from 'src/routes/hooks';
+import { varAlpha } from 'src/theme/styles';
 
 // ----------------------------------------------------------------------
 
@@ -24,7 +19,7 @@ export type NavContentProps = {
     path: string;
     title: string;
     icon: React.ReactNode;
-    group: "main" | "sub";
+    group: 'main' | 'sub';
     info?: React.ReactNode;
   }[];
   slots?: {
@@ -50,15 +45,15 @@ export function NavDesktop({
         top: 0,
         left: 0,
         height: 1,
-        display: "none",
-        position: "fixed",
-        flexDirection: "column",
-        bgcolor: "var(--layout-nav-bg)",
-        zIndex: "var(--layout-nav-zIndex)",
-        width: "var(--layout-nav-vertical-width)",
-        borderRight: `1px solid var(--layout-nav-border-color, ${varAlpha(theme.vars.palette.grey["500Channel"], 0.12)})`,
+        display: 'none',
+        position: 'fixed',
+        flexDirection: 'column',
+        bgcolor: 'var(--layout-nav-bg)',
+        zIndex: 'var(--layout-nav-zIndex)',
+        width: 'var(--layout-nav-vertical-width)',
+        borderRight: `1px solid var(--layout-nav-border-color, ${varAlpha(theme.vars.palette.grey['500Channel'], 0.12)})`,
         [theme.breakpoints.up(layoutQuery)]: {
-          display: "flex",
+          display: 'flex',
         },
         ...sx,
       }}
@@ -93,10 +88,10 @@ export function NavMobile({
         [`& .${drawerClasses.paper}`]: {
           pt: 2.5,
           px: 2.5,
-          overflow: "unset",
-          bgcolor: "var(--layout-nav-bg)",
-          width: "var(--layout-nav-mobile-width)",
-          boxShadow: "none",
+          overflow: 'unset',
+          bgcolor: 'var(--layout-nav-bg)',
+          width: 'var(--layout-nav-mobile-width)',
+          boxShadow: 'none',
           ...sx,
         },
       }}
@@ -113,12 +108,12 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
   const theme = useTheme();
 
   // Separate the data into main and subgroups
-  const mainItems = data.filter((item) => item.group === "main");
-  const subItems = data.filter((item) => item.group === "sub");
+  const mainItems = data.filter((item) => item.group === 'main');
+  const subItems = data.filter((item) => item.group === 'sub');
 
   return (
     <>
-      <Logo sx={{ display: "none" }} />
+      <Logo sx={{ display: 'none' }} />
 
       {slots?.topArea}
 
@@ -144,20 +139,20 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
                       gap: 2,
                       pr: 1.5,
                       borderRadius: 2,
-                      typography: "body2",
-                      fontWeight: "fontWeightMedium",
-                      minHeight: "var(--layout-nav-item-height)",
+                      typography: 'body2',
+                      fontWeight: 'fontWeightMedium',
+                      minHeight: 'var(--layout-nav-item-height)',
                       ...(!isActive && {
-                        color: "text.primary",
-                        "&:hover": {
-                          bgcolor: "action.hover",
+                        color: 'text.primary',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
                         },
                       }),
                       ...(isActive && {
-                        fontWeight: "fontWeightSemiBold",
+                        fontWeight: 'fontWeightSemiBold',
                         bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.66),
                         color: theme.palette.primary.contrastText,
-                        "&:hover": {
+                        '&:hover': {
                           bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.86),
                         },
                       }),
@@ -196,20 +191,20 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
                       gap: 2,
                       pr: 1.5,
                       borderRadius: 2,
-                      typography: "body2",
-                      fontWeight: "fontWeightMedium",
-                      minHeight: "var(--layout-nav-item-height)",
+                      typography: 'body2',
+                      fontWeight: 'fontWeightMedium',
+                      minHeight: 'var(--layout-nav-item-height)',
                       ...(!isActive && {
-                        color: "text.primary",
-                        "&:hover": {
-                          bgcolor: "action.hover",
+                        color: 'text.primary',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
                         },
                       }),
                       ...(isActive && {
-                        fontWeight: "fontWeightSemiBold",
+                        fontWeight: 'fontWeightSemiBold',
                         bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.66),
                         color: theme.palette.primary.contrastText,
-                        "&:hover": {
+                        '&:hover': {
                           bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.86),
                         },
                       }),

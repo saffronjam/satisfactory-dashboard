@@ -1,24 +1,21 @@
-import type { IconButtonProps } from "@mui/material/IconButton";
+import Avatar from '@mui/material/Avatar';
+import Badge from '@mui/material/Badge';
 
-import { useState, useCallback } from "react";
-
-import Box from "@mui/material/Box";
-import List from "@mui/material/List";
-import Badge from "@mui/material/Badge";
-import Button from "@mui/material/Button";
-import Avatar from "@mui/material/Avatar";
-import Divider from "@mui/material/Divider";
-import Tooltip from "@mui/material/Tooltip";
-import Popover from "@mui/material/Popover";
-import Typography from "@mui/material/Typography";
-import IconButton from "@mui/material/IconButton";
-import ListItemText from "@mui/material/ListItemText";
-import ListItemButton from "@mui/material/ListItemButton";
-
-import { fToNow } from "src/utils/format-time";
-
-import { Iconify } from "src/components/iconify";
-import { Scrollbar } from "src/components/scrollbar";
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+import type { IconButtonProps } from '@mui/material/IconButton';
+import IconButton from '@mui/material/IconButton';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import Popover from '@mui/material/Popover';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import { useCallback, useState } from 'react';
+import { Iconify } from 'src/components/iconify';
+import { Scrollbar } from 'src/components/scrollbar';
+import { fToNow } from 'src/utils/format-time';
 
 // ----------------------------------------------------------------------
 
@@ -62,7 +59,7 @@ export function NotificationsPopover({ data = [], sx, ...other }: NotificationsP
   return (
     <>
       <IconButton
-        color={openPopover ? "primary" : "default"}
+        color={openPopover ? 'primary' : 'default'}
         onClick={handleOpenPopover}
         sx={sx}
         {...other}
@@ -76,15 +73,15 @@ export function NotificationsPopover({ data = [], sx, ...other }: NotificationsP
         open={!!openPopover}
         anchorEl={openPopover}
         onClose={handleClosePopover}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{
           paper: {
             sx: {
               width: 360,
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
             },
           },
         }}
@@ -103,9 +100,9 @@ export function NotificationsPopover({ data = [], sx, ...other }: NotificationsP
           )}
         </Box>
 
-        <Divider sx={{ borderStyle: "dashed" }} />
+        <Divider sx={{ borderStyle: 'dashed' }} />
 
-        <Scrollbar fillContent sx={{ minHeight: 240, maxHeight: { xs: 360, sm: "none" } }}>
+        <Scrollbar fillContent sx={{ minHeight: 240, maxHeight: { xs: 360, sm: 'none' } }}>
           <List disablePadding>
             {notifications.map((notification) => (
               <NotificationItem key={notification.id} notification={notification} />
@@ -127,9 +124,9 @@ function NotificationItem({ notification }: { notification: NotificationItemProp
       sx={{
         py: 1.5,
         px: 2.5,
-        mt: "1px",
+        mt: '1px',
         ...(notification.isUnRead && {
-          bgcolor: "action.selected",
+          bgcolor: 'action.selected',
         }),
       }}
     >
@@ -141,9 +138,9 @@ function NotificationItem({ notification }: { notification: NotificationItemProp
             sx={{
               mt: 0.5,
               gap: 0.5,
-              display: "flex",
-              alignItems: "center",
-              color: "text.disabled",
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.disabled',
             }}
           >
             <Iconify width={14} icon="solar:clock-circle-outline" />
@@ -161,13 +158,13 @@ function renderContent(notification: NotificationItemProps) {
   const title = (
     <Typography variant="subtitle2">
       {notification.title}
-      <Typography component="span" variant="body2" sx={{ color: "text.secondary" }}>
+      <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
         &nbsp; {notification.description}
       </Typography>
     </Typography>
   );
 
-  if (notification.type === "hub-incoming-countdown") {
+  if (notification.type === 'hub-incoming-countdown') {
     return {
       title,
     };

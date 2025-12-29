@@ -1,17 +1,16 @@
-import type { CardProps } from "@mui/material/Card";
-import type { TimelineItemProps } from "@mui/lab/TimelineItem";
+import Timeline from '@mui/lab/Timeline';
+import TimelineConnector from '@mui/lab/TimelineConnector';
+import TimelineContent from '@mui/lab/TimelineContent';
+import TimelineDot from '@mui/lab/TimelineDot';
+import type { TimelineItemProps } from '@mui/lab/TimelineItem';
+import TimelineItem, { timelineItemClasses } from '@mui/lab/TimelineItem';
+import TimelineSeparator from '@mui/lab/TimelineSeparator';
+import type { CardProps } from '@mui/material/Card';
+import Card from '@mui/material/Card';
+import CardHeader from '@mui/material/CardHeader';
+import Typography from '@mui/material/Typography';
 
-import Card from "@mui/material/Card";
-import Timeline from "@mui/lab/Timeline";
-import TimelineDot from "@mui/lab/TimelineDot";
-import Typography from "@mui/material/Typography";
-import CardHeader from "@mui/material/CardHeader";
-import TimelineContent from "@mui/lab/TimelineContent";
-import TimelineSeparator from "@mui/lab/TimelineSeparator";
-import TimelineConnector from "@mui/lab/TimelineConnector";
-import TimelineItem, { timelineItemClasses } from "@mui/lab/TimelineItem";
-
-import { fDateTime } from "src/utils/format-time";
+import { fDateTime } from 'src/utils/format-time';
 
 // ----------------------------------------------------------------------
 
@@ -53,7 +52,7 @@ export function AnalyticsOrderTimeline({ title, subheader, list, ...other }: Pro
 
 type ItemProps = TimelineItemProps & {
   lastItem: boolean;
-  item: Props["list"][number];
+  item: Props['list'][number];
 };
 
 function Item({ item, lastItem, ...other }: ItemProps) {
@@ -62,11 +61,11 @@ function Item({ item, lastItem, ...other }: ItemProps) {
       <TimelineSeparator>
         <TimelineDot
           color={
-            (item.type === "order1" && "primary") ||
-            (item.type === "order2" && "success") ||
-            (item.type === "order3" && "info") ||
-            (item.type === "order4" && "warning") ||
-            "error"
+            (item.type === 'order1' && 'primary') ||
+            (item.type === 'order2' && 'success') ||
+            (item.type === 'order3' && 'info') ||
+            (item.type === 'order4' && 'warning') ||
+            'error'
           }
         />
         {lastItem ? null : <TimelineConnector />}
@@ -75,7 +74,7 @@ function Item({ item, lastItem, ...other }: ItemProps) {
       <TimelineContent>
         <Typography variant="subtitle2">{item.title}</Typography>
 
-        <Typography variant="caption" sx={{ color: "text.disabled" }}>
+        <Typography variant="caption" sx={{ color: 'text.disabled' }}>
           {fDateTime(item.time)}
         </Typography>
       </TimelineContent>

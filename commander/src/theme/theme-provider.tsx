@@ -1,10 +1,9 @@
-import type {} from "@mui/lab/themeAugmentation";
-import type {} from "@mui/material/themeCssVarsAugmentation";
+import type {} from '@mui/lab/themeAugmentation';
+import CssBaseline from '@mui/material/CssBaseline';
+import { Experimental_CssVarsProvider as CssVarsProvider } from '@mui/material/styles';
+import type {} from '@mui/material/themeCssVarsAugmentation';
 
-import CssBaseline from "@mui/material/CssBaseline";
-import { Experimental_CssVarsProvider as CssVarsProvider } from "@mui/material/styles";
-
-import { createTheme } from "./create-theme";
+import { createTheme } from './create-theme';
 
 // ----------------------------------------------------------------------
 

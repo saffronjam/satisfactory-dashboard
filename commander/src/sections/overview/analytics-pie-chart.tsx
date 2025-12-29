@@ -1,14 +1,13 @@
-import type { CardProps } from "@mui/material/Card";
+import Box from '@mui/material/Box';
+import type { CardProps } from '@mui/material/Card';
+import Card from '@mui/material/Card';
+import CardHeader from '@mui/material/CardHeader';
+import Divider from '@mui/material/Divider';
+import { useTheme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import { PieChart } from '@mui/x-charts/PieChart';
 
-import Card from "@mui/material/Card";
-import Divider from "@mui/material/Divider";
-import { useTheme } from "@mui/material/styles";
-import CardHeader from "@mui/material/CardHeader";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import { PieChart } from "@mui/x-charts/PieChart";
-
-import { fNumber } from "src/utils/format-number";
+import { fNumber } from 'src/utils/format-number';
 
 // ----------------------------------------------------------------------
 
@@ -46,19 +45,19 @@ export function AnalyticsPieChart({ title, subheader, chart, ...other }: Props) 
       {...other}
       sx={{
         boxShadow: 0,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
         mb: 0,
       }}
     >
       <CardHeader
         title={title}
         subheader={subheader}
-        titleTypographyProps={{ variant: "overline", fontSize: "16px" }}
+        titleTypographyProps={{ variant: 'overline', fontSize: '16px' }}
       />
 
-      <Box sx={{ my: 6, mx: "auto", display: "flex", justifyContent: "center" }}>
+      <Box sx={{ my: 6, mx: 'auto', display: 'flex', justifyContent: 'center' }}>
         <PieChart
           series={[
             {
@@ -66,7 +65,7 @@ export function AnalyticsPieChart({ title, subheader, chart, ...other }: Props) 
               innerRadius: 30,
               paddingAngle: 3,
               cornerRadius: 6,
-              highlightScope: { fade: "global", highlight: "item" },
+              highlightScope: { fade: 'global', highlight: 'item' },
               valueFormatter: (item) => fNumber(item.value, { decimals: 0 }),
             },
           ]}
@@ -78,20 +77,20 @@ export function AnalyticsPieChart({ title, subheader, chart, ...other }: Props) 
         />
       </Box>
 
-      <Divider sx={{ borderStyle: "dashed" }} />
+      <Divider sx={{ borderStyle: 'dashed' }} />
 
-      <Box sx={{ p: 3, display: "flex", justifyContent: "center", gap: 3, flexWrap: "wrap" }}>
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', gap: 3, flexWrap: 'wrap' }}>
         {pieData.map((item) => (
-          <Box key={item.id} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box
               sx={{
                 width: 12,
                 height: 12,
-                borderRadius: "50%",
+                borderRadius: '50%',
                 bgcolor: item.color,
               }}
             />
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               {item.label}
             </Typography>
           </Box>

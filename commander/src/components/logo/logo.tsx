@@ -1,12 +1,10 @@
-import type { BoxProps } from "@mui/material/Box";
+import type { BoxProps } from '@mui/material/Box';
+import Box from '@mui/material/Box';
+import { forwardRef } from 'react';
 
-import { forwardRef } from "react";
+import { RouterLink } from 'src/routes/components';
 
-import Box from "@mui/material/Box";
-
-import { RouterLink } from "src/routes/components";
-
-import { logoClasses } from "./classes";
+import { logoClasses } from './classes';
 
 // ----------------------------------------------------------------------
 
@@ -18,8 +16,8 @@ export type LogoProps = BoxProps & {
 
 export const Logo = forwardRef<HTMLDivElement, LogoProps>(
   (
-    { width, href = "/", height, isSingle = false, disableLink = false, className, sx, ...other },
-    ref,
+    { width, href = '/', height, isSingle = false, disableLink = false, className, sx, ...other },
+    ref
   ) => {
     const singleLogo = (
       <Box
@@ -28,7 +26,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
         src="/logo/vector/default.svg"
         width="100%"
         height="100%"
-        sx={{ objectFit: "cover" }}
+        sx={{ objectFit: 'cover' }}
       />
     );
     const fullLogo = (
@@ -38,7 +36,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
         src="/logo/vector/default.svg"
         width="100%"
         height="100%"
-        sx={{ objectFit: "cover" }}
+        sx={{ objectFit: 'cover' }}
       />
     );
 
@@ -54,14 +52,14 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
     return (
       <Box
         ref={ref}
-        className={logoClasses.root.concat(className ? ` ${className}` : "")}
+        className={logoClasses.root.concat(className ? ` ${className}` : '')}
         aria-label="Logo"
         sx={{
           flexShrink: 0,
-          width: "auto",
-          display: "inline-flex",
-          verticalAlign: "middle",
-          ...(disableLink && { pointerEvents: "none" }),
+          width: 'auto',
+          display: 'inline-flex',
+          verticalAlign: 'middle',
+          ...(disableLink && { pointerEvents: 'none' }),
           ...sx,
         }}
         {...other}
@@ -69,5 +67,5 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
         {isSingle ? singleLogo : fullLogo}
       </Box>
     );
-  },
+  }
 );

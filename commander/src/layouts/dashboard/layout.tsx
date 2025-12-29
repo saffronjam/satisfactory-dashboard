@@ -1,24 +1,21 @@
-import type { Theme, SxProps, Breakpoint } from "@mui/material/styles";
-
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
-
-import Alert from "@mui/material/Alert";
-import { useTheme } from "@mui/material/styles";
-
-import { Main } from "./main";
-import { layoutClasses } from "../classes";
-import { NavMobile, NavDesktop } from "./nav";
-import { navData } from "../config-nav-dashboard";
-import { MenuButton } from "../components/menu-button";
-import { LayoutSection } from "../core/layout-section";
-import { HeaderSection } from "../core/header-section";
-import { useNotifications } from "@toolpad/core";
-import { useSession } from "src/contexts/sessions";
-import { SessionSelector } from "src/components/session-selector";
-import { AddSessionDialog } from "src/components/session-dialog";
-import { WelcomeScreen } from "src/components/welcome";
-import { SessionStatusBar } from "src/components/session-status-bar";
+import Alert from '@mui/material/Alert';
+import type { Breakpoint, SxProps, Theme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
+import { useNotifications } from '@toolpad/core';
+import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { AddSessionDialog } from 'src/components/session-dialog';
+import { SessionSelector } from 'src/components/session-selector';
+import { SessionStatusBar } from 'src/components/session-status-bar';
+import { WelcomeScreen } from 'src/components/welcome';
+import { useSession } from 'src/contexts/sessions';
+import { layoutClasses } from '../classes';
+import { MenuButton } from '../components/menu-button';
+import { navData } from '../config-nav-dashboard';
+import { HeaderSection } from '../core/header-section';
+import { LayoutSection } from '../core/layout-section';
+import { Main } from './main';
+import { NavDesktop, NavMobile } from './nav';
 
 // ----------------------------------------------------------------------
 
@@ -48,10 +45,10 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
   const [navOpen, setNavOpen] = useState(false);
   const [addSessionDialogOpen, setAddSessionDialogOpen] = useState(false);
 
-  const layoutQuery: Breakpoint = "lg";
+  const layoutQuery: Breakpoint = 'lg';
 
   // Hide header on map page for full-screen experience
-  const hideHeader = location.pathname === "/map";
+  const hideHeader = location.pathname === '/map';
 
   // Show welcome screen when no sessions exist
   if (!sessionsLoading && sessions.length === 0) {
@@ -96,13 +93,13 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
                   <Alert
                     severity="warning"
                     sx={{
-                      display: "none",
+                      display: 'none',
                       borderRadius: 4,
                       m: 2,
-                      position: "fixed",
+                      position: 'fixed',
                       zIndex: 9999,
-                      width: "calc(100% - 32px)",
-                      [theme.breakpoints.up(layoutQuery)]: { width: "calc(100% - 230px - 32px)" },
+                      width: 'calc(100% - 32px)',
+                      [theme.breakpoints.up(layoutQuery)]: { width: 'calc(100% - 230px - 32px)' },
                     }}
                   >
                     This is an info Alert.
@@ -114,7 +111,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
                       onClick={() => setNavOpen(true)}
                       sx={{
                         ml: -1,
-                        [theme.breakpoints.up(layoutQuery)]: { display: "none" },
+                        [theme.breakpoints.up(layoutQuery)]: { display: 'none' },
                       }}
                     />
                     <NavMobile
@@ -147,15 +144,15 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
          * Style
          *************************************** */
         cssVars={{
-          "--layout-nav-vertical-width": "230px",
-          "--layout-dashboard-content-pt": theme.spacing(1),
-          "--layout-dashboard-content-pb": theme.spacing(8),
-          "--layout-dashboard-content-px": theme.spacing(5),
+          '--layout-nav-vertical-width': '230px',
+          '--layout-dashboard-content-pt': theme.spacing(1),
+          '--layout-dashboard-content-pb': theme.spacing(8),
+          '--layout-dashboard-content-px': theme.spacing(5),
         }}
         sx={{
           [`& .${layoutClasses.hasSidebar}`]: {
             [theme.breakpoints.up(layoutQuery)]: {
-              pl: "var(--layout-nav-vertical-width)",
+              pl: 'var(--layout-nav-vertical-width)',
             },
           },
           ...sx,

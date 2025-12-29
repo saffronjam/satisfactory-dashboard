@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -14,13 +13,14 @@ import {
   TextField,
   Typography,
   useTheme,
-} from "@mui/material";
-import { Iconify } from "src/components/iconify";
-import { useSession } from "src/contexts/sessions";
-import { varAlpha } from "src/theme/styles";
-import { Session } from "src/apiTypes";
-import { useContextSelector } from "use-context-selector";
-import { ApiContext } from "src/contexts/api/useApi";
+} from '@mui/material';
+import React, { useState } from 'react';
+import { Session } from 'src/apiTypes';
+import { Iconify } from 'src/components/iconify';
+import { ApiContext } from 'src/contexts/api/useApi';
+import { useSession } from 'src/contexts/sessions';
+import { varAlpha } from 'src/theme/styles';
+import { useContextSelector } from 'use-context-selector';
 
 interface SessionSelectorProps {
   onAddSession: () => void;
@@ -36,7 +36,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editName, setEditName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [pausingSessionId, setPausingSessionId] = useState<string | null>(null);
 
@@ -64,7 +64,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
 
   const handleEditClose = () => {
     setEditingSession(null);
-    setEditName("");
+    setEditName('');
     setIsUpdating(false);
   };
 
@@ -108,7 +108,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
   };
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box sx={{ width: '100%' }}>
       <Button
         fullWidth
         onClick={handleClick}
@@ -116,45 +116,45 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
           px: 2,
           py: 1.5,
           borderRadius: 2,
-          justifyContent: "flex-start",
-          bgcolor: varAlpha(theme.palette.grey["500Channel"], 0.08),
-          "&:hover": {
-            bgcolor: varAlpha(theme.palette.grey["500Channel"], 0.16),
+          justifyContent: 'flex-start',
+          bgcolor: varAlpha(theme.palette.grey['500Channel'], 0.08),
+          '&:hover': {
+            bgcolor: varAlpha(theme.palette.grey['500Channel'], 0.16),
           },
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flex: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
           <Box
             sx={{
               width: 8,
               height: 8,
-              borderRadius: "50%",
+              borderRadius: '50%',
               bgcolor: selectedSession?.isPaused
-                ? "warning.main"
+                ? 'warning.main'
                 : api.isOnline
-                  ? "success.main"
-                  : "error.main",
+                  ? 'success.main'
+                  : 'error.main',
               flexShrink: 0,
             }}
           />
-          <Box sx={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+          <Box sx={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
             <Typography
               variant="subtitle2"
               noWrap
               sx={{
-                color: "text.primary",
+                color: 'text.primary',
                 fontWeight: 600,
               }}
             >
-              {selectedSession?.name || "Select Session"}
+              {selectedSession?.name || 'Select Session'}
             </Typography>
             {selectedSession?.sessionName && (
               <Typography
                 variant="caption"
                 noWrap
                 sx={{
-                  color: "text.secondary",
-                  display: "block",
+                  color: 'text.secondary',
+                  display: 'block',
                 }}
               >
                 {selectedSession.sessionName}
@@ -162,8 +162,8 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
             )}
           </Box>
           <Iconify
-            icon={open ? "mdi:chevron-up" : "mdi:chevron-down"}
-            sx={{ color: "text.secondary", flexShrink: 0 }}
+            icon={open ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+            sx={{ color: 'text.secondary', flexShrink: 0 }}
           />
         </Box>
       </Button>
@@ -181,12 +181,12 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
           },
         }}
         anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
+          vertical: 'bottom',
+          horizontal: 'left',
         }}
         transformOrigin={{
-          vertical: "top",
-          horizontal: "left",
+          vertical: 'top',
+          horizontal: 'left',
         }}
       >
         {sessions.map((session) => (
@@ -201,20 +201,20 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
                 sx={{
                   width: 8,
                   height: 8,
-                  borderRadius: "50%",
+                  borderRadius: '50%',
                   bgcolor: session.isPaused
-                    ? "warning.main"
+                    ? 'warning.main'
                     : session.isOnline
-                      ? "success.main"
-                      : "error.main",
+                      ? 'success.main'
+                      : 'error.main',
                 }}
               />
             </ListItemIcon>
             <ListItemText
               primary={session.name}
               secondary={session.sessionName}
-              primaryTypographyProps={{ variant: "body2", noWrap: true }}
-              secondaryTypographyProps={{ variant: "caption", noWrap: true }}
+              primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+              secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
               sx={{ flex: 1, minWidth: 0 }}
             />
             <Box
@@ -224,12 +224,12 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
                 ml: 1,
                 p: 0.5,
                 borderRadius: 1,
-                display: "flex",
-                cursor: "pointer",
-                color: "text.secondary",
-                "&:hover": {
+                display: 'flex',
+                cursor: 'pointer',
+                color: 'text.secondary',
+                '&:hover': {
                   bgcolor: varAlpha(theme.palette.primary.mainChannel, 0.08),
-                  color: "primary.main",
+                  color: 'primary.main',
                 },
               }}
             >
@@ -241,19 +241,16 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
               sx={{
                 p: 0.5,
                 borderRadius: 1,
-                display: "flex",
-                cursor: pausingSessionId === session.id ? "wait" : "pointer",
-                color: session.isPaused ? "warning.main" : "text.secondary",
-                "&:hover": {
+                display: 'flex',
+                cursor: pausingSessionId === session.id ? 'wait' : 'pointer',
+                color: session.isPaused ? 'warning.main' : 'text.secondary',
+                '&:hover': {
                   bgcolor: varAlpha(theme.palette.warning.mainChannel, 0.08),
-                  color: "warning.main",
+                  color: 'warning.main',
                 },
               }}
             >
-              <Iconify
-                icon={session.isPaused ? "mdi:play-outline" : "mdi:pause"}
-                width={18}
-              />
+              <Iconify icon={session.isPaused ? 'mdi:play-outline' : 'mdi:pause'} width={18} />
             </Box>
             <Box
               component="span"
@@ -261,12 +258,12 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
               sx={{
                 p: 0.5,
                 borderRadius: 1,
-                display: "flex",
-                cursor: "pointer",
-                color: deleteConfirm === session.id ? "error.main" : "text.secondary",
-                "&:hover": {
+                display: 'flex',
+                cursor: 'pointer',
+                color: deleteConfirm === session.id ? 'error.main' : 'text.secondary',
+                '&:hover': {
                   bgcolor: varAlpha(theme.palette.error.mainChannel, 0.08),
-                  color: "error.main",
+                  color: 'error.main',
                 },
               }}
             >
@@ -281,7 +278,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
           <ListItemIcon sx={{ minWidth: 32 }}>
             <Iconify icon="mdi:plus" width={20} />
           </ListItemIcon>
-          <ListItemText primary="Add Session" primaryTypographyProps={{ variant: "body2" }} />
+          <ListItemText primary="Add Session" primaryTypographyProps={{ variant: 'body2' }} />
         </MenuItem>
       </Menu>
 
@@ -296,7 +293,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
             onChange={(e) => setEditName(e.target.value)}
             sx={{ mt: 1 }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && editName.trim()) {
+              if (e.key === 'Enter' && editName.trim()) {
                 void handleEditSave();
               }
             }}
@@ -309,7 +306,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
             onClick={handleEditSave}
             disabled={isUpdating || !editName.trim()}
           >
-            {isUpdating ? "Saving..." : "Save"}
+            {isUpdating ? 'Saving...' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

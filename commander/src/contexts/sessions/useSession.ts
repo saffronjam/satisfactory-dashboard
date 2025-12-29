@@ -1,5 +1,5 @@
-import { useContextSelector } from "use-context-selector";
-import { SessionContext, SessionContextType } from "./SessionContext";
+import { useContextSelector } from 'use-context-selector';
+import { SessionContext, SessionContextType } from './SessionContext';
 
 export function useSession(): SessionContextType {
   const sessions = useContextSelector(SessionContext, (ctx) => ctx.sessions);
@@ -13,7 +13,7 @@ export function useSession(): SessionContextType {
   const updateSession = useContextSelector(SessionContext, (ctx) => ctx.updateSession);
   const updateSessionFromEvent = useContextSelector(
     SessionContext,
-    (ctx) => ctx.updateSessionFromEvent,
+    (ctx) => ctx.updateSessionFromEvent
   );
   const deleteSession = useContextSelector(SessionContext, (ctx) => ctx.deleteSession);
   const refreshSessions = useContextSelector(SessionContext, (ctx) => ctx.refreshSessions);

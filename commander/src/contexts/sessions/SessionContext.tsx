@@ -1,5 +1,5 @@
-import { createContext } from "use-context-selector";
-import { Session, SessionInfo } from "src/apiTypes";
+import { Session, SessionInfo } from 'src/apiTypes';
+import { createContext } from 'use-context-selector';
 
 export interface SessionContextType {
   sessions: Session[];
@@ -27,21 +27,21 @@ export const defaultSessionContext: SessionContextType = {
 
   selectSession: () => {},
   createSession: async () => {
-    throw new Error("SessionProvider not initialized");
+    throw new Error('SessionProvider not initialized');
   },
   createMockSession: async () => {
-    throw new Error("SessionProvider not initialized");
+    throw new Error('SessionProvider not initialized');
   },
   updateSession: async () => {
-    throw new Error("SessionProvider not initialized");
+    throw new Error('SessionProvider not initialized');
   },
   updateSessionFromEvent: () => {},
   deleteSession: async () => {
-    throw new Error("SessionProvider not initialized");
+    throw new Error('SessionProvider not initialized');
   },
   refreshSessions: async () => {},
   previewSession: async () => {
-    throw new Error("SessionProvider not initialized");
+    throw new Error('SessionProvider not initialized');
   },
 };
 

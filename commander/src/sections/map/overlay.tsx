@@ -1,5 +1,6 @@
-import { Marker, Rectangle, useMapEvents } from "react-leaflet";
-import { useState, useEffect } from "react";
+import L from 'leaflet';
+import { useEffect, useState } from 'react';
+import { Marker, Rectangle, useMapEvents } from 'react-leaflet';
 import {
   Drone,
   MachineCategory,
@@ -7,12 +8,11 @@ import {
   MachineCategoryFactory,
   MachineCategoryGenerator,
   Train,
-} from "src/apiTypes";
-import { ConvertToMapCoords2 } from "./bounds";
-import L from "leaflet";
-import { MachineGroup, SelectedMapItem } from "src/types";
+} from 'src/apiTypes';
+import { MachineGroup, SelectedMapItem } from 'src/types';
+import { ConvertToMapCoords2 } from './bounds';
 
-export type FilterCategory = "production" | "power" | "resource" | "train" | "drone";
+export type FilterCategory = 'production' | 'power' | 'resource' | 'train' | 'drone';
 
 type IconProps = {
   size: number;
@@ -23,18 +23,18 @@ type IconProps = {
 
 // Category-based colors (vibrant palette for visibility on bright map)
 const categoryColors: Record<MachineCategory, string> = {
-  [MachineCategoryFactory]: "#4056A1", // Deep blue for Production
-  [MachineCategoryExtractor]: "#C97B2A", // Rich amber for Resource
-  [MachineCategoryGenerator]: "#2E8B8B", // Deep teal for Power
+  [MachineCategoryFactory]: '#4056A1', // Deep blue for Production
+  [MachineCategoryExtractor]: '#C97B2A', // Rich amber for Resource
+  [MachineCategoryGenerator]: '#2E8B8B', // Deep teal for Power
 };
 
 const getCategoryColor = (categories: MachineCategory[]): string => {
   const uniqueCategories = [...new Set(categories)];
   if (uniqueCategories.length === 1) {
-    return categoryColors[uniqueCategories[0]] || "#505050";
+    return categoryColors[uniqueCategories[0]] || '#505050';
   }
   // Mixed groups get a neutral grey
-  return "#505050";
+  return '#505050';
 };
 
 const iconifyFactory = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -58,8 +58,8 @@ const iconifyDroneStation = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 
      </svg>`;
 
 // Station colors (darker for visibility)
-const trainStationColor = "#5A5A5A"; // Dark warm grey
-const droneStationColor = "#4A5A6A"; // Dark cool grey
+const trainStationColor = '#5A5A5A'; // Dark warm grey
+const droneStationColor = '#4A5A6A'; // Dark cool grey
 
 const MultiIcon = (svgs: string[], { size, color, backgroundColor, padding }: IconProps) => {
   const width = (() => {
@@ -71,10 +71,10 @@ const MultiIcon = (svgs: string[], { size, color, backgroundColor, padding }: Ic
 
   const iconHtml = `
     <div color="${color}" style="background-color: ${backgroundColor}; border-radius: 50%; padding: ${padding}; width: ${width}px; height: ${size}; display: flex; justify-content: center; align-items: center;">
-      ${svgs.join("")}
+      ${svgs.join('')}
     </div>`;
   return L.divIcon({
-    className: "custom-icon",
+    className: 'custom-icon',
     html: iconHtml,
     iconAnchor: [12, 24],
   });
@@ -103,7 +103,7 @@ const createStationIcon = (svg: string, backgroundColor: string) => {
       ${svg}
     </div>`;
   return L.divIcon({
-    className: "custom-icon",
+    className: 'custom-icon',
     html: iconHtml,
     iconAnchor: [12, 24],
   });
@@ -118,11 +118,11 @@ const createStationGroupIcon = (svg: string, backgroundColor: string, count: num
       ${
         showBadge
           ? `<div style="position: absolute; top: -6px; right: -6px; background-color: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; justify-content: center; align-items: center;">${count}</div>`
-          : ""
+          : ''
       }
     </div>`;
   return L.divIcon({
-    className: "custom-icon",
+    className: 'custom-icon',
     html: iconHtml,
     iconAnchor: [12, 24],
   });
@@ -172,9 +172,9 @@ export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd
         });
 
         if (selectedGroups.length > 1) {
-          onSelectItem({ type: "machineGroups", data: selectedGroups });
+          onSelectItem({ type: 'machineGroups', data: selectedGroups });
         } else if (selectedGroups.length === 1) {
-          onSelectItem({ type: "machineGroup", data: selectedGroups[0] });
+          onSelectItem({ type: 'machineGroup', data: selectedGroups[0] });
         } else {
           onSelectItem(null);
         }
@@ -189,31 +189,31 @@ export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd
   // Track CTRL key for cursor change
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Control" || e.key === "Meta") {
+      if (e.key === 'Control' || e.key === 'Meta') {
         setCtrlPressed(true);
-        map.getContainer().style.cursor = "crosshair";
+        map.getContainer().style.cursor = 'crosshair';
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Control" || e.key === "Meta") {
+      if (e.key === 'Control' || e.key === 'Meta') {
         setCtrlPressed(false);
-        map.getContainer().style.cursor = "";
+        map.getContainer().style.cursor = '';
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
   }, [map]);
 
   // Get all entity types present in a group
   const getGroupEntityTypes = (group: MachineGroup) => {
-    const types: ("machine" | "train" | "drone")[] = [];
-    if (group.machines.length > 0) types.push("machine");
-    if (group.trainStations.length > 0) types.push("train");
-    if (group.droneStations.length > 0) types.push("drone");
+    const types: ('machine' | 'train' | 'drone')[] = [];
+    if (group.machines.length > 0) types.push('machine');
+    if (group.trainStations.length > 0) types.push('train');
+    if (group.droneStations.length > 0) types.push('drone');
     return types;
   };
 
@@ -235,7 +235,7 @@ export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd
 
     // Collect SVGs based on what's in the group
     const svgs: string[] = [];
-    let backgroundColor = "#505050";
+    let backgroundColor = '#505050';
 
     if (group.machines.length > 0) {
       const categories = getMachineCategories(group);
@@ -268,7 +268,7 @@ export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd
 
     // Mixed entity types get a neutral grey
     if (entityTypes.length > 1) {
-      backgroundColor = "#505050";
+      backgroundColor = '#505050';
     }
 
     const size = 35;
@@ -282,11 +282,11 @@ export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd
       const width = svgs.length === 1 ? size : size * 1.2;
       iconHtml = `
         <div style="position: relative; background-color: ${backgroundColor}; border-radius: 50%; padding: 7px; width: ${width}px; height: ${size}px; display: flex; justify-content: center; align-items: center; gap: 2px;">
-          ${svgs.join("")}
+          ${svgs.join('')}
           ${
             showBadge
               ? `<div style="position: absolute; top: -6px; right: -6px; background-color: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; justify-content: center; align-items: center;">${totalCount}</div>`
-              : ""
+              : ''
           }
         </div>`;
     } else {
@@ -305,21 +305,21 @@ export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd
       iconHtml = `
         <div style="position: relative; background-color: ${backgroundColor}; border-radius: 12px; padding: 6px; width: ${width}px; height: ${height}px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px;">
           <div style="display: flex; justify-content: center; gap: 4px;">
-            ${topRow.map(wrapSvg).join("")}
+            ${topRow.map(wrapSvg).join('')}
           </div>
           <div style="display: flex; justify-content: center; gap: 4px;">
-            ${bottomRow.map(wrapSvg).join("")}
+            ${bottomRow.map(wrapSvg).join('')}
           </div>
           ${
             showBadge
               ? `<div style="position: absolute; top: -6px; right: -6px; background-color: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; justify-content: center; align-items: center;">${totalCount}</div>`
-              : ""
+              : ''
           }
         </div>`;
     }
 
     return L.divIcon({
-      className: "custom-icon",
+      className: 'custom-icon',
       html: iconHtml,
       iconAnchor: [12, 24],
     });
@@ -338,7 +338,7 @@ export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd
             position={position}
             eventHandlers={{
               click: () => {
-                onSelectItem({ type: "machineGroup", data: group });
+                onSelectItem({ type: 'machineGroup', data: group });
               },
             }}
             icon={icon}
@@ -354,11 +354,11 @@ export function Overlay({ machineGroups, trains, drones, onSelectItem, onZoomEnd
             [selectionRect.end.lat, selectionRect.end.lng],
           ]}
           pathOptions={{
-            color: "#3b82f6",
-            fillColor: "#3b82f6",
+            color: '#3b82f6',
+            fillColor: '#3b82f6',
             fillOpacity: 0.15,
             weight: 2,
-            dashArray: "5, 5",
+            dashArray: '5, 5',
           }}
         />
       )}

@@ -1,3 +1,2 @@
-export * from "./utils";
-
-export * from "./mixins";
+export * from './mixins';
+export * from './utils';

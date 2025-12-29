@@ -1,15 +1,12 @@
-import { Grid2 as Grid } from "@mui/material";
-import { Iconify } from "src/components/iconify";
-
-import { ApiContext } from "src/contexts/api/useApi";
-import { DashboardContent } from "src/layouts/dashboard";
-import { varAlpha } from "src/theme/styles";
-import { Backdrop, CircularProgress, useTheme } from "@mui/material";
-
-import { AnalyticsWidgetSummary } from "../analytics-widget-summary";
-import { AnalyticsPieChart } from "../analytics-pie-chart";
-import { AnalyticsCouponsProgress } from "../analytics-coupon-progress";
-import { useContextSelector } from "use-context-selector";
+import { Backdrop, CircularProgress, Grid2 as Grid, useTheme } from '@mui/material';
+import { Iconify } from 'src/components/iconify';
+import { ApiContext } from 'src/contexts/api/useApi';
+import { DashboardContent } from 'src/layouts/dashboard';
+import { varAlpha } from 'src/theme/styles';
+import { useContextSelector } from 'use-context-selector';
+import { AnalyticsCouponsProgress } from '../analytics-coupon-progress';
+import { AnalyticsPieChart } from '../analytics-pie-chart';
+import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 
 // ----------------------------------------------------------------------
 
@@ -28,8 +25,8 @@ export function OverviewAnalyticsView() {
   });
   const theme = useTheme();
 
-  const mPerMinUnits = ["/min", "k/min", "M/min", "B/min", "T/min"];
-  const wUnits = ["W", "kW", "MW", "GW", "TW", "PW"];
+  const mPerMinUnits = ['/min', 'k/min', 'M/min', 'B/min', 'T/min'];
+  const wUnits = ['W', 'kW', 'MW', 'GW', 'TW', 'PW'];
 
   const totalEnergyProduced = () =>
     api.circuits.reduce((acc, circuit) => acc + circuit.production.total, 0) || 0;
@@ -63,7 +60,7 @@ export function OverviewAnalyticsView() {
                 title="Energy Consumption (P/C)"
                 total={[totalEnergyProduced(), totalEnergyConsumed()]}
                 icon={
-                  <Iconify icon="bi:lightning-charge-fill" sx={{ width: "100%", height: "100%" }} />
+                  <Iconify icon="bi:lightning-charge-fill" sx={{ width: '100%', height: '100%' }} />
                 }
                 chart={{
                   categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
@@ -78,7 +75,7 @@ export function OverviewAnalyticsView() {
                 title="Mined Resources (P/C)"
                 total={[totalMinableProduced(), totalMinableConsumed()]}
                 color="secondary"
-                icon={<Iconify icon="bi:gem" sx={{ width: "100%", height: "100%" }} />}
+                icon={<Iconify icon="bi:gem" sx={{ width: '100%', height: '100%' }} />}
                 chart={{
                   categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
                   series: api.history.map((data) => data.prodStats.minableProducedPerMinute) || [],
@@ -93,7 +90,7 @@ export function OverviewAnalyticsView() {
                 total={[totalItemsProduced(), totalItemsConsumed()]}
                 color="info"
                 icon={
-                  <Iconify icon="material-symbols:factory" sx={{ width: "100%", height: "100%" }} />
+                  <Iconify icon="material-symbols:factory" sx={{ width: '100%', height: '100%' }} />
                 }
                 chart={{
                   categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
@@ -109,13 +106,16 @@ export function OverviewAnalyticsView() {
                 total={[api.sinkStats?.totalPoints || 0, api.sinkStats?.pointsPerMinute || 0]}
                 color="warning"
                 icon={
-                  <Iconify icon="hugeicons:black-hole-01" sx={{ width: "100%", height: "100%" }} />
+                  <Iconify icon="hugeicons:black-hole-01" sx={{ width: '100%', height: '100%' }} />
                 }
                 chart={{
                   categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
                   series: api.history.map((data) => data.sinkStats.pointsPerMinute) || [],
                 }}
-                units={[["", "k", "M", "B", "T"], ["/min", "k/min", "M/min", "B/min", "T/min"]]}
+                units={[
+                  ['', 'k', 'M', 'B', 'T'],
+                  ['/min', 'k/min', 'M/min', 'B/min', 'T/min'],
+                ]}
               />
             </Grid>
 
@@ -126,29 +126,29 @@ export function OverviewAnalyticsView() {
                   series: (() => {
                     const data = [
                       {
-                        label: "Biomass",
+                        label: 'Biomass',
                         value: api.generatorStats?.sources?.biomass?.totalProduction || 0,
                       },
                       {
-                        label: "Coal",
+                        label: 'Coal',
                         value: api.generatorStats?.sources?.coal?.totalProduction || 0,
                       },
                       {
-                        label: "Fuel",
+                        label: 'Fuel',
                         value: api.generatorStats?.sources?.fuel?.totalProduction || 0,
                       },
                       {
-                        label: "Geothermal",
+                        label: 'Geothermal',
                         value: api.generatorStats?.sources?.geothermal?.totalProduction || 0,
                       },
                       {
-                        label: "Nuclear",
+                        label: 'Nuclear',
                         value: api.generatorStats?.sources?.nuclear?.totalProduction || 0,
                       },
                     ].filter((source) => source.value > 0);
 
                     if (data.length === 0) {
-                      return [{ label: "No data", value: 0 }];
+                      return [{ label: 'No data', value: 0 }];
                     }
 
                     return data;
@@ -164,21 +164,21 @@ export function OverviewAnalyticsView() {
                   series: (() => {
                     const data = [
                       {
-                        label: "Operating",
+                        label: 'Operating',
                         value: api.factoryStats?.efficiency?.machinesOperating || 0,
                       },
                       {
-                        label: "Idle",
+                        label: 'Idle',
                         value: api.factoryStats?.efficiency?.machinesIdle || 0,
                       },
                       {
-                        label: "Paused",
+                        label: 'Paused',
                         value: api.factoryStats?.efficiency?.machinesPaused || 0,
                       },
                     ].filter((source) => source.value > 0);
 
                     if (data.length === 0) {
-                      return [{ label: "No data", value: 0 }];
+                      return [{ label: 'No data', value: 0 }];
                     }
 
                     return data;

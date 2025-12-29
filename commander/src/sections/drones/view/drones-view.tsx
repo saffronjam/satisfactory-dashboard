@@ -1,4 +1,5 @@
-import { DashboardContent } from "src/layouts/dashboard";
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import {
   Autocomplete,
   Backdrop,
@@ -13,26 +14,25 @@ import {
   TextField,
   Typography,
   useTheme,
-} from "@mui/material";
-import { Gauge } from "src/sections/trains/gauge";
-import { DroneList } from "../drone-list";
-import { useContextSelector } from "use-context-selector";
-import { ApiContext } from "src/contexts/api/useApi";
-import { varAlpha } from "src/theme/styles";
-import { fNumber } from "src/utils/format-number";
-import { DroneStatus, DroneStatusFlying, DroneStatusIdle, DroneStatusDocking } from "src/apiTypes";
-import { useState, useMemo } from "react";
-import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
-import CheckBoxIcon from "@mui/icons-material/CheckBox";
+} from '@mui/material';
+import { useMemo, useState } from 'react';
+import { DroneStatus, DroneStatusDocking, DroneStatusFlying, DroneStatusIdle } from 'src/apiTypes';
+import { ApiContext } from 'src/contexts/api/useApi';
+import { DashboardContent } from 'src/layouts/dashboard';
+import { Gauge } from 'src/sections/trains/gauge';
+import { varAlpha } from 'src/theme/styles';
+import { fNumber } from 'src/utils/format-number';
+import { useContextSelector } from 'use-context-selector';
+import { DroneList } from '../drone-list';
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 // Status options for dropdown
 const statusOptions: { value: DroneStatus; label: string }[] = [
-  { value: DroneStatusFlying, label: "Flying" },
-  { value: DroneStatusDocking, label: "Docking" },
-  { value: DroneStatusIdle, label: "Idle" },
+  { value: DroneStatusFlying, label: 'Flying' },
+  { value: DroneStatusDocking, label: 'Docking' },
+  { value: DroneStatusIdle, label: 'Idle' },
 ];
 
 export function DronesView() {
@@ -47,7 +47,7 @@ export function DronesView() {
   const theme = useTheme();
 
   // Filter state
-  const [nameFilter, setNameFilter] = useState("");
+  const [nameFilter, setNameFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<{ value: DroneStatus; label: string }[]>([]);
 
   // Filter drones based on name and status
@@ -55,7 +55,7 @@ export function DronesView() {
     return api.drones.filter((drone) => {
       // Name filter (case-insensitive)
       const matchesName =
-        nameFilter === "" || drone.name.toLowerCase().includes(nameFilter.toLowerCase());
+        nameFilter === '' || drone.name.toLowerCase().includes(nameFilter.toLowerCase());
 
       // Status filter (if any selected)
       const matchesStatus =
@@ -89,7 +89,7 @@ export function DronesView() {
 
       {!api.isLoading && (
         <DashboardContent maxWidth="xl">
-          <Container sx={{ paddingTop: "50px" }}>
+          <Container sx={{ paddingTop: '50px' }}>
             <Grid container spacing={2}>
               {/* Total Drones */}
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -115,8 +115,8 @@ export function DronesView() {
                     <Typography variant="h6" sx={{ mb: 2 }}>
                       Status
                     </Typography>
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body2" color="textSecondary">
                           Flying
                         </Typography>
@@ -124,7 +124,7 @@ export function DronesView() {
                           {countByStatus(DroneStatusFlying)}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body2" color="textSecondary">
                           Docking
                         </Typography>
@@ -132,7 +132,7 @@ export function DronesView() {
                           {countByStatus(DroneStatusDocking)}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body2" color="textSecondary">
                           Idle
                         </Typography>
@@ -153,16 +153,16 @@ export function DronesView() {
 
                     <Gauge value={(avgSpeed() / maxSpeed()) * 100} />
 
-                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Typography variant="body2">Current</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: "bold" }}>
+                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
                           {fNumber(avgSpeed(), { decimals: 0 })} km/h
                         </Typography>
                       </Box>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Typography variant="body2">Max</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: "bold" }}>
+                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
                           {fNumber(maxSpeed(), { decimals: 0 })} km/h
                         </Typography>
                       </Box>
@@ -172,13 +172,13 @@ export function DronesView() {
               </Grid>
             </Grid>
 
-            <Divider sx={{ mb: "50px", mt: "35px" }} />
+            <Divider sx={{ mb: '50px', mt: '35px' }} />
 
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 mb: 3,
                 mt: 4,
               }}
@@ -194,7 +194,7 @@ export function DronesView() {
             </Box>
 
             {/* Filters */}
-            <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
               <TextField
                 label="Search by name"
                 variant="outlined"

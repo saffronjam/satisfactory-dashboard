@@ -1,1 +1,1 @@
-export * from "./drones-view";
+export * from './drones-view';

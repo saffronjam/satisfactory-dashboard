@@ -1,12 +1,12 @@
-import type { CardProps } from "@mui/material/Card";
-import Card from "@mui/material/Card";
-import CardHeader from "@mui/material/CardHeader";
-import { useTheme } from "@mui/material/styles";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
+import Box from '@mui/material/Box';
+import type { CardProps } from '@mui/material/Card';
+import Card from '@mui/material/Card';
+import CardHeader from '@mui/material/CardHeader';
+import { useTheme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import { Gauge, gaugeClasses } from '@mui/x-charts/Gauge';
 
-import { varAlpha } from "src/theme/styles";
+import { varAlpha } from 'src/theme/styles';
 
 // ----------------------------------------------------------------------
 
@@ -19,11 +19,11 @@ type Props = CardProps & {
 };
 
 export function AnalyticsCouponsProgress({
-  title = "Coupon Progress",
+  title = 'Coupon Progress',
   subheader,
   available,
   progress,
-  color = "primary",
+  color = 'primary',
   ...other
 }: Props) {
   const theme = useTheme();
@@ -35,26 +35,26 @@ export function AnalyticsCouponsProgress({
       {...other}
       sx={{
         boxShadow: 0,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <CardHeader
         title={title}
         subheader={subheader}
-        titleTypographyProps={{ variant: "overline", fontSize: "16px" }}
+        titleTypographyProps={{ variant: 'overline', fontSize: '16px' }}
       />
 
       <Box
         sx={{
           flex: 1,
-          mx: "auto",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          position: "relative",
+          mx: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
         }}
       >
         <Gauge
@@ -67,14 +67,14 @@ export function AnalyticsCouponsProgress({
           sx={{
             [`& .${gaugeClasses.valueText}`]: {
               fontSize: 22,
-              fontWeight: "bold",
-              transform: "translate(0px, 0px)",
+              fontWeight: 'bold',
+              transform: 'translate(0px, 0px)',
             },
             [`& .${gaugeClasses.valueArc}`]: {
               fill: theme.palette.primary.main,
             },
             [`& .${gaugeClasses.referenceArc}`]: {
-              fill: varAlpha(theme.palette.grey["500Channel"], 0.2),
+              fill: varAlpha(theme.palette.grey['500Channel'], 0.2),
             },
           }}
           text={({ value }) => `${value?.toFixed(1)}%`}

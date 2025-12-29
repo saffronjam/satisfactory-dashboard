@@ -1,4 +1,4 @@
-import { Drone, DroneStation, Machine, Train, TrainStation } from "src/apiTypes";
+import { Drone, DroneStation, Machine, Train, TrainStation } from 'src/apiTypes';
 
 export type Settings = {
   apiUrl: string;
@@ -57,8 +57,8 @@ export type MultiSelection = {
 };
 
 export type SelectedMapItem =
-  | { type: "machineGroup"; data: MachineGroup }
-  | { type: "machineGroups"; data: MachineGroup[] }
-  | { type: "multiSelection"; data: MultiSelection }
-  | { type: "trainStation"; data: SelectedTrainStation }
-  | { type: "droneStation"; data: SelectedDroneStation };
+  | { type: 'machineGroup'; data: MachineGroup }
+  | { type: 'machineGroups'; data: MachineGroup[] }
+  | { type: 'multiSelection'; data: MultiSelection }
+  | { type: 'trainStation'; data: SelectedTrainStation }
+  | { type: 'droneStation'; data: SelectedDroneStation };

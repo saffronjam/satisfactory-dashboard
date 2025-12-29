@@ -1,7 +1,5 @@
-import { Box, Chip, Divider, Typography, useTheme } from "@mui/material";
-import { varAlpha } from "src/theme/styles";
-import { MachineGroup, SelectedMapItem } from "src/types";
-import { fShortenNumber, MetricUnits, WattUnits } from "src/utils/format-number";
+import { Box, Chip, Divider, Typography, useTheme } from '@mui/material';
+import { useState } from 'react';
 import {
   Drone,
   DroneStation,
@@ -11,18 +9,20 @@ import {
   Train,
   TrainStation,
   TrainStatusDocking,
-} from "src/apiTypes";
-import { useState } from "react";
-import { useContextSelector } from "use-context-selector";
-import { ApiContext } from "src/contexts/api/useApi";
+} from 'src/apiTypes';
+import { ApiContext } from 'src/contexts/api/useApi';
+import { varAlpha } from 'src/theme/styles';
+import { MachineGroup, SelectedMapItem } from 'src/types';
+import { fShortenNumber, MetricUnits, WattUnits } from 'src/utils/format-number';
+import { useContextSelector } from 'use-context-selector';
 
-type SidebarView = "items" | "buildings" | "power" | "vehicles";
+type SidebarView = 'items' | 'buildings' | 'power' | 'vehicles';
 
 // Helper functions to determine docked trains/drones
 const getDockedTrains = (station: TrainStation, trains: Train[]): Train[] => {
   return trains.filter(
     (t) =>
-      t.status === TrainStatusDocking && t.timetable[t.timetableIndex]?.station === station.name,
+      t.status === TrainStatusDocking && t.timetable[t.timetableIndex]?.station === station.name
   );
 };
 
@@ -30,13 +30,13 @@ const getDockedDrones = (station: DroneStation, drones: Drone[]): Drone[] => {
   return drones.filter(
     (d) =>
       (d.status === DroneStatusDocking || d.status === DroneStatusIdle) &&
-      (d.home?.name === station.name || d.destination?.name === station.name),
+      (d.home?.name === station.name || d.destination?.name === station.name)
   );
 };
 
 export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapItem | null }) => {
   const theme = useTheme();
-  const [activeView, setActiveView] = useState<SidebarView>("items");
+  const [activeView, setActiveView] = useState<SidebarView>('items');
 
   // Get trains and drones from API context
   const trains = useContextSelector(ApiContext, (v) => v.trains) || [];
@@ -61,35 +61,35 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
 
   // View tabs component for machine group selections
   const renderViewTabs = (showVehicles: boolean) => (
-    <Box sx={{ display: "flex", gap: 0.5, mb: 2, flexWrap: "wrap" }}>
+    <Box sx={{ display: 'flex', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
       <Chip
         label="Items"
         size="small"
-        onClick={() => setActiveView("items")}
-        color={activeView === "items" ? "primary" : "default"}
-        variant={activeView === "items" ? "filled" : "outlined"}
+        onClick={() => setActiveView('items')}
+        color={activeView === 'items' ? 'primary' : 'default'}
+        variant={activeView === 'items' ? 'filled' : 'outlined'}
       />
       <Chip
         label="Buildings"
         size="small"
-        onClick={() => setActiveView("buildings")}
-        color={activeView === "buildings" ? "primary" : "default"}
-        variant={activeView === "buildings" ? "filled" : "outlined"}
+        onClick={() => setActiveView('buildings')}
+        color={activeView === 'buildings' ? 'primary' : 'default'}
+        variant={activeView === 'buildings' ? 'filled' : 'outlined'}
       />
       <Chip
         label="Power"
         size="small"
-        onClick={() => setActiveView("power")}
-        color={activeView === "power" ? "primary" : "default"}
-        variant={activeView === "power" ? "filled" : "outlined"}
+        onClick={() => setActiveView('power')}
+        color={activeView === 'power' ? 'primary' : 'default'}
+        variant={activeView === 'power' ? 'filled' : 'outlined'}
       />
       {showVehicles && (
         <Chip
           label="Vehicles"
           size="small"
-          onClick={() => setActiveView("vehicles")}
-          color={activeView === "vehicles" ? "primary" : "default"}
-          variant={activeView === "vehicles" ? "filled" : "outlined"}
+          onClick={() => setActiveView('vehicles')}
+          color={activeView === 'vehicles' ? 'primary' : 'default'}
+          variant={activeView === 'vehicles' ? 'filled' : 'outlined'}
         />
       )}
     </Box>
@@ -109,12 +109,12 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
   // Get power sources from machine groups (generators only)
   const getPowerSources = (groups: MachineGroup[]) => {
     const generators = groups.flatMap((g) =>
-      g.machines.filter((m) => m.category === MachineCategoryGenerator),
+      g.machines.filter((m) => m.category === MachineCategoryGenerator)
     );
     const powerByType: Record<string, { count: number; production: number }> = {};
     generators.forEach((gen) => {
       // Power is stored as an output item with name "Power"
-      const production = gen.output.find((o) => o.name === "Power")?.current || 0;
+      const production = gen.output.find((o) => o.name === 'Power')?.current || 0;
       if (!powerByType[gen.type]) {
         powerByType[gen.type] = { count: 0, production: 0 };
       }
@@ -125,7 +125,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
   };
 
   const renderMachineGroup = () => {
-    if (selectedItem?.type !== "machineGroup") return null;
+    if (selectedItem?.type !== 'machineGroup') return null;
     const machineGroup = selectedItem.data;
     const buildingCounts = getBuildingCounts([machineGroup]);
     const powerSources = getPowerSources([machineGroup]);
@@ -134,10 +134,10 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
 
     // Get all docked trains and drones
     const dockedTrains = (machineGroup.trainStations || []).flatMap((station) =>
-      getDockedTrains(station, trains),
+      getDockedTrains(station, trains)
     );
     const dockedDrones = (machineGroup.droneStations || []).flatMap((station) =>
-      getDockedDrones(station, drones),
+      getDockedDrones(station, drones)
     );
 
     // Calculate total items in group
@@ -150,15 +150,15 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
       <>
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 1,
           }}
         >
-          <Box sx={{ fontWeight: "bold" }}>Selected Group</Box>
+          <Box sx={{ fontWeight: 'bold' }}>Selected Group</Box>
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-            {totalItems} {totalItems === 1 ? "item" : "items"}
+            {totalItems} {totalItems === 1 ? 'item' : 'items'}
           </Box>
         </Box>
 
@@ -166,108 +166,108 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         {totalItems === 1 && machineGroup.machines.length === 1 ? (
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               marginBottom: 1,
             }}
           >
             <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Building</Box>
-            <Box sx={{ fontWeight: "bold" }}>{machineGroup.machines[0].type}</Box>
+            <Box sx={{ fontWeight: 'bold' }}>{machineGroup.machines[0].type}</Box>
           </Box>
         ) : (
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               marginBottom: 1,
             }}
           >
             <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Machines</Box>
-            <Box sx={{ fontWeight: "bold" }}>{machineGroup.machines.length}</Box>
+            <Box sx={{ fontWeight: 'bold' }}>{machineGroup.machines.length}</Box>
           </Box>
         )}
         {showVehicles && (
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               marginBottom: 2,
             }}
           >
             <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Vehicles</Box>
-            <Box sx={{ fontWeight: "bold" }}>{totalVehicles}</Box>
+            <Box sx={{ fontWeight: 'bold' }}>{totalVehicles}</Box>
           </Box>
         )}
 
         {renderViewTabs(showVehicles)}
 
         {/* Items View */}
-        {activeView === "items" && (
+        {activeView === 'items' && (
           <>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
                 Power Consumption
               </Box>
-              <Box sx={{ fontWeight: "bold" }}>
+              <Box sx={{ fontWeight: 'bold' }}>
                 {machineGroup.powerConsumption
                   ? fShortenNumber(machineGroup.powerConsumption, WattUnits)
-                  : "-"}
+                  : '-'}
               </Box>
             </Box>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Power Production</Box>
-              <Box sx={{ fontWeight: "bold" }}>
+              <Box sx={{ fontWeight: 'bold' }}>
                 {machineGroup.powerProduction
                   ? fShortenNumber(machineGroup.powerProduction, WattUnits)
-                  : "-"}
+                  : '-'}
               </Box>
             </Box>
 
             {/* produced items */}
             {Object.entries(machineGroup.itemProduction).length > 0 && (
               <>
-                <Divider sx={{ margin: "10px 0" }} />
+                <Divider sx={{ margin: '10px 0' }} />
                 <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: "bold", mb: 1 }}>Production</Box>
+                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Production</Box>
                   {Object.entries(machineGroup.itemProduction).map(([name, value]) => (
                     <Box
                       key={name}
                       sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                         marginBottom: 1,
                       }}
                     >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <img
                           src={`assets/images/satisfactory/64x64/${name}.png`}
                           alt={name}
                           style={{
-                            width: "24px",
-                            height: "24px",
+                            width: '24px',
+                            height: '24px',
                           }}
                         />
                         <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{name}</Box>
                       </Box>
-                      <Box sx={{ fontWeight: "bold" }}>
+                      <Box sx={{ fontWeight: 'bold' }}>
                         {fShortenNumber(value, MetricUnits, {
                           ensureConstantDecimals: true,
                           onlyDecimalsWhenDivisible: true,
@@ -282,31 +282,31 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
             {/* consumed items */}
             {Object.entries(machineGroup.itemConsumption).length > 0 && (
               <>
-                <Divider sx={{ margin: "10px 0" }} />
+                <Divider sx={{ margin: '10px 0' }} />
                 <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: "bold", mb: 1 }}>Consumption</Box>
+                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Consumption</Box>
                   {Object.entries(machineGroup.itemConsumption).map(([name, value]) => (
                     <Box
                       key={name}
                       sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                         marginBottom: 1,
                       }}
                     >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <img
                           src={`assets/images/satisfactory/64x64/${name}.png`}
                           alt={name}
                           style={{
-                            width: "24px",
-                            height: "24px",
+                            width: '24px',
+                            height: '24px',
                           }}
                         />
                         <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{name}</Box>
                       </Box>
-                      <Box sx={{ fontWeight: "bold" }}>
+                      <Box sx={{ fontWeight: 'bold' }}>
                         {fShortenNumber(value, MetricUnits, {
                           ensureConstantDecimals: true,
                           onlyDecimalsWhenDivisible: true,
@@ -321,21 +321,21 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         )}
 
         {/* Buildings View */}
-        {activeView === "buildings" && (
+        {activeView === 'buildings' && (
           <>
             {buildingCounts.length > 0 ? (
               buildingCounts.map(([type, count]) => (
                 <Box
                   key={type}
                   sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     marginBottom: 1,
                   }}
                 >
                   <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{type}</Box>
-                  <Box sx={{ fontWeight: "bold" }}>{count}</Box>
+                  <Box sx={{ fontWeight: 'bold' }}>{count}</Box>
                 </Box>
               ))
             ) : (
@@ -347,59 +347,59 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         )}
 
         {/* Power View */}
-        {activeView === "power" && (
+        {activeView === 'power' && (
           <>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Production</Box>
-              <Box sx={{ fontWeight: "bold" }}>
+              <Box sx={{ fontWeight: 'bold' }}>
                 {machineGroup.powerProduction
                   ? fShortenNumber(machineGroup.powerProduction, WattUnits)
-                  : "-"}
+                  : '-'}
               </Box>
             </Box>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
                 Total Consumption
               </Box>
-              <Box sx={{ fontWeight: "bold" }}>
+              <Box sx={{ fontWeight: 'bold' }}>
                 {machineGroup.powerConsumption
                   ? fShortenNumber(machineGroup.powerConsumption, WattUnits)
-                  : "-"}
+                  : '-'}
               </Box>
             </Box>
 
             {powerSources.length > 0 && (
               <>
-                <Divider sx={{ margin: "10px 0" }} />
-                <Box sx={{ fontWeight: "bold", mb: 1 }}>Power Sources</Box>
+                <Divider sx={{ margin: '10px 0' }} />
+                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Power Sources</Box>
                 {powerSources.map(([type, data]) => (
                   <Box
                     key={type}
                     sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                       marginBottom: 1,
                     }}
                   >
                     <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
                       {type} ({data.count})
                     </Box>
-                    <Box sx={{ fontWeight: "bold" }}>
+                    <Box sx={{ fontWeight: 'bold' }}>
                       {fShortenNumber(data.production, WattUnits)}
                     </Box>
                   </Box>
@@ -416,12 +416,12 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         )}
 
         {/* Vehicles View */}
-        {activeView === "vehicles" && showVehicles && (
+        {activeView === 'vehicles' && showVehicles && (
           <>
             {/* Train Stations */}
             {(machineGroup.trainStations?.length || 0) > 0 && (
               <>
-                <Box sx={{ fontWeight: "bold", mb: 1 }}>
+                <Box sx={{ fontWeight: 'bold', mb: 1 }}>
                   Train Stations ({machineGroup.trainStations.length})
                 </Box>
                 {machineGroup.trainStations.map((station, idx) => {
@@ -444,9 +444,9 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                           <Box
                             key={tidx}
                             sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
                               mt: 0.5,
                             }}
                           >
@@ -469,7 +469,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
             {(machineGroup.droneStations?.length || 0) > 0 && (
               <>
                 {(machineGroup.trainStations?.length || 0) > 0 && <Divider sx={{ my: 2 }} />}
-                <Box sx={{ fontWeight: "bold", mb: 1 }}>
+                <Box sx={{ fontWeight: 'bold', mb: 1 }}>
                   Drone Stations ({machineGroup.droneStations.length})
                 </Box>
                 {machineGroup.droneStations.map((station, idx) => {
@@ -491,7 +491,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                         <Typography
                           variant="caption"
                           color="textSecondary"
-                          sx={{ display: "block" }}
+                          sx={{ display: 'block' }}
                         >
                           Fuel: {station.fuelName}
                         </Typography>
@@ -501,9 +501,9 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                           <Box
                             key={didx}
                             sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
                               mt: 0.5,
                             }}
                           >
@@ -535,42 +535,42 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
 
   // View tabs for multi-selection (includes Vehicles if any selected)
   const renderMultiViewTabs = (hasVehicles: boolean) => (
-    <Box sx={{ display: "flex", gap: 0.5, mb: 2, flexWrap: "wrap" }}>
+    <Box sx={{ display: 'flex', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
       <Chip
         label="Items"
         size="small"
-        onClick={() => setActiveView("items")}
-        color={activeView === "items" ? "primary" : "default"}
-        variant={activeView === "items" ? "filled" : "outlined"}
+        onClick={() => setActiveView('items')}
+        color={activeView === 'items' ? 'primary' : 'default'}
+        variant={activeView === 'items' ? 'filled' : 'outlined'}
       />
       <Chip
         label="Buildings"
         size="small"
-        onClick={() => setActiveView("buildings")}
-        color={activeView === "buildings" ? "primary" : "default"}
-        variant={activeView === "buildings" ? "filled" : "outlined"}
+        onClick={() => setActiveView('buildings')}
+        color={activeView === 'buildings' ? 'primary' : 'default'}
+        variant={activeView === 'buildings' ? 'filled' : 'outlined'}
       />
       <Chip
         label="Power"
         size="small"
-        onClick={() => setActiveView("power")}
-        color={activeView === "power" ? "primary" : "default"}
-        variant={activeView === "power" ? "filled" : "outlined"}
+        onClick={() => setActiveView('power')}
+        color={activeView === 'power' ? 'primary' : 'default'}
+        variant={activeView === 'power' ? 'filled' : 'outlined'}
       />
       {hasVehicles && (
         <Chip
           label="Vehicles"
           size="small"
-          onClick={() => setActiveView("vehicles")}
-          color={activeView === "vehicles" ? "primary" : "default"}
-          variant={activeView === "vehicles" ? "filled" : "outlined"}
+          onClick={() => setActiveView('vehicles')}
+          color={activeView === 'vehicles' ? 'primary' : 'default'}
+          variant={activeView === 'vehicles' ? 'filled' : 'outlined'}
         />
       )}
     </Box>
   );
 
   const renderMultiSelection = () => {
-    if (selectedItem?.type !== "multiSelection") return null;
+    if (selectedItem?.type !== 'multiSelection') return null;
     const { machineGroups, trainStations, droneStations } = selectedItem.data;
 
     const totalItems = machineGroups.length + trainStations.length + droneStations.length;
@@ -579,7 +579,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
     // Aggregate stats from machine groups
     const aggregateItems = (
       groups: MachineGroup[],
-      key: "itemProduction" | "itemConsumption",
+      key: 'itemProduction' | 'itemConsumption'
     ): Record<string, number> => {
       const result: Record<string, number> = {};
       groups.forEach((g) => {
@@ -593,8 +593,8 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
     const totalMachines = machineGroups.reduce((sum, g) => sum + g.machines.length, 0);
     const totalPowerConsumption = machineGroups.reduce((sum, g) => sum + g.powerConsumption, 0);
     const totalPowerProduction = machineGroups.reduce((sum, g) => sum + g.powerProduction, 0);
-    const totalItemProduction = aggregateItems(machineGroups, "itemProduction");
-    const totalItemConsumption = aggregateItems(machineGroups, "itemConsumption");
+    const totalItemProduction = aggregateItems(machineGroups, 'itemProduction');
+    const totalItemConsumption = aggregateItems(machineGroups, 'itemConsumption');
 
     // Get all trains and drones
     const allTrains = trainStations.flatMap((ts) => ts.dockedTrains);
@@ -605,102 +605,102 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         {/* Header */}
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 1,
           }}
         >
-          <Box sx={{ fontWeight: "bold" }}>Multi-Selection</Box>
+          <Box sx={{ fontWeight: 'bold' }}>Multi-Selection</Box>
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{totalItems} items</Box>
         </Box>
 
         {/* Summary counts */}
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 1,
           }}
         >
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Machine Groups</Box>
-          <Box sx={{ fontWeight: "bold" }}>{machineGroups.length}</Box>
+          <Box sx={{ fontWeight: 'bold' }}>{machineGroups.length}</Box>
         </Box>
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 2,
           }}
         >
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Machines</Box>
-          <Box sx={{ fontWeight: "bold" }}>{totalMachines}</Box>
+          <Box sx={{ fontWeight: 'bold' }}>{totalMachines}</Box>
         </Box>
 
         {renderMultiViewTabs(hasVehicles)}
 
         {/* Items View */}
-        {activeView === "items" && (
+        {activeView === 'items' && (
           <>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
                 Power Consumption
               </Box>
-              <Box sx={{ fontWeight: "bold" }}>
-                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : "-"}
+              <Box sx={{ fontWeight: 'bold' }}>
+                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
               </Box>
             </Box>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Power Production</Box>
-              <Box sx={{ fontWeight: "bold" }}>
-                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : "-"}
+              <Box sx={{ fontWeight: 'bold' }}>
+                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
               </Box>
             </Box>
 
             {/* Combined produced items */}
             {Object.entries(totalItemProduction).length > 0 && (
               <>
-                <Divider sx={{ margin: "10px 0" }} />
+                <Divider sx={{ margin: '10px 0' }} />
                 <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: "bold", mb: 1 }}>Production</Box>
+                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Production</Box>
                   {Object.entries(totalItemProduction).map(([name, value]) => (
                     <Box
                       key={name}
                       sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                         marginBottom: 1,
                       }}
                     >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <img
                           src={`assets/images/satisfactory/64x64/${name}.png`}
                           alt={name}
                           style={{
-                            width: "24px",
-                            height: "24px",
+                            width: '24px',
+                            height: '24px',
                           }}
                         />
                         <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{name}</Box>
                       </Box>
-                      <Box sx={{ fontWeight: "bold" }}>
+                      <Box sx={{ fontWeight: 'bold' }}>
                         {fShortenNumber(value, MetricUnits, {
                           ensureConstantDecimals: true,
                           onlyDecimalsWhenDivisible: true,
@@ -715,31 +715,31 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
             {/* Combined consumed items */}
             {Object.entries(totalItemConsumption).length > 0 && (
               <>
-                <Divider sx={{ margin: "10px 0" }} />
+                <Divider sx={{ margin: '10px 0' }} />
                 <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: "bold", mb: 1 }}>Consumption</Box>
+                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Consumption</Box>
                   {Object.entries(totalItemConsumption).map(([name, value]) => (
                     <Box
                       key={name}
                       sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                         marginBottom: 1,
                       }}
                     >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <img
                           src={`assets/images/satisfactory/64x64/${name}.png`}
                           alt={name}
                           style={{
-                            width: "24px",
-                            height: "24px",
+                            width: '24px',
+                            height: '24px',
                           }}
                         />
                         <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{name}</Box>
                       </Box>
-                      <Box sx={{ fontWeight: "bold" }}>
+                      <Box sx={{ fontWeight: 'bold' }}>
                         {fShortenNumber(value, MetricUnits, {
                           ensureConstantDecimals: true,
                           onlyDecimalsWhenDivisible: true,
@@ -754,21 +754,21 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         )}
 
         {/* Buildings View */}
-        {activeView === "buildings" && (
+        {activeView === 'buildings' && (
           <>
             {getBuildingCounts(machineGroups).length > 0 ? (
               getBuildingCounts(machineGroups).map(([type, count]) => (
                 <Box
                   key={type}
                   sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     marginBottom: 1,
                   }}
                 >
                   <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{type}</Box>
-                  <Box sx={{ fontWeight: "bold" }}>{count}</Box>
+                  <Box sx={{ fontWeight: 'bold' }}>{count}</Box>
                 </Box>
               ))
             ) : (
@@ -780,55 +780,55 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         )}
 
         {/* Power View */}
-        {activeView === "power" && (
+        {activeView === 'power' && (
           <>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Production</Box>
-              <Box sx={{ fontWeight: "bold" }}>
-                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : "-"}
+              <Box sx={{ fontWeight: 'bold' }}>
+                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
               </Box>
             </Box>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
                 Total Consumption
               </Box>
-              <Box sx={{ fontWeight: "bold" }}>
-                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : "-"}
+              <Box sx={{ fontWeight: 'bold' }}>
+                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
               </Box>
             </Box>
 
             {getPowerSources(machineGroups).length > 0 && (
               <>
-                <Divider sx={{ margin: "10px 0" }} />
-                <Box sx={{ fontWeight: "bold", mb: 1 }}>Power Sources</Box>
+                <Divider sx={{ margin: '10px 0' }} />
+                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Power Sources</Box>
                 {getPowerSources(machineGroups).map(([type, data]) => (
                   <Box
                     key={type}
                     sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                       marginBottom: 1,
                     }}
                   >
                     <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
                       {type} ({data.count})
                     </Box>
-                    <Box sx={{ fontWeight: "bold" }}>
+                    <Box sx={{ fontWeight: 'bold' }}>
                       {fShortenNumber(data.production, WattUnits)}
                     </Box>
                   </Box>
@@ -845,12 +845,12 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         )}
 
         {/* Vehicles View */}
-        {activeView === "vehicles" && hasVehicles && (
+        {activeView === 'vehicles' && hasVehicles && (
           <>
             {/* Docked Trains */}
             {allTrains.length > 0 && (
               <>
-                <Box sx={{ fontWeight: "bold", mb: 1 }}>Docked Trains ({allTrains.length})</Box>
+                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Docked Trains ({allTrains.length})</Box>
                 {allTrains.map((train, index) => (
                   <Box
                     key={index}
@@ -863,16 +863,16 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                   >
                     <Box
                       sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                       }}
                     >
                       <Typography variant="body2" fontWeight="bold">
                         {train.name}
                       </Typography>
                       <Chip
-                        label={train.status === TrainStatusDocking ? "Docking" : train.status}
+                        label={train.status === TrainStatusDocking ? 'Docking' : train.status}
                         size="small"
                         color="info"
                       />
@@ -889,7 +889,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
             {allDrones.length > 0 && (
               <>
                 {allTrains.length > 0 && <Divider sx={{ my: 2 }} />}
-                <Box sx={{ fontWeight: "bold", mb: 1 }}>Docked Drones ({allDrones.length})</Box>
+                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Docked Drones ({allDrones.length})</Box>
                 {allDrones.map((drone, index) => (
                   <Box
                     key={index}
@@ -902,9 +902,9 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                   >
                     <Box
                       sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                       }}
                     >
                       <Typography variant="body2" fontWeight="bold">
@@ -932,27 +932,27 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
   };
 
   const renderTrainStation = () => {
-    if (selectedItem?.type !== "trainStation") return null;
+    if (selectedItem?.type !== 'trainStation') return null;
     const { station, dockedTrains } = selectedItem.data;
 
     return (
       <>
-        <Box sx={{ fontWeight: "bold", mb: 2 }}>Train Station</Box>
+        <Box sx={{ fontWeight: 'bold', mb: 2 }}>Train Station</Box>
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 1,
           }}
         >
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Name</Box>
-          <Box sx={{ fontWeight: "bold" }}>{station.name}</Box>
+          <Box sx={{ fontWeight: 'bold' }}>{station.name}</Box>
         </Box>
 
-        <Divider sx={{ margin: "10px 0" }} />
+        <Divider sx={{ margin: '10px 0' }} />
 
-        <Box sx={{ fontWeight: "bold", mb: 1 }}>Docked Trains ({dockedTrains.length})</Box>
+        <Box sx={{ fontWeight: 'bold', mb: 1 }}>Docked Trains ({dockedTrains.length})</Box>
         {dockedTrains.length === 0 ? (
           <Typography variant="body2" color="textSecondary">
             No trains currently docked
@@ -968,12 +968,12 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                 backgroundColor: theme.palette.background.paper,
               }}
             >
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="body2" fontWeight="bold">
                   {train.name}
                 </Typography>
                 <Chip
-                  label={train.status === TrainStatusDocking ? "Docking" : train.status}
+                  label={train.status === TrainStatusDocking ? 'Docking' : train.status}
                   size="small"
                   color="info"
                 />
@@ -989,40 +989,40 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
   };
 
   const renderDroneStation = () => {
-    if (selectedItem?.type !== "droneStation") return null;
+    if (selectedItem?.type !== 'droneStation') return null;
     const { station, dockedDrones } = selectedItem.data;
 
     return (
       <>
-        <Box sx={{ fontWeight: "bold", mb: 2 }}>Drone Station</Box>
+        <Box sx={{ fontWeight: 'bold', mb: 2 }}>Drone Station</Box>
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 1,
           }}
         >
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Name</Box>
-          <Box sx={{ fontWeight: "bold" }}>{station.name}</Box>
+          <Box sx={{ fontWeight: 'bold' }}>{station.name}</Box>
         </Box>
         {station.fuelName && (
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               marginBottom: 1,
             }}
           >
             <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Fuel</Box>
-            <Box sx={{ fontWeight: "bold" }}>{station.fuelName}</Box>
+            <Box sx={{ fontWeight: 'bold' }}>{station.fuelName}</Box>
           </Box>
         )}
 
-        <Divider sx={{ margin: "10px 0" }} />
+        <Divider sx={{ margin: '10px 0' }} />
 
-        <Box sx={{ fontWeight: "bold", mb: 1 }}>Drones at Station ({dockedDrones.length})</Box>
+        <Box sx={{ fontWeight: 'bold', mb: 1 }}>Drones at Station ({dockedDrones.length})</Box>
         {dockedDrones.length === 0 ? (
           <Typography variant="body2" color="textSecondary">
             No drones currently at this station
@@ -1038,14 +1038,14 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
                 backgroundColor: theme.palette.background.paper,
               }}
             >
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="body2" fontWeight="bold">
                   {drone.name}
                 </Typography>
                 <Chip
                   label={drone.status}
                   size="small"
-                  color={drone.status === "flying" ? "success" : "info"}
+                  color={drone.status === 'flying' ? 'success' : 'info'}
                 />
               </Box>
               <Typography variant="caption" color="textSecondary">
@@ -1060,7 +1060,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
 
   // Render multiple unified groups (CTRL+drag selection)
   const renderMachineGroups = () => {
-    if (selectedItem?.type !== "machineGroups") return null;
+    if (selectedItem?.type !== 'machineGroups') return null;
     const groups = selectedItem.data;
 
     // Aggregate stats from all groups
@@ -1077,7 +1077,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
     const totalPowerProduction = groups.reduce((sum, g) => sum + g.powerProduction, 0);
 
     // Aggregate item production/consumption
-    const aggregateItems = (key: "itemProduction" | "itemConsumption"): Record<string, number> => {
+    const aggregateItems = (key: 'itemProduction' | 'itemConsumption'): Record<string, number> => {
       const result: Record<string, number> = {};
       groups.forEach((g) => {
         Object.entries(g[key]).forEach(([name, value]) => {
@@ -1086,28 +1086,28 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
       });
       return result;
     };
-    const totalItemProduction = aggregateItems("itemProduction");
-    const totalItemConsumption = aggregateItems("itemConsumption");
+    const totalItemProduction = aggregateItems('itemProduction');
+    const totalItemConsumption = aggregateItems('itemConsumption');
 
     // Get all docked trains and drones from all groups
     const allDockedTrains = groups.flatMap((g) =>
-      (g.trainStations || []).flatMap((station) => getDockedTrains(station, trains)),
+      (g.trainStations || []).flatMap((station) => getDockedTrains(station, trains))
     );
     const allDockedDrones = groups.flatMap((g) =>
-      (g.droneStations || []).flatMap((station) => getDockedDrones(station, drones)),
+      (g.droneStations || []).flatMap((station) => getDockedDrones(station, drones))
     );
 
     return (
       <>
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 1,
           }}
         >
-          <Box sx={{ fontWeight: "bold" }}>Multi-Selection</Box>
+          <Box sx={{ fontWeight: 'bold' }}>Multi-Selection</Box>
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
             {groups.length} groups
           </Box>
@@ -1115,101 +1115,103 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
 
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 1,
           }}
         >
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Items</Box>
-          <Box sx={{ fontWeight: "bold" }}>{totalItems}</Box>
+          <Box sx={{ fontWeight: 'bold' }}>{totalItems}</Box>
         </Box>
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 1,
           }}
         >
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Machines</Box>
-          <Box sx={{ fontWeight: "bold" }}>{totalMachines}</Box>
+          <Box sx={{ fontWeight: 'bold' }}>{totalMachines}</Box>
         </Box>
         {showVehicles && (
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               marginBottom: 2,
             }}
           >
             <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Vehicles</Box>
-            <Box sx={{ fontWeight: "bold" }}>{totalVehicles}</Box>
+            <Box sx={{ fontWeight: 'bold' }}>{totalVehicles}</Box>
           </Box>
         )}
 
         {renderViewTabs(showVehicles)}
 
         {/* Items View */}
-        {activeView === "items" && (
+        {activeView === 'items' && (
           <>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Power Consumption</Box>
-              <Box sx={{ fontWeight: "bold" }}>
-                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : "-"}
+              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
+                Power Consumption
+              </Box>
+              <Box sx={{ fontWeight: 'bold' }}>
+                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
               </Box>
             </Box>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Power Production</Box>
-              <Box sx={{ fontWeight: "bold" }}>
-                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : "-"}
+              <Box sx={{ fontWeight: 'bold' }}>
+                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
               </Box>
             </Box>
 
             {/* Combined produced items */}
             {Object.entries(totalItemProduction).length > 0 && (
               <>
-                <Divider sx={{ margin: "10px 0" }} />
+                <Divider sx={{ margin: '10px 0' }} />
                 <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: "bold", mb: 1 }}>Production</Box>
+                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Production</Box>
                   {Object.entries(totalItemProduction)
                     .sort((a, b) => b[1] - a[1])
                     .map(([name, value]) => (
                       <Box
                         key={name}
                         sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
                           marginBottom: 1,
                         }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <img
                             src={`assets/images/satisfactory/64x64/${name}.png`}
                             alt={name}
-                            style={{ width: "24px", height: "24px" }}
+                            style={{ width: '24px', height: '24px' }}
                           />
                           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
                             {name}
                           </Box>
                         </Box>
-                        <Box sx={{ fontWeight: "bold" }}>
+                        <Box sx={{ fontWeight: 'bold' }}>
                           {fShortenNumber(value, MetricUnits, {
                             ensureConstantDecimals: true,
                             onlyDecimalsWhenDivisible: true,
@@ -1224,32 +1226,32 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
             {/* Combined consumed items */}
             {Object.entries(totalItemConsumption).length > 0 && (
               <>
-                <Divider sx={{ margin: "10px 0" }} />
+                <Divider sx={{ margin: '10px 0' }} />
                 <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: "bold", mb: 1 }}>Consumption</Box>
+                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Consumption</Box>
                   {Object.entries(totalItemConsumption)
                     .sort((a, b) => b[1] - a[1])
                     .map(([name, value]) => (
                       <Box
                         key={name}
                         sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
                           marginBottom: 1,
                         }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <img
                             src={`assets/images/satisfactory/64x64/${name}.png`}
                             alt={name}
-                            style={{ width: "24px", height: "24px" }}
+                            style={{ width: '24px', height: '24px' }}
                           />
                           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
                             {name}
                           </Box>
                         </Box>
-                        <Box sx={{ fontWeight: "bold" }}>
+                        <Box sx={{ fontWeight: 'bold' }}>
                           {fShortenNumber(value, MetricUnits, {
                             ensureConstantDecimals: true,
                             onlyDecimalsWhenDivisible: true,
@@ -1264,21 +1266,21 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         )}
 
         {/* Buildings View */}
-        {activeView === "buildings" && (
+        {activeView === 'buildings' && (
           <>
             {getBuildingCounts(groups).length > 0 ? (
               getBuildingCounts(groups).map(([type, count]) => (
                 <Box
                   key={type}
                   sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     marginBottom: 1,
                   }}
                 >
                   <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{type}</Box>
-                  <Box sx={{ fontWeight: "bold" }}>{count}</Box>
+                  <Box sx={{ fontWeight: 'bold' }}>{count}</Box>
                 </Box>
               ))
             ) : (
@@ -1290,53 +1292,55 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         )}
 
         {/* Power View */}
-        {activeView === "power" && (
+        {activeView === 'power' && (
           <>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
               <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Production</Box>
-              <Box sx={{ fontWeight: "bold" }}>
-                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : "-"}
+              <Box sx={{ fontWeight: 'bold' }}>
+                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
               </Box>
             </Box>
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 1,
               }}
             >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Consumption</Box>
-              <Box sx={{ fontWeight: "bold" }}>
-                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : "-"}
+              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
+                Total Consumption
+              </Box>
+              <Box sx={{ fontWeight: 'bold' }}>
+                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
               </Box>
             </Box>
 
             {getPowerSources(groups).length > 0 && (
               <>
-                <Divider sx={{ margin: "10px 0" }} />
-                <Box sx={{ fontWeight: "bold", mb: 1 }}>Power Sources</Box>
+                <Divider sx={{ margin: '10px 0' }} />
+                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Power Sources</Box>
                 {getPowerSources(groups).map(([type, data]) => (
                   <Box
                     key={type}
                     sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                       marginBottom: 1,
                     }}
                   >
                     <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
                       {type} ({data.count})
                     </Box>
-                    <Box sx={{ fontWeight: "bold" }}>
+                    <Box sx={{ fontWeight: 'bold' }}>
                       {fShortenNumber(data.production, WattUnits)}
                     </Box>
                   </Box>
@@ -1353,52 +1357,52 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
         )}
 
         {/* Vehicles View */}
-        {activeView === "vehicles" && showVehicles && (
+        {activeView === 'vehicles' && showVehicles && (
           <>
             {/* Train Stations */}
             {totalTrainStations > 0 && (
               <>
-                <Box sx={{ fontWeight: "bold", mb: 1 }}>
-                  Train Stations ({totalTrainStations})
-                </Box>
-                {groups.flatMap((g) => g.trainStations || []).map((station, idx) => {
-                  const stationDockedTrains = getDockedTrains(station, trains);
-                  return (
-                    <Box
-                      key={idx}
-                      sx={{
-                        mb: 2,
-                        p: 1,
-                        borderRadius: 1,
-                        backgroundColor: theme.palette.background.paper,
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight="bold">
-                        {station.name}
-                      </Typography>
-                      {stationDockedTrains.length > 0 ? (
-                        stationDockedTrains.map((train, tidx) => (
-                          <Box
-                            key={tidx}
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              mt: 0.5,
-                            }}
-                          >
-                            <Typography variant="caption">{train.name}</Typography>
-                            <Chip label="Docking" size="small" color="info" />
-                          </Box>
-                        ))
-                      ) : (
-                        <Typography variant="caption" color="textSecondary">
-                          No trains docked
+                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Train Stations ({totalTrainStations})</Box>
+                {groups
+                  .flatMap((g) => g.trainStations || [])
+                  .map((station, idx) => {
+                    const stationDockedTrains = getDockedTrains(station, trains);
+                    return (
+                      <Box
+                        key={idx}
+                        sx={{
+                          mb: 2,
+                          p: 1,
+                          borderRadius: 1,
+                          backgroundColor: theme.palette.background.paper,
+                        }}
+                      >
+                        <Typography variant="body2" fontWeight="bold">
+                          {station.name}
                         </Typography>
-                      )}
-                    </Box>
-                  );
-                })}
+                        {stationDockedTrains.length > 0 ? (
+                          stationDockedTrains.map((train, tidx) => (
+                            <Box
+                              key={tidx}
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                mt: 0.5,
+                              }}
+                            >
+                              <Typography variant="caption">{train.name}</Typography>
+                              <Chip label="Docking" size="small" color="info" />
+                            </Box>
+                          ))
+                        ) : (
+                          <Typography variant="caption" color="textSecondary">
+                            No trains docked
+                          </Typography>
+                        )}
+                      </Box>
+                    );
+                  })}
               </>
             )}
 
@@ -1406,56 +1410,56 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
             {totalDroneStations > 0 && (
               <>
                 {totalTrainStations > 0 && <Divider sx={{ my: 2 }} />}
-                <Box sx={{ fontWeight: "bold", mb: 1 }}>
-                  Drone Stations ({totalDroneStations})
-                </Box>
-                {groups.flatMap((g) => g.droneStations || []).map((station, idx) => {
-                  const stationDockedDrones = getDockedDrones(station, drones);
-                  return (
-                    <Box
-                      key={idx}
-                      sx={{
-                        mb: 2,
-                        p: 1,
-                        borderRadius: 1,
-                        backgroundColor: theme.palette.background.paper,
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight="bold">
-                        {station.name}
-                      </Typography>
-                      {station.fuelName && (
-                        <Typography
-                          variant="caption"
-                          color="textSecondary"
-                          sx={{ display: "block" }}
-                        >
-                          Fuel: {station.fuelName}
+                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Drone Stations ({totalDroneStations})</Box>
+                {groups
+                  .flatMap((g) => g.droneStations || [])
+                  .map((station, idx) => {
+                    const stationDockedDrones = getDockedDrones(station, drones);
+                    return (
+                      <Box
+                        key={idx}
+                        sx={{
+                          mb: 2,
+                          p: 1,
+                          borderRadius: 1,
+                          backgroundColor: theme.palette.background.paper,
+                        }}
+                      >
+                        <Typography variant="body2" fontWeight="bold">
+                          {station.name}
                         </Typography>
-                      )}
-                      {stationDockedDrones.length > 0 ? (
-                        stationDockedDrones.map((drone, didx) => (
-                          <Box
-                            key={didx}
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              mt: 0.5,
-                            }}
+                        {station.fuelName && (
+                          <Typography
+                            variant="caption"
+                            color="textSecondary"
+                            sx={{ display: 'block' }}
                           >
-                            <Typography variant="caption">{drone.name}</Typography>
-                            <Chip label={drone.status} size="small" color="info" />
-                          </Box>
-                        ))
-                      ) : (
-                        <Typography variant="caption" color="textSecondary">
-                          No drones at station
-                        </Typography>
-                      )}
-                    </Box>
-                  );
-                })}
+                            Fuel: {station.fuelName}
+                          </Typography>
+                        )}
+                        {stationDockedDrones.length > 0 ? (
+                          stationDockedDrones.map((drone, didx) => (
+                            <Box
+                              key={didx}
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                mt: 0.5,
+                              }}
+                            >
+                              <Typography variant="caption">{drone.name}</Typography>
+                              <Chip label={drone.status} size="small" color="info" />
+                            </Box>
+                          ))
+                        ) : (
+                          <Typography variant="caption" color="textSecondary">
+                            No drones at station
+                          </Typography>
+                        )}
+                      </Box>
+                    );
+                  })}
               </>
             )}
 
@@ -1484,26 +1488,26 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
   return (
     <Box
       sx={{
-        position: "absolute",
+        position: 'absolute',
         top: 16,
         right: 16,
         bottom: 16,
         width: 300,
         backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.95),
-        backdropFilter: "blur(8px)",
+        backdropFilter: 'blur(8px)',
         zIndex: 1000,
-        boxShadow: "0 0 15px rgba(0, 0, 0, 0.8)",
-        borderRadius: "10px",
-        overflow: "auto",
+        boxShadow: '0 0 15px rgba(0, 0, 0, 0.8)',
+        borderRadius: '10px',
+        overflow: 'auto',
       }}
     >
       <Box sx={{ padding: 2 }}>
         {!selectedItem && renderEmpty()}
-        {selectedItem?.type === "machineGroup" && renderMachineGroup()}
-        {selectedItem?.type === "machineGroups" && renderMachineGroups()}
-        {selectedItem?.type === "multiSelection" && renderMultiSelection()}
-        {selectedItem?.type === "trainStation" && renderTrainStation()}
-        {selectedItem?.type === "droneStation" && renderDroneStation()}
+        {selectedItem?.type === 'machineGroup' && renderMachineGroup()}
+        {selectedItem?.type === 'machineGroups' && renderMachineGroups()}
+        {selectedItem?.type === 'multiSelection' && renderMultiSelection()}
+        {selectedItem?.type === 'trainStation' && renderTrainStation()}
+        {selectedItem?.type === 'droneStation' && renderDroneStation()}
       </Box>
     </Box>
   );

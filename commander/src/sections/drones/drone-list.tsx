@@ -1,14 +1,14 @@
-import { Box, Card, CardContent, Chip, Typography, useTheme } from "@mui/material";
+import { Box, Card, CardContent, Chip, Typography, useTheme } from '@mui/material';
 import {
   Drone,
   DroneStation,
   DroneStatusDocking,
   DroneStatusFlying,
   DroneStatusIdle,
-} from "src/apiTypes";
-import { Iconify } from "src/components/iconify";
-import { varAlpha } from "src/theme/styles";
-import { fNumber } from "src/utils/format-number";
+} from 'src/apiTypes';
+import { Iconify } from 'src/components/iconify';
+import { varAlpha } from 'src/theme/styles';
+import { fNumber } from 'src/utils/format-number';
 
 const DroneCard = ({ drone }: { drone: Drone }) => {
   const theme = useTheme();
@@ -18,7 +18,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
       case DroneStatusFlying:
         return {
           icon: <Iconify icon="mdi:airplane" />,
-          label: "Flying",
+          label: 'Flying',
           backgroundColor: theme.palette.success.darkChannel,
           color: theme.palette.primary.contrastTextChannel,
           pulse: false,
@@ -26,7 +26,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
       case DroneStatusDocking:
         return {
           icon: <Iconify icon="game-icons:cargo-crate" />,
-          label: "Docking",
+          label: 'Docking',
           backgroundColor: theme.palette.info.darkChannel,
           color: theme.palette.info.contrastTextChannel,
           pulse: true,
@@ -34,7 +34,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
       case DroneStatusIdle:
         return {
           icon: <Iconify icon="mdi:pause" />,
-          label: "Idle",
+          label: 'Idle',
           backgroundColor: theme.palette.warning.darkChannel,
           color: theme.palette.warning.contrastTextChannel,
           pulse: false,
@@ -54,14 +54,14 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
 
   // Get display name for home station
   const getHomeName = () => {
-    if (!drone.home) return "No Home";
-    return drone.home.name || "Unnamed";
+    if (!drone.home) return 'No Home';
+    return drone.home.name || 'Unnamed';
   };
 
   // Get display name for paired station
   const getPairedName = () => {
-    if (!drone.paired) return "No Pair";
-    return drone.paired.name || "Unnamed";
+    if (!drone.paired) return 'No Pair';
+    return drone.paired.name || 'Unnamed';
   };
 
   // Determine if drone is at home or flying to/from paired
@@ -77,13 +77,13 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
     <Card
       variant="outlined"
       sx={{
-        marginBottom: "15px",
-        padding: "20px",
+        marginBottom: '15px',
+        padding: '20px',
       }}
     >
       <CardContent>
         {/* Header: Name and Status */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h4">{drone.name}</Typography>
           <Chip
             label={style.label}
@@ -93,11 +93,11 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
               color: varAlpha(style.color),
               pl: 0.6,
               ...(style.pulse && {
-                animation: "pulse-animation 2s infinite ease-in-out",
-                "@keyframes pulse-animation": {
-                  "0%": { opacity: 1 },
-                  "50%": { opacity: 0.6 },
-                  "100%": { opacity: 1 },
+                animation: 'pulse-animation 2s infinite ease-in-out',
+                '@keyframes pulse-animation': {
+                  '0%': { opacity: 1 },
+                  '50%': { opacity: 0.6 },
+                  '100%': { opacity: 1 },
                 },
               }),
             }}
@@ -107,19 +107,19 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
         {/* Route Visualization - Ellipse with bidirectional arrows */}
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             my: 3,
-            position: "relative",
+            position: 'relative',
           }}
         >
           {/* Home Station */}
           <Box
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
               zIndex: 1,
               minWidth: 80,
             }}
@@ -128,7 +128,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
               sx={{
                 width: 14,
                 height: 14,
-                borderRadius: "50%",
+                borderRadius: '50%',
                 backgroundColor: isAtHome ? theme.palette.primary.main : theme.palette.grey[600],
                 border: `2px solid ${isAtHome ? theme.palette.primary.main : theme.palette.grey[500]}`,
               }}
@@ -137,7 +137,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
               variant="body2"
               sx={{
                 mt: 0.5,
-                fontWeight: isAtHome ? "bold" : "normal",
+                fontWeight: isAtHome ? 'bold' : 'normal',
                 color: isAtHome ? theme.palette.primary.main : theme.palette.text.secondary,
               }}
             >
@@ -149,12 +149,12 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
           </Box>
 
           {/* Ellipse Route with SVG */}
-          <Box sx={{ position: "relative", width: 180, height: 80, mx: 1 }}>
+          <Box sx={{ position: 'relative', width: 180, height: 80, mx: 1 }}>
             <svg
               width="180"
               height="80"
               viewBox="0 0 180 80"
-              style={{ position: "absolute", top: 0, left: 0 }}
+              style={{ position: 'absolute', top: 0, left: 0 }}
             >
               <defs>
                 {/* Animated dash pattern for forward path (home → paired) */}
@@ -181,11 +181,11 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
                 fill="none"
                 stroke={isFlyingToPaired ? theme.palette.primary.main : theme.palette.grey[600]}
                 strokeWidth="2"
-                strokeDasharray={isFlyingToPaired ? "8 4" : "none"}
+                strokeDasharray={isFlyingToPaired ? '8 4' : 'none'}
                 style={
                   isFlyingToPaired
                     ? {
-                        animation: "dash-flow-forward 0.8s linear infinite",
+                        animation: 'dash-flow-forward 0.8s linear infinite',
                       }
                     : undefined
                 }
@@ -202,11 +202,11 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
                 fill="none"
                 stroke={isFlyingToHome ? theme.palette.primary.main : theme.palette.grey[600]}
                 strokeWidth="2"
-                strokeDasharray={isFlyingToHome ? "8 4" : "none"}
+                strokeDasharray={isFlyingToHome ? '8 4' : 'none'}
                 style={
                   isFlyingToHome
                     ? {
-                        animation: "dash-flow-backward 0.8s linear infinite",
+                        animation: 'dash-flow-backward 0.8s linear infinite',
                       }
                     : undefined
                 }
@@ -236,9 +236,9 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
           {/* Paired Station */}
           <Box
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
               zIndex: 1,
               minWidth: 80,
             }}
@@ -247,7 +247,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
               sx={{
                 width: 14,
                 height: 14,
-                borderRadius: "50%",
+                borderRadius: '50%',
                 backgroundColor: !isAtHome ? theme.palette.primary.main : theme.palette.grey[600],
                 border: `2px solid ${!isAtHome ? theme.palette.primary.main : theme.palette.grey[500]}`,
               }}
@@ -256,7 +256,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
               variant="body2"
               sx={{
                 mt: 0.5,
-                fontWeight: !isAtHome ? "bold" : "normal",
+                fontWeight: !isAtHome ? 'bold' : 'normal',
                 color: !isAtHome ? theme.palette.primary.main : theme.palette.text.secondary,
               }}
             >
@@ -269,15 +269,15 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
         </Box>
 
         {/* Footer: Speed and Fuel */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography variant="body2">Speed:</Typography>
-            <Typography variant="h6" sx={{ pl: 0.5, fontWeight: "bold" }}>
+            <Typography variant="h6" sx={{ pl: 0.5, fontWeight: 'bold' }}>
               {fNumber(drone.speed, { decimals: 0 })} km/h
             </Typography>
           </Box>
           {drone.home?.fuelName && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Iconify icon="mdi:fuel" sx={{ color: theme.palette.text.secondary }} />
               <Typography variant="body2" color="textSecondary">
                 {drone.home.fuelName}

@@ -1,12 +1,11 @@
-import type { BoxProps } from "@mui/material/Box";
-import type { Breakpoint } from "@mui/material/styles";
-import type { ContainerProps } from "@mui/material/Container";
+import type { BoxProps } from '@mui/material/Box';
+import Box from '@mui/material/Box';
+import type { ContainerProps } from '@mui/material/Container';
+import Container from '@mui/material/Container';
+import type { Breakpoint } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 
-import Box from "@mui/material/Box";
-import { useTheme } from "@mui/material/styles";
-import Container from "@mui/material/Container";
-
-import { layoutClasses } from "src/layouts/classes";
+import { layoutClasses } from 'src/layouts/classes';
 
 // ----------------------------------------------------------------------
 
@@ -16,9 +15,9 @@ export function Main({ children, sx, ...other }: BoxProps) {
       component="main"
       className={layoutClasses.main}
       sx={{
-        display: "flex",
-        flex: "1 1 auto",
-        flexDirection: "column",
+        display: 'flex',
+        flex: '1 1 auto',
+        flexDirection: 'column',
         ...sx,
       }}
       {...other}
@@ -38,25 +37,25 @@ export function DashboardContent({
   sx,
   children,
   disablePadding,
-  maxWidth = "xl",
+  maxWidth = 'xl',
   ...other
 }: DashboardContentProps) {
   const theme = useTheme();
 
-  const layoutQuery: Breakpoint = "lg";
+  const layoutQuery: Breakpoint = 'lg';
 
   return (
     <Container
       className={layoutClasses.content}
       maxWidth={maxWidth || false}
       sx={{
-        display: "flex",
-        flex: "1 1 auto",
-        flexDirection: "column",
-        pt: "var(--layout-dashboard-content-pt)",
-        pb: "var(--layout-dashboard-content-pb)",
+        display: 'flex',
+        flex: '1 1 auto',
+        flexDirection: 'column',
+        pt: 'var(--layout-dashboard-content-pt)',
+        pb: 'var(--layout-dashboard-content-pb)',
         [theme.breakpoints.up(layoutQuery)]: {
-          px: "var(--layout-dashboard-content-px)",
+          px: 'var(--layout-dashboard-content-px)',
         },
         ...(disablePadding && {
           p: 0,

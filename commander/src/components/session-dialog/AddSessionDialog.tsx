@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from "react";
 import {
   Alert,
   Box,
@@ -17,30 +16,31 @@ import {
   TextField,
   Tooltip,
   Typography,
-} from "@mui/material";
-import { Iconify } from "src/components/iconify";
-import { useSession } from "src/contexts/sessions";
-import { SessionInfo } from "src/apiTypes";
-import { sessionApi } from "src/services/sessionApi";
+} from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { SessionInfo } from 'src/apiTypes';
+import { Iconify } from 'src/components/iconify';
+import { useSession } from 'src/contexts/sessions';
+import { sessionApi } from 'src/services/sessionApi';
 
 interface AddSessionDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
-const DEFAULT_FRM_PORT = "8080";
+const DEFAULT_FRM_PORT = '8080';
 
 export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClose }) => {
   const { createSession, createMockSession, previewSession, mockExists } = useSession();
 
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
   const [clientIP, setClientIP] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ success: boolean; info?: SessionInfo } | null>(
-    null,
+    null
   );
 
   // Fetch client IP when dialog opens
@@ -54,8 +54,8 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
   }, [open]);
 
   const resetForm = () => {
-    setName("");
-    setAddress("");
+    setName('');
+    setAddress('');
     setError(null);
     setTestResult(null);
     setIsTesting(false);
@@ -69,7 +69,7 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
 
   const handleTest = async () => {
     if (!address.trim()) {
-      setError("Address is required");
+      setError('Address is required');
       return;
     }
 
@@ -87,7 +87,7 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
       }
     } catch (err) {
       setTestResult({ success: false });
-      setError(err instanceof Error ? err.message : "Failed to connect to server");
+      setError(err instanceof Error ? err.message : 'Failed to connect to server');
     } finally {
       setIsTesting(false);
     }
@@ -95,11 +95,11 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      setError("Name is required");
+      setError('Name is required');
       return;
     }
     if (!address.trim()) {
-      setError("Address is required");
+      setError('Address is required');
       return;
     }
 
@@ -110,7 +110,7 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
       await createSession(name.trim(), address.trim());
       handleClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create session");
+      setError(err instanceof Error ? err.message : 'Failed to create session');
     } finally {
       setIsCreating(false);
     }
@@ -121,10 +121,10 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
     setError(null);
 
     try {
-      await createMockSession("Demo Session");
+      await createMockSession('Demo Session');
       handleClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create mock session");
+      setError(err instanceof Error ? err.message : 'Failed to create mock session');
     } finally {
       setIsCreating(false);
     }
@@ -158,7 +158,7 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
           </Alert>
         )}
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <TextField
             label="Session Name"
             value={name}
@@ -193,20 +193,20 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
 
           <Collapse in={testResult?.success && !!testResult?.info} timeout={300}>
             <Card variant="outlined">
-              <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
+              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Typography variant="subtitle2" color="success.main" sx={{ mb: 1 }}>
                   Connection Successful
                 </Typography>
 
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="text.secondary">
                       Save Name
                     </Typography>
                     <Typography variant="body2">{testResult?.info?.sessionName}</Typography>
                   </Box>
 
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="text.secondary">
                       Total Play Time
                     </Typography>
@@ -216,7 +216,7 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
                     </Typography>
                   </Box>
 
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="text.secondary">
                       In-Game Days
                     </Typography>
@@ -246,7 +246,7 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
                 Add Demo Session
               </Button>
 
-              <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center" }}>
+              <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
                 Try Commander with simulated data
               </Typography>
             </>
@@ -262,7 +262,7 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
           disabled={isTesting || !address.trim()}
           startIcon={isTesting ? <CircularProgress size={20} /> : <Iconify icon="mdi:connection" />}
         >
-          {isTesting ? "Testing..." : "Test"}
+          {isTesting ? 'Testing...' : 'Test'}
         </Button>
         <Button
           variant="contained"
@@ -270,7 +270,7 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
           disabled={isCreating || !name.trim() || !address.trim()}
           startIcon={isCreating ? <CircularProgress size={20} /> : <Iconify icon="mdi:plus" />}
         >
-          {isCreating ? "Adding..." : "Add"}
+          {isCreating ? 'Adding...' : 'Add'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,1 +1,1 @@
-export { SessionStatusBar } from "./SessionStatusBar";
+export { SessionStatusBar } from './SessionStatusBar';

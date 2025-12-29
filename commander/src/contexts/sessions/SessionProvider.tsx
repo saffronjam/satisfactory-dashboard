@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Session, SessionInfo } from "src/apiTypes";
-import { sessionApi } from "src/services/sessionApi";
-import { SessionContext, SessionContextType } from "./SessionContext";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Session, SessionInfo } from 'src/apiTypes';
+import { sessionApi } from 'src/services/sessionApi';
+import { SessionContext, SessionContextType } from './SessionContext';
 
-const SELECTED_SESSION_KEY = "commander-selected-session";
+const SELECTED_SESSION_KEY = 'commander-selected-session';
 const SESSION_POLL_INTERVAL = 10000; // Poll session status every 10 seconds
 
 interface SessionProviderProps {
@@ -13,14 +13,14 @@ interface SessionProviderProps {
 export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(() =>
-    localStorage.getItem(SELECTED_SESSION_KEY),
+    localStorage.getItem(SELECTED_SESSION_KEY)
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const selectedSession = useMemo(
     () => sessions.find((s) => s.id === selectedSessionId) || null,
-    [sessions, selectedSessionId],
+    [sessions, selectedSessionId]
   );
 
   const mockExists = useMemo(() => sessions.some((s) => s.isMock), [sessions]);
@@ -44,7 +44,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
         localStorage.setItem(SELECTED_SESSION_KEY, firstSession.id);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch sessions");
+      setError(err instanceof Error ? err.message : 'Failed to fetch sessions');
     } finally {
       setIsLoading(false);
     }
@@ -101,7 +101,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
       return newSession;
     },
-    [selectedSessionId],
+    [selectedSessionId]
   );
 
   const createMockSession = useCallback(
@@ -117,7 +117,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
       return newSession;
     },
-    [selectedSessionId],
+    [selectedSessionId]
   );
 
   const updateSession = useCallback(
@@ -126,7 +126,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       setSessions((prev) => prev.map((s) => (s.id === id ? updatedSession : s)));
       return updatedSession;
     },
-    [],
+    []
   );
 
   const updateSessionFromEvent = useCallback((session: Session) => {
@@ -150,7 +150,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
         }
       }
     },
-    [selectedSessionId, sessions],
+    [selectedSessionId, sessions]
   );
 
   const previewSession = useCallback(async (address: string): Promise<SessionInfo> => {
@@ -188,7 +188,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       deleteSession,
       refreshSessions,
       previewSession,
-    ],
+    ]
   );
 
   return <SessionContext.Provider value={contextValue}>{children}</SessionContext.Provider>;

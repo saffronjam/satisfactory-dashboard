@@ -1,14 +1,14 @@
-import { Box, Card, CardContent, Container, Typography, useTheme } from "@mui/material";
-import { DashboardContent } from "src/layouts/dashboard";
-import { Iconify } from "src/components/iconify";
+import { Box, Card, CardContent, Container, Typography, useTheme } from '@mui/material';
+import { Iconify } from 'src/components/iconify';
+import { DashboardContent } from 'src/layouts/dashboard';
 
 export const SettingsView = () => {
   const theme = useTheme();
 
   return (
     <DashboardContent maxWidth="xl">
-      <Container sx={{ paddingTop: "50px" }}>
-        <Typography variant="h4" sx={{ marginBottom: "30px" }}>
+      <Container sx={{ paddingTop: '50px' }}>
+        <Typography variant="h4" sx={{ marginBottom: '30px' }}>
           Settings
         </Typography>
 
@@ -16,10 +16,10 @@ export const SettingsView = () => {
           <CardContent>
             <Box
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
                 py: 8,
                 gap: 2,
               }}
@@ -36,7 +36,7 @@ export const SettingsView = () => {
               <Typography variant="h5" color="textSecondary">
                 Nothing to see here yet!
               </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ textAlign: "center" }}>
+              <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
                 Settings and preferences will be available in a future update.
               </Typography>
             </Box>
