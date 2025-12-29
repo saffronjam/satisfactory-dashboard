@@ -13,12 +13,12 @@ React-based dashboard for monitoring Satisfactory factory operations. Features r
 - **Vite 5** for build and dev server
 - **Material-UI 6** for UI components
 - **React Router 6** for client-side routing
-- **Recharts + ApexCharts** for data visualization
+- **MUI X Charts + Recharts** for data visualization
 - **Leaflet + React Leaflet** for interactive maps
 - **styled-components** for custom styling
 - **Day.js** for date formatting
 - **oxlint** for linting
-- **Biome** for code formatting
+- **oxfmt** for code formatting
 
 ## Architecture
 
@@ -37,7 +37,7 @@ commander/src/
 │   ├── settings.tsx         # App settings
 │   └── page-not-found.tsx   # 404 page
 ├── components/              # Reusable components
-│   ├── chart/              # Chart wrappers (Recharts, ApexCharts)
+│   ├── chart/              # Chart components (MUI X Charts)
 │   ├── color-utils/        # Color picker and preview
 │   ├── iconify/            # Iconify icon integration
 │   ├── label/              # Label/badge components
@@ -106,10 +106,10 @@ Output: `dist/` directory
 ```bash
 bun run lint         # oxlint check
 bun run lint:fix     # oxlint auto-fix
-bun run format       # Biome format check
-bun run format:fix   # Biome format and write
-bun run check        # Biome full check (lint + format)
-bun run check:fix    # Biome check and fix
+bun run format       # oxfmt format check
+bun run format:fix   # oxfmt format and write
+bun run check        # Full check (oxlint + oxfmt)
+bun run check:fix    # Fix all (oxlint + oxfmt)
 ```
 
 ## Key Development Patterns
@@ -409,26 +409,19 @@ bun run lint         # Check for issues
 bun run lint:fix     # Auto-fix issues
 ```
 
-## Formatting with Biome
+## Formatting with oxfmt
 
-Configuration in `biome.json`:
+Configuration in `.oxfmtrc.json`:
 
 ```json
 {
-  "formatter": {
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 100
-  },
-  "javascript": {
-    "formatter": {
-      "semicolons": "always",
-      "quoteStyle": "single",
-      "trailingCommas": "es5"
-    }
-  }
+  "printWidth": 100,
+  "singleQuote": true,
+  "trailingComma": "es5"
 }
 ```
+
+oxfmt is Prettier-compatible and 30x faster.
 
 ## Docker Build
 
@@ -483,4 +476,4 @@ EXPOSE 80
 - **Vite docs**: https://vitejs.dev/
 - **Bun docs**: https://bun.sh/docs
 - **oxlint docs**: https://oxc.rs/docs/guide/usage/linter.html
-- **Biome docs**: https://biomejs.dev/
+- **oxfmt docs**: https://oxc.rs/docs/guide/usage/formatter.html

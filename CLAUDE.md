@@ -175,7 +175,7 @@ React dashboard with Material-UI, Vite bundler, and real-time SSE integration.
 commander/src/
 ├── pages/              # Page components (home, map, production, power, trains, drones, players, settings)
 ├── components/         # Reusable UI components
-│   ├── chart/         # Chart components (Recharts, ApexCharts)
+│   ├── chart/         # Chart components (MUI X Charts)
 │   ├── iconify/       # Icon integration
 │   ├── label/         # Label components
 │   ├── logo/          # Logo component
@@ -201,7 +201,7 @@ commander/src/
 - **Material-UI 6** for UI components
 - **Vite 5** for build and dev server
 - **React Router 6** for routing
-- **Recharts + ApexCharts** for data visualization
+- **MUI X Charts + Recharts** for data visualization
 - **Leaflet + React Leaflet** for interactive maps
 - **Day.js** for date formatting
 
