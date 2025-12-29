@@ -1,4 +1,4 @@
-import packageJson from '../package.json';
+import packageJson from "../package.json";
 
 // ----------------------------------------------------------------------
 
@@ -10,6 +10,6 @@ export type ConfigValue = {
 // ----------------------------------------------------------------------
 
 export const CONFIG: ConfigValue = {
-  appName: 'Commander',
+  appName: "Commander",
   appVersion: packageJson.version,
 };

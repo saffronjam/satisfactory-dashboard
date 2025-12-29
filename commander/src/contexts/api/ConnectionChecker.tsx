@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Snackbar, IconButton, Alert } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { ApiContext } from './useApi';
-import { useContextSelector } from 'use-context-selector';
+import React, { useEffect, useState } from "react";
+import { Snackbar, IconButton, Alert } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { ApiContext } from "./useApi";
+import { useContextSelector } from "use-context-selector";
 
 export const ConnectionCheckerProvider: React.FC<any> = () => {
   type AlertProps = {
-    severity: 'success' | 'error' | 'info' | 'warning' | undefined;
+    severity: "success" | "error" | "info" | "warning" | undefined;
     message: string;
   };
 
-  const upMessage = 'Satifactory API is online';
-  const downMessage = 'Satifactory API is offline';
+  const upMessage = "Satifactory API is online";
+  const downMessage = "Satifactory API is offline";
 
   const isOnline = useContextSelector(ApiContext, (v) => {
     return v.isOnline;
   });
-  const [props, setProps] = useState<AlertProps>({ severity: 'success', message: upMessage });
+  const [props, setProps] = useState<AlertProps>({ severity: "success", message: upMessage });
   const [open, setOpen] = useState<boolean>(false);
   const [didFirstCheck, setDidFirstCheck] = useState<boolean>(false);
 
@@ -27,20 +27,20 @@ export const ConnectionCheckerProvider: React.FC<any> = () => {
     }
 
     const up = isOnline;
-    let newMessage = '';
-    let newSeverity: 'success' | 'error' | 'info' | 'warning' | undefined;
+    let newMessage = "";
+    let newSeverity: "success" | "error" | "info" | "warning" | undefined;
 
     if (up) {
       newMessage = upMessage;
-      newSeverity = 'success';
+      newSeverity = "success";
     } else {
       newMessage = downMessage;
-      newSeverity = 'error';
+      newSeverity = "error";
     }
 
     setProps({ severity: newSeverity, message: newMessage });
     setOpen(true);
-    if (newSeverity !== 'error') {
+    if (newSeverity !== "error") {
       setTimeout(() => {
         setOpen(false);
       }, 5000);
@@ -52,16 +52,16 @@ export const ConnectionCheckerProvider: React.FC<any> = () => {
   }, [isOnline]);
 
   const handleClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason !== 'clickaway') {
+    if (reason !== "clickaway") {
       setOpen(false);
     }
   };
 
   return (
     <Snackbar
-      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      anchorOrigin={{ vertical: "top", horizontal: "right" }}
       open={open}
-      autoHideDuration={props?.severity !== 'error' ? 2000 : null}
+      autoHideDuration={props?.severity !== "error" ? 2000 : null}
       onClose={handleClose}
     >
       <Alert
