@@ -1,0 +1,47 @@
+# Commander
+
+<div align="center">
+  <img src="docs/images/dashboard.png" alt="Commander Dashboard" width="800">
+</div>
+
+A real-time dashboard for monitoring and managing your Satisfactory factory.
+
+## Features
+
+- Factory statistics visualization (energy, resources, sink points)
+- Power circuit monitoring
+- Drone and train tracking
+- Player management
+- Interactive map with Leaflet
+- Real-time updates via Server-Sent Events
+
+## Quick Start
+
+```bash
+docker compose up --build
+```
+
+Services:
+- Frontend: http://localhost:3000
+- API: http://localhost:8081
+
+## Development
+
+```bash
+make deps      # Start Redis
+make run       # Run frontend (3039) + backend (8081) with hot reload
+```
+
+Other useful commands:
+
+```bash
+make help      # Show all available commands
+make lint      # Run linters
+make build     # Build for production
+```
+
+## Tech Stack
+
+- **Frontend:** React, TypeScript, Material-UI, Vite, Bun
+- **Backend:** Go, Gin, Redis
+- **Real-time:** Server-Sent Events (SSE)
