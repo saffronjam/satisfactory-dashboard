@@ -1,14 +1,14 @@
-import type { CardProps } from '@mui/material/Card';
-import type { ChartOptions } from 'src/components/chart';
+import type { CardProps } from "@mui/material/Card";
 
-import Card from '@mui/material/Card';
-import Divider from '@mui/material/Divider';
-import { useTheme } from '@mui/material/styles';
-import CardHeader from '@mui/material/CardHeader';
+import Card from "@mui/material/Card";
+import Divider from "@mui/material/Divider";
+import { useTheme } from "@mui/material/styles";
+import CardHeader from "@mui/material/CardHeader";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import { PieChart } from "@mui/x-charts/PieChart";
 
-import { fNumber } from 'src/utils/format-number';
-
-import { Chart, useChart, ChartLegends } from 'src/components/chart';
+import { fNumber } from "src/utils/format-number";
 
 // ----------------------------------------------------------------------
 
@@ -21,20 +21,11 @@ type Props = CardProps & {
       label: string;
       value: number;
     }[];
-    options?: ChartOptions;
   };
 };
 
-export function AnalyticsPieChart({
-  title,
-  subheader,
-  chart,
-  color = 'primary',
-  ...other
-}: Props) {
+export function AnalyticsPieChart({ title, subheader, chart, ...other }: Props) {
   const theme = useTheme();
-
-  const chartSeries = chart.series.map((item) => item.value);
 
   const chartColors = chart.colors ?? [
     theme.palette.primary.main,
@@ -43,61 +34,69 @@ export function AnalyticsPieChart({
     theme.palette.secondary.main,
   ];
 
-  const chartOptions = useChart({
-    chart: {
-      sparkline: { enabled: true },
-      animations: {
-        enabled: false, // Disables animation on updates
-      },
-    },
-    colors: chartColors,
-    labels: chart.series.map((item) => item.label),
-    stroke: { width: 5, colors: [theme.palette.background.paper] },
-    dataLabels: {
-      enabled: true,
-      style: { fontSize: '15' },
-      textAnchor: 'start',
-      dropShadow: { enabled: false },
-    },
-    tooltip: {
-      y: {
-        formatter: (value: number) => fNumber(value, { decimals: 0 }),
-        title: { formatter: (seriesName: string) => `${seriesName}` },
-      },
-    },
-    plotOptions: { pie: { expandOnClick: false, dataLabels: {offset: -20}, donut: { labels: { show: false } } } },
-    ...chart.options,
-  });
+  const pieData = chart.series.map((item, index) => ({
+    id: index,
+    value: item.value,
+    label: item.label,
+    color: chartColors[index % chartColors.length],
+  }));
 
   return (
     <Card
       {...other}
       sx={{
         boxShadow: 0,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        mb: 0,
       }}
     >
       <CardHeader
         title={title}
         subheader={subheader}
-        titleTypographyProps={{ variant: 'overline', fontSize: '16px' }}
+        titleTypographyProps={{ variant: "overline", fontSize: "16px" }}
       />
 
-      <Chart
-        type="pie"
-        series={chartSeries}
-        options={chartOptions}
-        width={{ xs: 240, xl: 260 }}
-        height={{ xs: 240, xl: 260 }}
-        sx={{ my: 6, mx: 'auto' }}
-      />
+      <Box sx={{ my: 6, mx: "auto", display: "flex", justifyContent: "center" }}>
+        <PieChart
+          series={[
+            {
+              data: pieData,
+              innerRadius: 30,
+              paddingAngle: 3,
+              cornerRadius: 6,
+              highlightScope: { fade: "global", highlight: "item" },
+              valueFormatter: (item) => fNumber(item.value, { decimals: 0 }),
+            },
+          ]}
+          width={260}
+          height={260}
+          skipAnimation={false}
+          margin={{ top: 0, bottom: 0, left: 0, right: 0 }}
+          hideLegend
+        />
+      </Box>
 
-      <Divider sx={{ borderStyle: 'dashed' }} />
+      <Divider sx={{ borderStyle: "dashed" }} />
 
-      <ChartLegends
-        labels={chartOptions?.labels}
-        colors={chartOptions?.colors}
-        sx={{ p: 3, justifyContent: 'center' }}
-      />
+      <Box sx={{ p: 3, display: "flex", justifyContent: "center", gap: 3, flexWrap: "wrap" }}>
+        {pieData.map((item) => (
+          <Box key={item.id} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                borderRadius: "50%",
+                bgcolor: item.color,
+              }}
+            />
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              {item.label}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
     </Card>
   );
 }

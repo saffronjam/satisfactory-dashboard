@@ -1,10 +1,12 @@
-import type { CardProps } from '@mui/material/Card';
-import Card from '@mui/material/Card';
-import CardHeader from '@mui/material/CardHeader';
-import { useTheme } from '@mui/material/styles';
-import Divider from '@mui/material/Divider';
-import { Chart } from 'src/components/chart';
-import { varAlpha } from 'src/theme/styles';
+import type { CardProps } from "@mui/material/Card";
+import Card from "@mui/material/Card";
+import CardHeader from "@mui/material/CardHeader";
+import { useTheme } from "@mui/material/styles";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
+
+import { varAlpha } from "src/theme/styles";
 
 // ----------------------------------------------------------------------
 
@@ -17,68 +19,76 @@ type Props = CardProps & {
 };
 
 export function AnalyticsCouponsProgress({
-  title = 'Coupon Progress',
+  title = "Coupon Progress",
   subheader,
   available,
   progress,
-  color = 'primary',
+  color = "primary",
   ...other
 }: Props) {
   const theme = useTheme();
 
-  const chartOptions = {
-    chart: {
-      sparkline: { enabled: true },
-    },
-    colors: [theme.palette.primary.main],
-    plotOptions: {
-      radialBar: {
-        hollow: {
-          size: '80%',
-          background: 'transparent',
-          position: 'front' as any,
-        },
-        dataLabels: {
-          name: {
-            offsetY: 0,
-            show: true,
-            color: theme.palette.primary.contrastText,
-            fontSize: '22px',
-          },
-          value: {
-            offsetY: 10,
-            show: true,
-            color: varAlpha(theme.palette.primary.contrastTextChannel, 0.60),
-          },
-        },
-      },
-    },
-
-    labels: [`${Math.round(available)} Coupons`],
-  };
-
-  const chartSeries = [(progress * 100).toFixed(2)] as any;
+  const progressPercent = progress * 100;
 
   return (
     <Card
       {...other}
       sx={{
-        boxShadow: 0
+        boxShadow: 0,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <CardHeader
         title={title}
         subheader={subheader}
-        titleTypographyProps={{ variant: 'overline', fontSize: '16px' }}
+        titleTypographyProps={{ variant: "overline", fontSize: "16px" }}
       />
 
-      <Chart
-        type="radialBar"
-        series={chartSeries}
-        options={chartOptions}
-        height={{ xs: 240, xl: 265 }}
-        sx={{ my: 10, mx: 'auto' }}
-      />
+      <Box
+        sx={{
+          flex: 1,
+          mx: "auto",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+        }}
+      >
+        <Gauge
+          value={progressPercent}
+          startAngle={-110}
+          endAngle={110}
+          width={260}
+          height={200}
+          cornerRadius="50%"
+          sx={{
+            [`& .${gaugeClasses.valueText}`]: {
+              fontSize: 22,
+              fontWeight: "bold",
+              transform: "translate(0px, 0px)",
+            },
+            [`& .${gaugeClasses.valueArc}`]: {
+              fill: theme.palette.primary.main,
+            },
+            [`& .${gaugeClasses.referenceArc}`]: {
+              fill: varAlpha(theme.palette.grey["500Channel"], 0.2),
+            },
+          }}
+          text={({ value }) => `${value?.toFixed(1)}%`}
+        />
+        <Typography
+          variant="body2"
+          sx={{
+            color: varAlpha(theme.palette.text.primaryChannel, 0.6),
+            mt: -2,
+          }}
+        >
+          {Math.round(available)} Coupons Available
+        </Typography>
+      </Box>
     </Card>
   );
 }

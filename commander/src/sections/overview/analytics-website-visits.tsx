@@ -1,11 +1,10 @@
-import type { CardProps } from '@mui/material/Card';
-import type { ChartOptions } from 'src/components/chart';
+import type { CardProps } from "@mui/material/Card";
 
-import Card from '@mui/material/Card';
-import CardHeader from '@mui/material/CardHeader';
-import { useTheme, alpha as hexAlpha } from '@mui/material/styles';
-
-import { Chart, useChart } from 'src/components/chart';
+import Card from "@mui/material/Card";
+import CardHeader from "@mui/material/CardHeader";
+import { useTheme, alpha as hexAlpha } from "@mui/material/styles";
+import Box from "@mui/material/Box";
+import { BarChart } from "@mui/x-charts/BarChart";
 
 // ----------------------------------------------------------------------
 
@@ -19,7 +18,6 @@ type Props = CardProps & {
       name: string;
       data: number[];
     }[];
-    options?: ChartOptions;
   };
 };
 
@@ -31,37 +29,34 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, ...other }: Pr
     hexAlpha(theme.palette.primary.light, 0.64),
   ];
 
-  const chartOptions = useChart({
-    colors: chartColors,
-    stroke: {
-      width: 2,
-      colors: ['transparent'],
-    },
-    xaxis: {
-      categories: chart.categories,
-    },
-    legend: {
-      show: true,
-    },
-    tooltip: {
-      y: {
-        formatter: (value: number) => `${value} visits`,
-      },
-    },
-    ...chart.options,
-  });
+  const barSeries = chart.series.map((s, index) => ({
+    data: s.data,
+    label: s.name,
+    color: chartColors[index % chartColors.length],
+  }));
 
   return (
     <Card {...other}>
       <CardHeader title={title} subheader={subheader} />
 
-      <Chart
-        type="bar"
-        series={chart.series}
-        options={chartOptions}
-        height={364}
-        sx={{ py: 2.5, pl: 1, pr: 2.5 }}
-      />
+      <Box sx={{ py: 2.5, pl: 1, pr: 2.5 }}>
+        <BarChart
+          series={barSeries}
+          xAxis={[
+            {
+              data: chart.categories ?? [],
+              scaleType: "band",
+            },
+          ]}
+          height={364}
+          slotProps={{
+            legend: {
+              direction: "horizontal",
+              position: { vertical: "top", horizontal: "end" },
+            },
+          }}
+        />
+      </Box>
     </Card>
   );
 }
