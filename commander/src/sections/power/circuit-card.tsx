@@ -7,11 +7,11 @@ import {
   Stack,
   Typography,
   useTheme,
-} from "@mui/material";
-import { Circuit } from "src/apiTypes";
-import { Iconify } from "src/components/iconify";
-import { varAlpha } from "src/theme/styles";
-import { fPercent, fShortenNumber, WattHoursUnits, WattUnits } from "src/utils/format-number";
+} from '@mui/material';
+import { Circuit } from 'src/apiTypes';
+import { Iconify } from 'src/components/iconify';
+import { varAlpha } from 'src/theme/styles';
+import { fPercent, fShortenNumber, WattHoursUnits, WattUnits } from 'src/utils/format-number';
 
 export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string }) {
   const theme = useTheme();
@@ -19,7 +19,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
   // Battery time to full
   const secondsToFullyCharge = circuit.battery.untilFull;
   const fullyChargedIn = new Date(0, 0, 0, 0, 0, secondsToFullyCharge);
-  const formatted = `${String(fullyChargedIn.getHours()).padStart(2, "0")}:${String(fullyChargedIn.getMinutes()).padStart(2, "0")}:${String(fullyChargedIn.getSeconds()).padStart(2, "0")}`;
+  const formatted = `${String(fullyChargedIn.getHours()).padStart(2, '0')}:${String(fullyChargedIn.getMinutes()).padStart(2, '0')}:${String(fullyChargedIn.getSeconds()).padStart(2, '0')}`;
 
   const hasBattery = circuit.battery.capacity > 0 || circuit.battery.untilFull > 0;
 
@@ -76,20 +76,20 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
     <Card
       variant="outlined"
       sx={{
-        marginBottom: "30px",
-        padding: "20px",
+        marginBottom: '30px',
+        padding: '20px',
       }}
     >
       <CardContent>
         <Box
           sx={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
             marginBottom: 2,
           }}
         >
-          <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", marginRight: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', marginRight: 2 }}>
             <Typography variant="h5">{name}</Typography>
           </Box>
           <Stack direction="row" spacing={1}>
@@ -97,8 +97,8 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
               <Chip
                 variant="filled"
                 sx={{
-                  paddingLeft: "6px",
-                  fontWeight: "bold",
+                  paddingLeft: '6px',
+                  fontWeight: 'bold',
                   backgroundColor: varAlpha(theme.palette.error.darkerChannel, 1),
                   color: varAlpha(theme.palette.error.lighterChannel, 0.7),
                 }}
@@ -111,7 +111,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
             {!hasBattery && (
               // Icon = exclamation mark
               <Chip
-                sx={{ paddingLeft: "6px" }}
+                sx={{ paddingLeft: '6px' }}
                 variant="filled"
                 label="No Battery connected"
                 icon={
@@ -127,6 +127,8 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
               variant="outlined"
               sx={{
                 padding: theme.spacing(2),
+                margin: 0,
+                height: '100%',
                 borderColor: getProductionCapacityColor(),
               }}
             >
@@ -141,6 +143,8 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
               variant="outlined"
               sx={{
                 padding: theme.spacing(2),
+                margin: 0,
+                height: '100%',
                 borderColor: getProduction(),
               }}
             >
@@ -153,7 +157,12 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
           <Grid size={{ xs: 3 }}>
             <Card
               variant="outlined"
-              sx={{ padding: theme.spacing(2), borderColor: getConsumeColor() }}
+              sx={{
+                padding: theme.spacing(2),
+                margin: 0,
+                height: '100%',
+                borderColor: getConsumeColor(),
+              }}
             >
               <Typography variant="h6">
                 {fShortenNumber(circuit.consumption.total, WattUnits, { decimals: 3 })}
@@ -164,7 +173,12 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
           <Grid size={{ xs: 3 }}>
             <Card
               variant="outlined"
-              sx={{ padding: theme.spacing(2), borderColor: getMaxConsumeColor() }}
+              sx={{
+                padding: theme.spacing(2),
+                margin: 0,
+                height: '100%',
+                borderColor: getMaxConsumeColor(),
+              }}
             >
               <Typography variant="h6">
                 {fShortenNumber(circuit.consumption.max, WattUnits, { decimals: 3 })}
@@ -176,19 +190,21 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
 
         {hasBattery && (
           <>
-            <Grid container sx={{ marginTop: "30px" }}>
+            <Grid container sx={{ marginTop: '30px' }}>
               <Grid size={{ xs: 3 }}>
                 <Typography variant="h6">Battery</Typography>
               </Grid>
               <Grid></Grid>
             </Grid>
-            <Grid container spacing={2} sx={{ marginTop: "20px" }}>
+            <Grid container spacing={2} sx={{ marginTop: '20px' }}>
               <Grid size={{ xs: 3 }}>
                 <Card
                   variant="outlined"
                   sx={{
                     padding: theme.spacing(2),
-                    borderColor: hasBattery ? getBatteryCapacityColor() : "",
+                    margin: 0,
+                    height: '100%',
+                    borderColor: hasBattery ? getBatteryCapacityColor() : '',
                   }}
                 >
                   <Typography variant="h6">
@@ -202,13 +218,15 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
                   variant="outlined"
                   sx={{
                     padding: theme.spacing(2),
-                    borderColor: hasBattery ? getBatteryPercentColor() : "",
+                    margin: 0,
+                    height: '100%',
+                    borderColor: hasBattery ? getBatteryPercentColor() : '',
                   }}
                 >
                   <Typography variant="h6">
                     {hasBattery
                       ? `${fPercent(circuit.battery.percentage, { decimals: 0 })} %`
-                      : "-"}
+                      : '-'}
                   </Typography>
                   <Typography variant="body2">Battery Percent</Typography>
                 </Card>
@@ -218,19 +236,28 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
                   variant="outlined"
                   sx={{
                     padding: theme.spacing(2),
-                    borderColor: hasBattery ? getBatteryDifferentialColor() : "",
+                    margin: 0,
+                    height: '100%',
+                    borderColor: hasBattery ? getBatteryDifferentialColor() : '',
                   }}
                 >
                   <Typography variant="h6">
                     {hasBattery
                       ? fShortenNumber(circuit.battery.differential, WattUnits, { decimals: 3 })
-                      : "-"}
+                      : '-'}
                   </Typography>
                   <Typography variant="body2">Battery Differential</Typography>
                 </Card>
               </Grid>
               <Grid size={{ xs: 3 }}>
-                <Card variant="outlined" sx={{ padding: theme.spacing(2) }}>
+                <Card
+                  variant="outlined"
+                  sx={{
+                    padding: theme.spacing(2),
+                    margin: 0,
+                    height: '100%',
+                  }}
+                >
                   <Typography variant="h6">{formatted}</Typography>
                   <Typography variant="body2">Battery Until Time</Typography>
                 </Card>
