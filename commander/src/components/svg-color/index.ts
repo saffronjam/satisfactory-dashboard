@@ -1,5 +1,5 @@
-export * from './classes';
+export * from "./classes";
 
-export * from './svg-color';
+export * from "./svg-color";
 
-export type * from './types';
+export type * from "./types";

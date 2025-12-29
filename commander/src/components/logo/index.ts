@@ -1,3 +1,3 @@
-export * from './logo';
+export * from "./logo";
 
-export * from './classes';
+export * from "./classes";

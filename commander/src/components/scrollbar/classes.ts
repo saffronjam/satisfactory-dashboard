@@ -1,3 +1,3 @@
 // ----------------------------------------------------------------------
 
-export const scrollbarClasses = { root: 'mnl__scrollbar__root' };
+export const scrollbarClasses = { root: "mnl__scrollbar__root" };
