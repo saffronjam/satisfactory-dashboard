@@ -1,9 +1,9 @@
-import { Helmet } from 'react-helmet-async';
-import { LeafletContext } from '@react-leaflet/core';
+import { Helmet } from "react-helmet-async";
+import { LeafletContext } from "@react-leaflet/core";
 
-import { CONFIG } from 'src/config-global';
+import { CONFIG } from "src/config-global";
 
-import { MapView } from 'src/sections/map/view';
+import { MapView } from "src/sections/map/view";
 
 // ----------------------------------------------------------------------
 

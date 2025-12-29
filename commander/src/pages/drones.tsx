@@ -1,8 +1,8 @@
-import { Helmet } from 'react-helmet-async';
+import { Helmet } from "react-helmet-async";
 
-import { CONFIG } from 'src/config-global';
+import { CONFIG } from "src/config-global";
 
-import { DronesView } from 'src/sections/drones/view';
+import { DronesView } from "src/sections/drones/view";
 
 // ----------------------------------------------------------------------
 
