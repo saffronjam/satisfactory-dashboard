@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 import {
   Backdrop,
   Box,
@@ -17,43 +17,43 @@ import {
   Tooltip,
   Typography,
   useTheme,
-} from '@mui/material';
-import { DashboardContent } from 'src/layouts/dashboard';
-import { ApiContext, ApiContextType } from 'src/contexts/api/useApi';
-import { varAlpha } from 'src/theme/styles';
-import { useSettings } from 'src/hooks/use-settings';
-import { Iconify } from 'src/components/iconify';
-import { useContextSelector } from 'use-context-selector';
-import { fShortenNumber, MetricUnits, PerMinuteMetricUnits } from 'src/utils/format-number';
+} from "@mui/material";
+import { DashboardContent } from "src/layouts/dashboard";
+import { ApiContext, ApiContextType } from "src/contexts/api/useApi";
+import { varAlpha } from "src/theme/styles";
+import { useSettings } from "src/hooks/use-settings";
+import { Iconify } from "src/components/iconify";
+import { useContextSelector } from "use-context-selector";
+import { fShortenNumber, MetricUnits, PerMinuteMetricUnits } from "src/utils/format-number";
 
 type Column = {
   id:
-    | 'icon'
-    | 'name'
-    | 'inventory'
-    | 'production'
-    | 'consumption'
-    | 'production efficiency'
-    | 'consumption efficiency';
+    | "icon"
+    | "name"
+    | "inventory"
+    | "production"
+    | "consumption"
+    | "production efficiency"
+    | "consumption efficiency";
   label: string;
   minWidth?: number;
-  align?: 'left' | 'right' | 'center';
+  align?: "left" | "right" | "center";
   format?: (value: number) => string;
   severity?: (value: number | string) => Severity;
   trend?: (row: any, history: any) => number;
 };
 
 enum Severity {
-  none = 'none',
-  awesome = 'awesome',
-  ok = 'ok',
-  unsatisfactory = 'unsatisfactory',
-  poor = 'poor',
+  none = "none",
+  awesome = "awesome",
+  ok = "ok",
+  unsatisfactory = "unsatisfactory",
+  poor = "poor",
 }
 
 function calculateTrend(data: number[]): number {
   if (data.length < 2) {
-    throw new Error('At least two data points are required to calculate a trend.');
+    throw new Error("At least two data points are required to calculate a trend.");
   }
 
   const n = data.length;
@@ -69,24 +69,24 @@ function calculateTrend(data: number[]): number {
 }
 
 const columns: readonly Column[] = [
-  { id: 'icon', label: '', minWidth: 64, align: 'center' },
-  { id: 'name', label: 'Name', minWidth: 100, align: 'left' },
+  { id: "icon", label: "", minWidth: 64, align: "center" },
+  { id: "name", label: "Name", minWidth: 100, align: "left" },
 
   {
-    id: 'inventory',
-    label: 'Inventory',
+    id: "inventory",
+    label: "Inventory",
     minWidth: 150,
-    align: 'center',
+    align: "center",
     format: (value) => fShortenNumber(value, MetricUnits, { decimals: 2 }),
     severity: (_value: number | string) => Severity.none,
-    trend: (row: any, history: ApiContextType['history']) => {
+    trend: (row: any, history: ApiContextType["history"]) => {
       if (history.length < 10) {
         return 0;
       }
 
       // Collect all values for the current item
       const itemProdHistory = history.map((dataPoint) =>
-        dataPoint.prodStats.items.find((i) => i.name === row.name)
+        dataPoint.prodStats.items.find((i) => i.name === row.name),
       );
 
       const itemProdHistoryCount = itemProdHistory
@@ -98,20 +98,20 @@ const columns: readonly Column[] = [
     },
   },
   {
-    id: 'production',
-    label: 'Production',
+    id: "production",
+    label: "Production",
     minWidth: 150,
-    align: 'center',
+    align: "center",
     format: (value: number) => `${fShortenNumber(value, PerMinuteMetricUnits, { decimals: 2 })}`,
     severity: (_value: number | string) => Severity.none,
-    trend: (row: any, history: ApiContextType['history']) => {
+    trend: (row: any, history: ApiContextType["history"]) => {
       if (history.length < 10) {
         return 0;
       }
 
       // Collect all values for the current item
       const itemProdHistory = history.map((dataPoint) =>
-        dataPoint.prodStats.items.find((i) => i.name === row.name)
+        dataPoint.prodStats.items.find((i) => i.name === row.name),
       );
 
       const itemValues = itemProdHistory
@@ -123,20 +123,20 @@ const columns: readonly Column[] = [
     },
   },
   {
-    id: 'consumption',
-    label: 'Consumption',
+    id: "consumption",
+    label: "Consumption",
     minWidth: 150,
-    align: 'center',
+    align: "center",
     format: (value: number) => `${fShortenNumber(value, PerMinuteMetricUnits, { decimals: 2 })}`,
     severity: (_value: number | string) => Severity.none,
-    trend: (row: any, history: ApiContextType['history']) => {
+    trend: (row: any, history: ApiContextType["history"]) => {
       if (history.length < 10) {
         return 0;
       }
 
       // Collect all values for the current item
       const itemProdHistory = history.map((dataPoint) =>
-        dataPoint.prodStats.items.find((i) => i.name === row.name)
+        dataPoint.prodStats.items.find((i) => i.name === row.name),
       );
 
       const itemValues = itemProdHistory
@@ -148,13 +148,13 @@ const columns: readonly Column[] = [
     },
   },
   {
-    id: 'production efficiency',
-    label: 'Production Efficiency',
+    id: "production efficiency",
+    label: "Production Efficiency",
     minWidth: 100,
-    align: 'center',
+    align: "center",
     format: (value: number) => `${Math.round(value * 100)}%`,
     severity: (value: number | string) => {
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         return Severity.none;
       }
 
@@ -172,13 +172,13 @@ const columns: readonly Column[] = [
     },
   },
   {
-    id: 'consumption efficiency',
-    label: 'Consumption Efficiency',
+    id: "consumption efficiency",
+    label: "Consumption Efficiency",
     minWidth: 100,
-    align: 'center',
+    align: "center",
     format: (value: number) => `${Math.round(value * 100)}%`,
     severity: (value: number | string) => {
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         return Severity.none;
       }
 
@@ -200,15 +200,15 @@ const columns: readonly Column[] = [
 const severityToStyle = (severity: Severity) => {
   switch (severity) {
     case Severity.awesome:
-      return { label: 'Awesome', color: 'green' };
+      return { label: "Awesome", color: "green" };
     case Severity.ok:
-      return { label: 'OK', color: 'yellow' };
+      return { label: "OK", color: "yellow" };
     case Severity.unsatisfactory:
-      return { label: 'Unsatisfactory', color: 'orange' };
+      return { label: "Unsatisfactory", color: "orange" };
     case Severity.poor:
-      return { label: 'Poor', color: 'red' };
+      return { label: "Poor", color: "red" };
     default:
-      return { label: '', color: 'transparent' };
+      return { label: "", color: "transparent" };
   }
 };
 
@@ -225,9 +225,9 @@ export function ProductionView() {
 
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
-  const [sortColumn, setSortColumn] = React.useState<Column['id'] | null>(null);
-  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [sortColumn, setSortColumn] = React.useState<Column["id"] | null>(null);
+  const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("asc");
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   const { settings, saveSettings } = useSettings();
 
@@ -240,18 +240,18 @@ export function ProductionView() {
     setPage(0);
   };
 
-  const handleSort = (columnId: Column['id']) => {
-    if (columnId === 'icon') return; // Skip sorting for the 'Icon' column
+  const handleSort = (columnId: Column["id"]) => {
+    if (columnId === "icon") return; // Skip sorting for the 'Icon' column
     if (sortColumn === columnId) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortColumn(columnId);
-      setSortDirection('asc');
+      setSortDirection("asc");
     }
   };
 
   const sortedRows = React.useMemo(() => {
-    if (api.isLoading || !api.isOnline) {
+    if (api.isLoading) {
       return [];
     }
 
@@ -264,11 +264,11 @@ export function ProductionView() {
           inventory: item.count,
           production: item.producedPerMinute,
           consumption: item.consumedPerMinute,
-          'production efficiency': item.produceEfficiency,
-          'consumption efficiency': item.consumeEfficiency,
+          "production efficiency": item.produceEfficiency,
+          "consumption efficiency": item.consumeEfficiency,
         })) || [];
 
-    if (sortColumn == 'icon') {
+    if (sortColumn == "icon") {
       return rows;
     }
 
@@ -277,7 +277,7 @@ export function ProductionView() {
         const aValue = a[sortColumn];
         const bValue = b[sortColumn];
         const compareResult =
-          typeof aValue === 'number' && typeof bValue === 'number'
+          typeof aValue === "number" && typeof bValue === "number"
             ? aValue - bValue
             : String(aValue).localeCompare(String(bValue));
 
@@ -285,7 +285,7 @@ export function ProductionView() {
         if (compareResult === 0) {
           return a.name.localeCompare(b.name);
         }
-        return sortDirection === 'asc' ? compareResult : -compareResult;
+        return sortDirection === "asc" ? compareResult : -compareResult;
       });
     }
     return rows;
@@ -293,14 +293,14 @@ export function ProductionView() {
 
   const filteredRows = sortedRows.filter((row) => {
     return Object.values(row).some((value) =>
-      value.toString().toLowerCase().includes(searchQuery.toLowerCase())
+      value.toString().toLowerCase().includes(searchQuery.toLowerCase()),
     );
   });
 
   return (
     <>
       <Backdrop
-        open={api.isLoading || !api.isOnline}
+        open={api.isLoading}
         sx={{
           color: theme.palette.primary.main,
           backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.5),
@@ -310,12 +310,12 @@ export function ProductionView() {
         <CircularProgress color="inherit" />
       </Backdrop>
 
-      {!api.isLoading && api.isOnline && (
+      {!api.isLoading && (
         <DashboardContent maxWidth="xl">
           <TableContainer
             sx={{
               backgroundColor: theme.palette.background.neutral,
-              height: 'calc(100vh - 200px)',
+              height: "calc(100vh - 200px)",
               borderTopLeftRadius: 15,
               borderTopRightRadius: 15,
             }}
@@ -331,10 +331,10 @@ export function ProductionView() {
                         minWidth: column.minWidth,
                         backgroundColor: theme.palette.primary.darker,
                         color: theme.palette.primary.contrastText,
-                        cursor: column.id !== 'icon' ? 'pointer' : 'default',
+                        cursor: column.id !== "icon" ? "pointer" : "default",
                       }}
                       onClick={() => {
-                        if (column.id !== 'icon') {
+                        if (column.id !== "icon") {
                           handleSort(column.id);
                         }
                       }}
@@ -342,24 +342,24 @@ export function ProductionView() {
                       <Typography
                         variant="overline"
                         sx={{
-                          display: 'flex', // Set display to flex
-                          alignItems: 'center', // Center vertically
+                          display: "flex", // Set display to flex
+                          alignItems: "center", // Center vertically
                           justifyContent: column.align,
 
-                          userSelect: 'none', // Prevent text selection
-                          WebkitUserSelect: 'none', // For Safari
-                          MozUserSelect: 'none', // For Firefox
-                          msUserSelect: 'none', // For older IE versions
+                          userSelect: "none", // Prevent text selection
+                          WebkitUserSelect: "none", // For Safari
+                          MozUserSelect: "none", // For Firefox
+                          msUserSelect: "none", // For older IE versions
                         }}
                       >
                         {column.label}
-                        {sortDirection === 'asc' ? (
+                        {sortDirection === "asc" ? (
                           <Iconify
                             icon="bi:caret-up-fill"
                             fontSize="small"
                             sx={{
                               ml: 0.5,
-                              color: sortColumn === column.id ? 'white' : 'transparent',
+                              color: sortColumn === column.id ? "white" : "transparent",
                             }}
                           />
                         ) : (
@@ -368,7 +368,7 @@ export function ProductionView() {
                             fontSize="small"
                             sx={{
                               ml: 0.5,
-                              color: sortColumn === column.id ? 'white' : 'transparent',
+                              color: sortColumn === column.id ? "white" : "transparent",
                             }}
                           />
                         )}
@@ -395,25 +395,25 @@ export function ProductionView() {
                         }}
                       >
                         {columns.map((column) => {
-                          if (column.id === 'icon') {
+                          if (column.id === "icon") {
                             return (
                               <TableCell key={column.id} align={column.align}>
                                 <div
                                   style={{
-                                    marginLeft: '10px',
-                                    width: '50px',
-                                    height: '50px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
+                                    marginLeft: "10px",
+                                    width: "50px",
+                                    height: "50px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
                                   }}
                                 >
                                   <img
                                     src={`assets/images/satisfactory/64x64/${row.name}.png`}
                                     alt={row.name}
                                     style={{
-                                      width: '50px',
-                                      height: '50px',
+                                      width: "50px",
+                                      height: "50px",
                                     }}
                                   />
                                 </div>
@@ -434,23 +434,23 @@ export function ProductionView() {
                                 <Tooltip title={severityStyle.label} arrow>
                                   <Box
                                     sx={{
-                                      display: 'inline-block',
-                                      width: '10px',
-                                      height: '10px',
-                                      borderRadius: '50%',
+                                      display: "inline-block",
+                                      width: "10px",
+                                      height: "10px",
+                                      borderRadius: "50%",
                                       backgroundColor: severityStyle.color,
-                                      marginLeft: '0.5rem',
+                                      marginLeft: "0.5rem",
                                     }}
                                   />
                                 </Tooltip>
                               );
                             }
 
-                            if (settings.productionView.showTrend && typeof value === 'number') {
+                            if (settings.productionView.showTrend && typeof value === "number") {
                               const trendValue = column.trend ? column.trend(row, api.history) : 0;
 
                               const color =
-                                trendValue === 0 ? 'transparent' : trendValue > 0 ? 'green' : 'red';
+                                trendValue === 0 ? "transparent" : trendValue > 0 ? "green" : "red";
 
                               return (
                                 <Stack direction="row" spacing={0.3} sx={{ ml: 1 }}>
@@ -458,9 +458,9 @@ export function ProductionView() {
                                     icon={
                                       settings.productionView.showTrend
                                         ? trendValue > 0
-                                          ? 'bi:caret-up-fill'
-                                          : 'bi:caret-down-fill'
-                                        : ''
+                                          ? "bi:caret-up-fill"
+                                          : "bi:caret-down-fill"
+                                        : ""
                                     }
                                     fontSize="small"
                                     sx={{ color: color }}
@@ -475,12 +475,12 @@ export function ProductionView() {
                             return (
                               <Box
                                 sx={{
-                                  display: 'inline-block',
-                                  width: '10px',
-                                  height: '10px',
-                                  borderRadius: '50%',
+                                  display: "inline-block",
+                                  width: "10px",
+                                  height: "10px",
+                                  borderRadius: "50%",
                                   backgroundColor: severityStyle.color,
-                                  marginLeft: '0.5rem',
+                                  marginLeft: "0.5rem",
                                 }}
                               />
                             );
@@ -495,9 +495,9 @@ export function ProductionView() {
                               <Box
                                 display="flex"
                                 alignItems="center"
-                                justifyContent={column.align || 'flex-start'}
+                                justifyContent={column.align || "flex-start"}
                               >
-                                {column.format && typeof value === 'number'
+                                {column.format && typeof value === "number"
                                   ? column.format(value)
                                   : value}
                                 <EndDecorator />
@@ -527,7 +527,7 @@ export function ProductionView() {
                 label="Search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                sx={{ color: 'white', marginRight: 4 }}
+                sx={{ color: "white", marginRight: 4 }}
               />
 
               <FormControlLabel
@@ -535,14 +535,14 @@ export function ProductionView() {
                   <Checkbox
                     checked={settings.productionView.includeMinable}
                     sx={{
-                      '&:hover': {
-                        backgroundColor: 'transparent', // Removes hover background color
+                      "&:hover": {
+                        backgroundColor: "transparent", // Removes hover background color
                       },
                     }}
                   />
                 }
                 label="Minable"
-                sx={{ color: 'white', marginRight: 4 }}
+                sx={{ color: "white", marginRight: 4 }}
                 onChange={(event: any) =>
                   saveSettings({
                     ...settings,
@@ -558,15 +558,15 @@ export function ProductionView() {
                   <Checkbox
                     checked={settings.productionView.includeItems}
                     sx={{
-                      '&:hover': {
-                        backgroundColor: 'transparent', // Removes hover background color
+                      "&:hover": {
+                        backgroundColor: "transparent", // Removes hover background color
                       },
                     }}
                   />
                 }
                 label="Items"
                 // No hover color
-                sx={{ color: 'white', marginRight: 4 }}
+                sx={{ color: "white", marginRight: 4 }}
                 onChange={(event: any) =>
                   saveSettings({
                     ...settings,
@@ -582,15 +582,15 @@ export function ProductionView() {
                   <Checkbox
                     checked={settings.productionView.showTrend}
                     sx={{
-                      '&:hover': {
-                        backgroundColor: 'transparent', // Removes hover background color
+                      "&:hover": {
+                        backgroundColor: "transparent", // Removes hover background color
                       },
                     }}
                   />
                 }
                 label="Show Trends"
                 // No hover color
-                sx={{ color: 'white', marginRight: 4 }}
+                sx={{ color: "white", marginRight: 4 }}
                 onChange={(event: any) =>
                   saveSettings({
                     ...settings,
@@ -611,7 +611,7 @@ export function ProductionView() {
               page={page}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
-              sx={{ color: 'white' }}
+              sx={{ color: "white" }}
             />
           </Box>
         </DashboardContent>

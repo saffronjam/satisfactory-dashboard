@@ -1,23 +1,16 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  LinearProgress,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { Grid2 as Grid } from '@mui/material';
+import { Card, CardContent, CardHeader, LinearProgress, Stack, Typography } from "@mui/material";
+import { Grid2 as Grid } from "@mui/material";
 
-import { DashboardContent } from 'src/layouts/dashboard';
-import { ApiContext } from 'src/contexts/api/useApi';
-import { fNumber } from 'src/utils/format-number';
-import { useContextSelector } from 'use-context-selector';
+import { DashboardContent } from "src/layouts/dashboard";
+import { ApiContext } from "src/contexts/api/useApi";
+import { fNumber } from "src/utils/format-number";
+import { useContextSelector } from "use-context-selector";
 
 const HealthBar = ({ health }: { health: number }) => {
   const getColor = () => {
-    if (health > 80) return 'success';
-    if (health > 50) return 'warning';
-    return 'error';
+    if (health > 80) return "success";
+    if (health > 50) return "warning";
+    return "error";
   };
 
   return (
@@ -25,7 +18,7 @@ const HealthBar = ({ health }: { health: number }) => {
       <LinearProgress
         variant="determinate"
         value={health}
-        sx={{ marginTop: '10px' }}
+        sx={{ marginTop: "10px" }}
         color={getColor()}
       />
       <Typography sx={{ mt: 1 }}>{fNumber(health, { decimals: 0 })} / 100</Typography>
@@ -35,26 +28,26 @@ const HealthBar = ({ health }: { health: number }) => {
 
 const FavoriteItem = ({ item }: { item: { name: string; count: number } }) => {
   return (
-    <Card sx={{ marginTop: '20px' }} variant="outlined">
+    <Card sx={{ marginTop: "20px" }} variant="outlined">
       <CardHeader title="Favorite Item" />
       {/* Center horizontal and verical */}
       <CardContent
         sx={{
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
         }}
       >
         <img
           src={`assets/images/satisfactory/64x64/${item.name}.png`}
           alt={item.name}
           style={{
-            width: '50px',
-            height: '50px',
+            width: "50px",
+            height: "50px",
           }}
-        />{' '}
+        />{" "}
         <Stack direction="row" spacing={2}>
           <Typography variant="button">{fNumber(item.count)}</Typography>
         </Stack>
@@ -71,15 +64,15 @@ export function PlayersView() {
 
   return (
     <DashboardContent maxWidth="xl">
-      <Grid container spacing={2} sx={{ marginBottom: '30px' }}>
+      <Grid container spacing={2} sx={{ marginBottom: "30px" }}>
         {api.players.map((player) => (
           <Card
             key={player.id} // Ensure a unique key for each card
             sx={{
-              padding: '20px',
-              marginBottom: '20px',
+              padding: "20px",
+              marginBottom: "20px",
               minWidth: 400,
-              position: 'relative', // Add this for the relative positioning context
+              position: "relative", // Add this for the relative positioning context
             }}
             variant="outlined"
           >

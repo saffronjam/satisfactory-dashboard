@@ -1,22 +1,48 @@
-import { DashboardContent } from 'src/layouts/dashboard';
+import { DashboardContent } from "src/layouts/dashboard";
 import {
+  Autocomplete,
   Backdrop,
   Box,
   Card,
   CardContent,
+  Checkbox,
   CircularProgress,
   Container,
   Divider,
   Grid2 as Grid,
+  TextField,
   Typography,
   useTheme,
-} from '@mui/material';
-import { Gauge } from '../gauge';
-import { TrainList } from '../train-list';
-import { useContextSelector } from 'use-context-selector';
-import { ApiContext } from 'src/contexts/api/useApi';
-import { varAlpha } from 'src/theme/styles';
-import { fNumber, fShortenNumber, MetricUnits, WattUnits } from 'src/utils/format-number';
+} from "@mui/material";
+import { Gauge } from "../gauge";
+import { TrainList } from "../train-list";
+import { useContextSelector } from "use-context-selector";
+import { ApiContext } from "src/contexts/api/useApi";
+import { varAlpha } from "src/theme/styles";
+import { fNumber, fShortenNumber, MetricUnits, WattUnits } from "src/utils/format-number";
+import { useState, useMemo } from "react";
+import {
+  TrainStatus,
+  TrainStatusSelfDriving,
+  TrainStatusManualDriving,
+  TrainStatusDocking,
+  TrainStatusParked,
+  TrainStatusDerailed,
+} from "src/apiTypes";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
+
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
+
+// Status options for dropdown
+const statusOptions: { value: TrainStatus; label: string }[] = [
+  { value: TrainStatusSelfDriving, label: "Self Driving" },
+  { value: TrainStatusManualDriving, label: "Manual Driving" },
+  { value: TrainStatusDocking, label: "Docking" },
+  { value: TrainStatusParked, label: "Parked" },
+  { value: TrainStatusDerailed, label: "Derailed" },
+];
 
 export function TrainsView() {
   const api = useContextSelector(ApiContext, (v) => {
@@ -28,6 +54,25 @@ export function TrainsView() {
     };
   });
   const theme = useTheme();
+
+  // Filter state
+  const [nameFilter, setNameFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<{ value: TrainStatus; label: string }[]>([]);
+
+  // Filter trains based on name and status
+  const filteredTrains = useMemo(() => {
+    return api.trains.filter((train) => {
+      // Name filter (case-insensitive)
+      const matchesName =
+        nameFilter === "" || train.name.toLowerCase().includes(nameFilter.toLowerCase());
+
+      // Status filter (if any selected)
+      const matchesStatus =
+        statusFilter.length === 0 || statusFilter.some((s) => s.value === train.status);
+
+      return matchesName && matchesStatus;
+    });
+  }, [api.trains, nameFilter, statusFilter]);
 
   const totalPowerConsumption = () =>
     api.trains.reduce((acc, train) => acc + train.powerConsumption, 0);
@@ -56,7 +101,7 @@ export function TrainsView() {
   return (
     <>
       <Backdrop
-        open={api.isLoading === true || !api.isOnline}
+        open={api.isLoading === true}
         sx={{
           color: theme.palette.primary.main,
           backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.5),
@@ -66,9 +111,9 @@ export function TrainsView() {
         <CircularProgress color="inherit" />
       </Backdrop>
 
-      {!api.isLoading && api.isOnline && (
+      {!api.isLoading && (
         <DashboardContent maxWidth="xl">
-          <Container sx={{ paddingTop: '50px' }}>
+          <Container sx={{ paddingTop: "50px" }}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card>
@@ -95,19 +140,19 @@ export function TrainsView() {
 
                     <Gauge value={(totalPowerConsumption() / maxPowerConsumption()) * 100} />
 
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Typography variant="body2">Current</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
+                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: "bold" }}>
                           {fShortenNumber(totalPowerConsumption(), WattUnits, {
                             decimals: 1,
                             ensureConstantDecimals: true,
                           })}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Typography variant="body2">Max</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
+                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: "bold" }}>
                           {fShortenNumber(maxPowerConsumption(), WattUnits, { decimals: 2 })}
                         </Typography>
                       </Box>
@@ -123,16 +168,16 @@ export function TrainsView() {
 
                     <Gauge value={(avgSpeed() / maxSpeed()) * 100} />
 
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Typography variant="body2">Current</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
+                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: "bold" }}>
                           {fNumber(avgSpeed(), { decimals: 0 })} km/h
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Typography variant="body2">Max</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
+                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: "bold" }}>
                           {fNumber(maxSpeed(), { decimals: 0 })} km/h
                         </Typography>
                       </Box>
@@ -141,11 +186,66 @@ export function TrainsView() {
                 </Card>
               </Grid>
             </Grid>
-            <Divider sx={{ mb: '50px', mt: '35px' }} />
-            <Typography variant="h4" sx={{ marginTop: '30px', marginBottom: '30px' }}>
-              All Trains
-            </Typography>
-            <TrainList trains={api.trains} trainStations={api.trainStations} />
+            <Divider sx={{ mb: "50px", mt: "35px" }} />
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 3,
+                mt: 4,
+              }}
+            >
+              <Typography variant="h4">
+                All Trains
+                {filteredTrains.length !== api.trains.length && (
+                  <Typography component="span" variant="body1" color="textSecondary" sx={{ ml: 1 }}>
+                    ({filteredTrains.length} of {api.trains.length})
+                  </Typography>
+                )}
+              </Typography>
+            </Box>
+
+            {/* Filters */}
+            <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+              <TextField
+                label="Search by name"
+                variant="outlined"
+                size="small"
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                sx={{ minWidth: 200 }}
+              />
+              <Autocomplete
+                multiple
+                size="small"
+                options={statusOptions}
+                disableCloseOnSelect
+                getOptionLabel={(option) => option.label}
+                value={statusFilter}
+                onChange={(_, newValue) => setStatusFilter(newValue)}
+                renderOption={(props, option, { selected }) => {
+                  const { key, ...rest } = props as any;
+                  return (
+                    <li key={key} {...rest}>
+                      <Checkbox
+                        icon={icon}
+                        checkedIcon={checkedIcon}
+                        style={{ marginRight: 8 }}
+                        checked={selected}
+                      />
+                      {option.label}
+                    </li>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Filter by status" placeholder="Status" />
+                )}
+                sx={{ minWidth: 250 }}
+              />
+            </Box>
+
+            <TrainList trains={filteredTrains} trainStations={api.trainStations} />
           </Container>
         </DashboardContent>
       )}

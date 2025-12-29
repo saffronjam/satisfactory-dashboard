@@ -1,4 +1,4 @@
-import { Card, Typography } from '@mui/material';
+import { Card, Typography } from "@mui/material";
 
 export default function PlayerStats({ player }: { player: any }) {
   return (

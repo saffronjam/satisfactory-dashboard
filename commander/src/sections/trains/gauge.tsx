@@ -1,5 +1,5 @@
-import { useTheme } from '@mui/material';
-import GaugeComponent from 'react-gauge-component';
+import { useTheme } from "@mui/material";
+import GaugeComponent from "react-gauge-component";
 
 export function Gauge({ value }: { value: number }) {
   const theme = useTheme();
@@ -12,7 +12,7 @@ export function Gauge({ value }: { value: number }) {
           hide: true,
         },
         tickLabels: {
-          type: 'inner',
+          type: "inner",
         },
       }}
       arc={{
@@ -26,7 +26,7 @@ export function Gauge({ value }: { value: number }) {
         subArcs: [{ limit: 40 }, { limit: 60 }, { limit: 70 }, {}, {}, {}, {}],
       }}
       pointer={{
-        type: 'needle',
+        type: "needle",
         elastic: true,
         animationDelay: 0,
         color: theme.palette.grey[400],

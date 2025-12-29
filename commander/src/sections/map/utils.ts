@@ -1,5 +1,11 @@
-import { Machine, MachineCategoryGenerator } from 'src/apiTypes';
-import { MachineGroup } from 'src/types';
+import { DroneStation, Machine, MachineCategoryGenerator, TrainStation } from "src/apiTypes";
+import { MachineGroup } from "src/types";
+
+// Entity type for unified grouping
+type GroupableEntity =
+  | { type: "machine"; data: Machine; x: number; y: number }
+  | { type: "trainStation"; data: TrainStation; x: number; y: number }
+  | { type: "droneStation"; data: DroneStation; x: number; y: number };
 
 class UnionFind {
   private parent: number[];
@@ -64,30 +70,62 @@ export function groupMachines(nodes: Machine[], distance: number): Machine[][] {
 }
 
 export const computeMachineGroups = (machines: Machine[], groupDistance: number) => {
-  const groups = groupMachines(machines, groupDistance);
-  console.log(`found ${groups.length} groups`);
+  return computeUnifiedGroups(machines, [], [], groupDistance);
+};
 
-  return groups.map((machines) => {
+// Unified grouping function that groups machines, train stations, and drone stations together
+export const computeUnifiedGroups = (
+  machines: Machine[],
+  trainStations: TrainStation[],
+  droneStations: DroneStation[],
+  groupDistance: number,
+): MachineGroup[] => {
+  // Create unified entities array
+  const entities: GroupableEntity[] = [
+    ...machines.map((m) => ({ type: "machine" as const, data: m, x: m.x, y: m.y })),
+    ...trainStations.map((s) => ({ type: "trainStation" as const, data: s, x: s.x, y: s.y })),
+    ...droneStations.map((s) => ({ type: "droneStation" as const, data: s, x: s.x, y: s.y })),
+  ];
+
+  if (entities.length === 0) return [];
+
+  // Group all entities together based on distance
+  const groups = groupByDistance(entities, groupDistance);
+
+  return groups.map((entityGroup) => {
+    // Separate entities by type
+    const groupMachines = entityGroup
+      .filter((e): e is GroupableEntity & { type: "machine" } => e.type === "machine")
+      .map((e) => e.data);
+    const groupTrainStations = entityGroup
+      .filter((e): e is GroupableEntity & { type: "trainStation" } => e.type === "trainStation")
+      .map((e) => e.data);
+    const groupDroneStations = entityGroup
+      .filter((e): e is GroupableEntity & { type: "droneStation" } => e.type === "droneStation")
+      .map((e) => e.data);
+
+    // Calculate center from all entities
     const center = {
-      x: machines.reduce((acc, m) => acc + m.x, 0) / machines.length,
-      y: machines.reduce((acc, m) => acc + m.y, 0) / machines.length,
+      x: entityGroup.reduce((acc, e) => acc + e.x, 0) / entityGroup.length,
+      y: entityGroup.reduce((acc, e) => acc + e.y, 0) / entityGroup.length,
     };
-    const powerConsumption = machines.reduce((acc, m) => {
+
+    // Calculate power metrics from machines
+    const powerConsumption = groupMachines.reduce((acc, m) => {
       if (m.category === MachineCategoryGenerator) return acc;
-      return acc + (m.input.find((i) => i.name === 'Power')?.current || 0);
+      return acc + (m.input.find((i) => i.name === "Power")?.current || 0);
     }, 0);
-    const powerProduction = machines.reduce((acc, m) => {
+    const powerProduction = groupMachines.reduce((acc, m) => {
       if (m.category !== MachineCategoryGenerator) return acc;
-      return acc + (m.output.find((i) => i.name === 'Power')?.current || 0);
+      return acc + (m.output.find((i) => i.name === "Power")?.current || 0);
     }, 0);
 
     const itemProduction: { [key: string]: number } = {};
     const itemConsumption: { [key: string]: number } = {};
 
-    machines.forEach((m) => {
+    groupMachines.forEach((m) => {
       m.output.forEach((p) => {
-        if (p.name === 'Power') return;
-
+        if (p.name === "Power") return;
         if (itemProduction[p.name] === undefined) {
           itemProduction[p.name] = 0;
         }
@@ -95,8 +133,7 @@ export const computeMachineGroups = (machines: Machine[], groupDistance: number)
       });
 
       m.input.forEach((i) => {
-        if (i.name === 'Power') return;
-
+        if (i.name === "Power") return;
         if (itemConsumption[i.name] === undefined) {
           itemConsumption[i.name] = 0;
         }
@@ -104,9 +141,20 @@ export const computeMachineGroups = (machines: Machine[], groupDistance: number)
       });
     });
 
+    // Create hash from all entities (sorted to ensure stable hash regardless of input order)
+    const hash = [
+      ...groupMachines.map((m) => `m:${m.x},${m.y},${m.z}`),
+      ...groupTrainStations.map((s) => `t:${s.x},${s.y}`),
+      ...groupDroneStations.map((s) => `d:${s.x},${s.y}`),
+    ]
+      .sort()
+      .join("|");
+
     return {
-      hash: machines.map((m) => JSON.stringify([m.x, m.y, m.z])).join(','),
-      machines,
+      hash,
+      machines: groupMachines,
+      trainStations: groupTrainStations,
+      droneStations: groupDroneStations,
       center,
       powerConsumption,
       powerProduction,
@@ -115,6 +163,40 @@ export const computeMachineGroups = (machines: Machine[], groupDistance: number)
     } as MachineGroup;
   });
 };
+
+// Generic grouping for any items with x, y coordinates
+export function groupByDistance<T extends { x: number; y: number }>(
+  items: T[],
+  distance: number,
+): T[][] {
+  if (distance === 0 || items.length === 0) {
+    return items.map((item) => [item]);
+  }
+
+  const n = items.length;
+  const uf = new UnionFind(n);
+
+  const euclideanDistance = (a: T, b: T): number => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (euclideanDistance(items[i], items[j]) < distance) {
+        uf.union(i, j);
+      }
+    }
+  }
+
+  const groups: Map<number, T[]> = new Map();
+  for (let i = 0; i < n; i++) {
+    const root = uf.find(i);
+    if (!groups.has(root)) {
+      groups.set(root, []);
+    }
+    groups.get(root)!.push(items[i]);
+  }
+
+  return Array.from(groups.values());
+}
 
 export const zoomToGroupDistance = (zoom: number) => {
   zoom = Math.floor(zoom);

@@ -1,1 +1,1 @@
-export * from './power-view';
+export * from "./power-view";

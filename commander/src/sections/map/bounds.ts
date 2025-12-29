@@ -1,4 +1,4 @@
-import { LatLngBounds, LatLngExpression } from 'leaflet';
+import { LatLngBounds, LatLngExpression } from "leaflet";
 
 // Bounds found at https://github.dev/AnthorNet/SC-InteractiveMap/tree/dev/src
 export const MapBounds = new LatLngBounds([80, -80], [-240, 240]);
@@ -22,8 +22,8 @@ export const ConvertToMapCoords2 = (x: number, y: number): LatLngExpression => {
   const targetTopLeft = { x: 16, y: -16 };
   const targetBottomRight = { x: 144, y: -144 };
 
-  const xRatio = (x-sourceTopLeft.x) / (sourceBottomRight.x - sourceTopLeft.x);
-  const yRatio = (y-sourceTopLeft.y) / (sourceBottomRight.y - sourceTopLeft.y);
+  const xRatio = (x - sourceTopLeft.x) / (sourceBottomRight.x - sourceTopLeft.x);
+  const yRatio = (y - sourceTopLeft.y) / (sourceBottomRight.y - sourceTopLeft.y);
 
   const translatedX = targetTopLeft.x + xRatio * (targetBottomRight.x - targetTopLeft.x);
   const translatedY = targetTopLeft.y + yRatio * (targetBottomRight.y - targetTopLeft.y);
