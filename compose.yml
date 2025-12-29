@@ -2,13 +2,11 @@ services:
   commander:
     build:
       context: ./commander
-      args:
-        VITE_API_URL: http://localhost:8081
     container_name: commander
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://localhost:8081
+      - API_URL=http://localhost:8081/v1
     depends_on:
       - api
     restart: unless-stopped
