@@ -100,6 +100,12 @@ export interface ApiError {
   code: string;
   msg: string;
 }
+/**
+ * SatisfactoryApiError represents an error during communication with Satisfactory API.
+ */
+export interface SatisfactoryApiError {
+  Message: string;
+}
 
 //////////
 // source: factory_stats.go
@@ -108,6 +114,8 @@ export interface MachineEfficiency {
   machinesOperating: number /* int */;
   machinesIdle: number /* int */;
   machinesPaused: number /* int */;
+  machinesUnconfigured: number /* int */;
+  machinesUnknown: number /* int */;
 }
 export interface FactoryStats {
   totalMachines: number /* int */;
@@ -124,6 +132,7 @@ export const PowerTypeCoal: PowerType = "coal";
 export const PowerTypeFuel: PowerType = "fuel";
 export const PowerTypeGeothermal: PowerType = "geothermal";
 export const PowerTypeNuclear: PowerType = "nuclear";
+export const PowerTypeUnknown: PowerType = "unknown";
 export interface PowerSource {
   count: number /* int */;
   totalProduction: number /* float64 */;
@@ -244,6 +253,7 @@ export const SatisfactoryEventTrainSetup: SatisfactoryEventType = "trainSetup";
 export const SatisfactoryEventDrones: SatisfactoryEventType = "drones";
 export const SatisfactoryEventDroneStations: SatisfactoryEventType = "droneStations";
 export const SatisfactoryEventDroneSetup: SatisfactoryEventType = "droneSetup";
+export const SatisfactoryEventSessionUpdate: SatisfactoryEventType = "sessionUpdate";
 export const SatisfactoryEventKey: string = "satisfactory_events";
 export interface SatisfactoryEvent {
   type: SatisfactoryEventType;
@@ -252,6 +262,76 @@ export interface SatisfactoryEvent {
 export interface SseSatisfactoryEvent extends SatisfactoryEvent {
   clientId: number /* int64 */;
 }
+
+//////////
+// source: session.go
+
+/**
+ * Session represents a Satisfactory server connection target
+ */
+export interface Session {
+  id: string; // UUID
+  name: string; // User-provided display name
+  address: string; // IP:port (e.g., "192.168.1.100:8080")
+  sessionName: string; // From getSessionInfo API
+  isMock: boolean; // True for mock session
+  isOnline: boolean; // Current connection status
+  isPaused: boolean; // True if polling is paused by user
+  createdAt: string;
+}
+/**
+ * SessionInfoRaw represents the raw response from Satisfactory's getSessionInfo endpoint (PascalCase)
+ */
+export interface SessionInfoRaw {
+  SessionName: string;
+  IsPaused: boolean;
+  DayLength: number /* int */;
+  NightLength: number /* int */;
+  PassedDays: number /* int */;
+  NumberOfDaysSinceLastDeath: number /* int */;
+  Hours: number /* int */;
+  Minutes: number /* int */;
+  Seconds: number /* float64 */;
+  IsDay: boolean;
+  TotalPlayDuration: number /* int */;
+  TotalPlayDurationText: string;
+}
+/**
+ * SessionInfo is the normalized DTO sent to the frontend (camelCase)
+ */
+export interface SessionInfo {
+  sessionName: string;
+  isPaused: boolean;
+  dayLength: number /* int */;
+  nightLength: number /* int */;
+  passedDays: number /* int */;
+  numberOfDaysSinceLastDeath: number /* int */;
+  hours: number /* int */;
+  minutes: number /* int */;
+  seconds: number /* float64 */;
+  isDay: boolean;
+  totalPlayDuration: number /* int */;
+  totalPlayDurationText: string;
+}
+/**
+ * CreateSessionRequest is the request body for creating a new session
+ */
+export interface CreateSessionRequest {
+  name: string;
+  address: string; // Required for non-mock sessions
+  isMock: boolean;
+}
+/**
+ * UpdateSessionRequest is the request body for updating a session (all fields optional)
+ */
+export interface UpdateSessionRequest {
+  name?: string;
+  isPaused?: boolean;
+}
+/**
+ * SessionDTO is the data transfer object for Session
+ */
+export type SessionDTO = Session;
 
 //////////
 // source: sink_stats.go
@@ -288,10 +368,11 @@ export const TrainTypeFreight: TrainType = "freight";
 export const TrainTypeLocomotive: TrainType = "locomotive";
 export type TrainStatus = string;
 export const TrainStatusSelfDriving: TrainStatus = "selfDriving";
-export const TrainStatusManual: TrainStatus = "manualDriving";
+export const TrainStatusManualDriving: TrainStatus = "manualDriving";
 export const TrainStatusParked: TrainStatus = "parked";
 export const TrainStatusDocking: TrainStatus = "docking";
 export const TrainStatusDerailed: TrainStatus = "derailed";
+export const TrainStatusUnknown: TrainStatus = "unknown";
 export interface TrainVehicle {
   type: TrainType;
   capacity: number /* float64 */;
