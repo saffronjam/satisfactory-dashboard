@@ -112,6 +112,8 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
             justifyContent: 'center',
             my: 3,
             position: 'relative',
+            overflowX: 'auto',
+            pb: 1,
           }}
         >
           {/* Home Station */}
@@ -122,6 +124,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
               alignItems: 'center',
               zIndex: 1,
               minWidth: 80,
+              flexShrink: 0,
             }}
           >
             <Box
@@ -139,17 +142,18 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
                 mt: 0.5,
                 fontWeight: isAtHome ? 'bold' : 'normal',
                 color: isAtHome ? theme.palette.primary.main : theme.palette.text.secondary,
+                whiteSpace: 'nowrap',
               }}
             >
               {getHomeName()}
             </Typography>
-            <Typography variant="caption" color="textSecondary">
+            <Typography variant="caption" color="textSecondary" sx={{ whiteSpace: 'nowrap' }}>
               Home
             </Typography>
           </Box>
 
           {/* Ellipse Route with SVG */}
-          <Box sx={{ position: 'relative', width: 180, height: 80, mx: 1 }}>
+          <Box sx={{ position: 'relative', width: 180, height: 80, mx: 1, flexShrink: 0 }}>
             <svg
               width="180"
               height="80"
@@ -241,6 +245,7 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
               alignItems: 'center',
               zIndex: 1,
               minWidth: 80,
+              flexShrink: 0,
             }}
           >
             <Box
@@ -258,11 +263,12 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
                 mt: 0.5,
                 fontWeight: !isAtHome ? 'bold' : 'normal',
                 color: !isAtHome ? theme.palette.primary.main : theme.palette.text.secondary,
+                whiteSpace: 'nowrap',
               }}
             >
               {getPairedName()}
             </Typography>
-            <Typography variant="caption" color="textSecondary">
+            <Typography variant="caption" color="textSecondary" sx={{ whiteSpace: 'nowrap' }}>
               Paired
             </Typography>
           </Box>

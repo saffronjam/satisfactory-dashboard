@@ -207,14 +207,14 @@ export function TrainsView() {
             </Box>
 
             {/* Filters */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
               <TextField
                 label="Search by name"
                 variant="outlined"
                 size="small"
                 value={nameFilter}
                 onChange={(e) => setNameFilter(e.target.value)}
-                sx={{ minWidth: 200 }}
+                sx={{ flex: 1, minWidth: 0 }}
               />
               <Autocomplete
                 multiple
@@ -241,7 +241,7 @@ export function TrainsView() {
                 renderInput={(params) => (
                   <TextField {...params} label="Filter by status" placeholder="Status" />
                 )}
-                sx={{ minWidth: 250 }}
+                sx={{ flex: 1, minWidth: 0 }}
               />
             </Box>
 

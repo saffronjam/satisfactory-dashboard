@@ -122,7 +122,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
           </Stack>
         </Box>
         <Grid container spacing={2}>
-          <Grid size={{ xs: 3 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             <Card
               variant="outlined"
               sx={{
@@ -138,7 +138,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
               <Typography variant="body2">Power Capacity</Typography>
             </Card>
           </Grid>
-          <Grid size={{ xs: 3 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             <Card
               variant="outlined"
               sx={{
@@ -154,7 +154,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
               <Typography variant="body2">Power Production</Typography>
             </Card>
           </Grid>
-          <Grid size={{ xs: 3 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             <Card
               variant="outlined"
               sx={{
@@ -170,7 +170,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
               <Typography variant="body2">Current Consumption</Typography>
             </Card>
           </Grid>
-          <Grid size={{ xs: 3 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             <Card
               variant="outlined"
               sx={{
@@ -191,13 +191,13 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
         {hasBattery && (
           <>
             <Grid container sx={{ marginTop: '30px' }}>
-              <Grid size={{ xs: 3 }}>
+              <Grid size={{ xs: 6, sm: 3 }}>
                 <Typography variant="h6">Battery</Typography>
               </Grid>
               <Grid></Grid>
             </Grid>
             <Grid container spacing={2} sx={{ marginTop: '20px' }}>
-              <Grid size={{ xs: 3 }}>
+              <Grid size={{ xs: 6, sm: 3 }}>
                 <Card
                   variant="outlined"
                   sx={{
@@ -213,7 +213,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
                   <Typography variant="body2">Battery Capacity</Typography>
                 </Card>
               </Grid>
-              <Grid size={{ xs: 3 }}>
+              <Grid size={{ xs: 6, sm: 3 }}>
                 <Card
                   variant="outlined"
                   sx={{
@@ -231,7 +231,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
                   <Typography variant="body2">Battery Percent</Typography>
                 </Card>
               </Grid>
-              <Grid size={{ xs: 3 }}>
+              <Grid size={{ xs: 6, sm: 3 }}>
                 <Card
                   variant="outlined"
                   sx={{
@@ -249,7 +249,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
                   <Typography variant="body2">Battery Differential</Typography>
                 </Card>
               </Grid>
-              <Grid size={{ xs: 3 }}>
+              <Grid size={{ xs: 6, sm: 3 }}>
                 <Card
                   variant="outlined"
                   sx={{

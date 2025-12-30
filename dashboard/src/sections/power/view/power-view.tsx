@@ -34,7 +34,7 @@ export function PowerView() {
     <DashboardContent maxWidth="xl">
       <Container sx={{ paddingTop: '50px' }}>
         <Grid container spacing={2} sx={{ marginBottom: '30px' }}>
-          <Grid size={{ xs: 3 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             <Card sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}>
               <Typography variant="h3">
                 {api.isLoading ? (
@@ -51,7 +51,7 @@ export function PowerView() {
               <Typography>Total Power Capacity</Typography>
             </Card>
           </Grid>
-          <Grid size={{ xs: 3 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             <Card sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}>
               <Typography variant="h3">
                 {api.isLoading ? (
@@ -68,7 +68,7 @@ export function PowerView() {
               <Typography>Total Production</Typography>
             </Card>
           </Grid>
-          <Grid size={{ xs: 3 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             <Card sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}>
               <Typography variant="h3">
                 {api.isLoading ? (
@@ -85,7 +85,7 @@ export function PowerView() {
               <Typography>Battery Capacity</Typography>
             </Card>
           </Grid>
-          <Grid size={{ xs: 3 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             {api.isLoading ? (
               <Skeleton
                 sx={{
@@ -149,7 +149,7 @@ export function PowerView() {
             <Card sx={{ marginBottom: '30px', padding: '20px', opacity: 0.5 }}>
               <CardContent>
                 <Grid container sx={{ marginBottom: '20px' }}>
-                  <Grid size={{ xs: 3 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
                     <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                       <Skeleton width={'80px'} />
                     </Box>
@@ -159,7 +159,7 @@ export function PowerView() {
                   </Grid>
                 </Grid>
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 3 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
                     <Card
                       variant="outlined"
                       sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}
@@ -172,7 +172,7 @@ export function PowerView() {
                       </Typography>
                     </Card>
                   </Grid>
-                  <Grid size={{ xs: 3 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
                     <Card
                       variant="outlined"
                       sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}
@@ -185,7 +185,7 @@ export function PowerView() {
                       </Typography>
                     </Card>
                   </Grid>
-                  <Grid size={{ xs: 3 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
                     <Card
                       variant="outlined"
                       sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}
@@ -198,7 +198,7 @@ export function PowerView() {
                       </Typography>
                     </Card>
                   </Grid>
-                  <Grid size={{ xs: 3 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
                     <Card
                       variant="outlined"
                       sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}
@@ -214,7 +214,7 @@ export function PowerView() {
                 </Grid>
 
                 <Grid container sx={{ marginTop: '30px' }}>
-                  <Grid size={{ xs: 3 }}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
                     <Typography variant="h6">Battery</Typography>
                   </Grid>
                   <Grid>
