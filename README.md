@@ -6,6 +6,14 @@
 
 A real-time dashboard for monitoring and managing your Satisfactory factory.
 
+## Requirements
+
+This dashboard is built on the [Ficsit Remote Monitoring (FRM)](https://github.com/porisius/FicsitRemoteMonitoring) mod, which exposes factory data via an API. You must have FRM installed and running in your Satisfactory game for the dashboard to work.
+
+**Installing the mod:**
+
+Use [Satisfactory Mod Manager](https://docs.ficsit.app/) to install and manage mods. Search for "Ficsit Remote Monitoring" in the mod manager and install it. Once in-game, start with `/frm http start` (See docs [here](https://docs.ficsit.app/ficsitremotemonitoring/latest/commands.html)). This should print the port that is exposed. After that, you can add your session endpoint in this dashboard.
+
 ## Features
 
 - Factory statistics visualization (energy, resources, sink points)
