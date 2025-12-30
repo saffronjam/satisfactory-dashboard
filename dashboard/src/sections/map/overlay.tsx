@@ -56,21 +56,52 @@ type OverlayProps = {
   machineGroups: MachineGroup[];
   onSelectItem: (item: SelectedMapItem | null) => void;
   onZoomEnd: (zoom: number) => void;
+  multiSelectMode?: boolean; // For mobile: programmatic multi-select mode
 };
 
-export function Overlay({ machineGroups, onSelectItem, onZoomEnd }: OverlayProps) {
+export function Overlay({
+  machineGroups,
+  onSelectItem,
+  onZoomEnd,
+  multiSelectMode = false,
+}: OverlayProps) {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
     start: L.LatLng;
     end: L.LatLng;
   } | null>(null);
 
+  // Helper to complete selection
+  const completeSelection = (endLatLng: L.LatLng) => {
+    if (!selectionRect) return;
+
+    const bounds = L.latLngBounds(selectionRect.start, endLatLng);
+
+    // Find all groups within the selection rectangle
+    const selectedGroups = machineGroups.filter((group) => {
+      const position = ConvertToMapCoords2(group.center.x, group.center.y);
+      return bounds.contains(position);
+    });
+
+    if (selectedGroups.length > 1) {
+      onSelectItem({ type: 'machineGroups', data: selectedGroups });
+    } else if (selectedGroups.length === 1) {
+      onSelectItem({ type: 'machineGroup', data: selectedGroups[0] });
+    } else {
+      onSelectItem(null);
+    }
+
+    setIsSelecting(false);
+    setSelectionRect(null);
+  };
+
   const map = useMapEvents({
     zoomend: () => {
       onZoomEnd(map.getZoom());
     },
     mousedown: (e) => {
-      if (e.originalEvent.ctrlKey || e.originalEvent.metaKey) {
+      // Start selection if Ctrl/Meta key is pressed OR if multiSelectMode is enabled
+      if (e.originalEvent.ctrlKey || e.originalEvent.metaKey || multiSelectMode) {
         e.originalEvent.preventDefault();
         setIsSelecting(true);
         setSelectionRect({ start: e.latlng, end: e.latlng });
@@ -84,31 +115,81 @@ export function Overlay({ machineGroups, onSelectItem, onZoomEnd }: OverlayProps
     },
     mouseup: (e) => {
       if (isSelecting && selectionRect) {
-        const bounds = L.latLngBounds(selectionRect.start, e.latlng);
-
-        // Find all groups within the selection rectangle
-        const selectedGroups = machineGroups.filter((group) => {
-          const position = ConvertToMapCoords2(group.center.x, group.center.y);
-          return bounds.contains(position);
-        });
-
-        if (selectedGroups.length > 1) {
-          onSelectItem({ type: 'machineGroups', data: selectedGroups });
-        } else if (selectedGroups.length === 1) {
-          onSelectItem({ type: 'machineGroup', data: selectedGroups[0] });
-        } else {
-          onSelectItem(null);
-        }
-
-        setIsSelecting(false);
-        setSelectionRect(null);
+        completeSelection(e.latlng);
         map.dragging.enable();
       }
     },
   });
 
-  // Track CTRL key for cursor change
+  // Handle touch events for mobile multi-select
   useEffect(() => {
+    if (!multiSelectMode) return;
+
+    const container = map.getContainer();
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (!multiSelectMode || e.touches.length !== 1) return;
+
+      e.preventDefault();
+      const touch = e.touches[0];
+      const point = L.point(touch.clientX, touch.clientY);
+      const containerPoint = point.subtract(
+        L.point(container.getBoundingClientRect().left, container.getBoundingClientRect().top)
+      );
+      const latlng = map.containerPointToLatLng(containerPoint);
+
+      setIsSelecting(true);
+      setSelectionRect({ start: latlng, end: latlng });
+      map.dragging.disable();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isSelecting || !selectionRect || e.touches.length !== 1) return;
+
+      e.preventDefault();
+      const touch = e.touches[0];
+      const point = L.point(touch.clientX, touch.clientY);
+      const containerPoint = point.subtract(
+        L.point(container.getBoundingClientRect().left, container.getBoundingClientRect().top)
+      );
+      const latlng = map.containerPointToLatLng(containerPoint);
+
+      setSelectionRect({ ...selectionRect, end: latlng });
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!isSelecting || !selectionRect) return;
+
+      e.preventDefault();
+      // Use the last known position from selectionRect.end
+      completeSelection(selectionRect.end);
+      map.dragging.enable();
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [multiSelectMode, map, isSelecting, selectionRect, machineGroups, onSelectItem]);
+
+  // Update cursor when multiSelectMode changes
+  useEffect(() => {
+    if (multiSelectMode) {
+      map.getContainer().style.cursor = 'crosshair';
+    } else {
+      map.getContainer().style.cursor = '';
+    }
+  }, [multiSelectMode, map]);
+
+  // Track CTRL key for cursor change (desktop only, not needed when multiSelectMode is active)
+  useEffect(() => {
+    if (multiSelectMode) return; // Skip keyboard handling when in programmatic mode
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control' || e.key === 'Meta') {
         map.getContainer().style.cursor = 'crosshair';
@@ -125,7 +206,7 @@ export function Overlay({ machineGroups, onSelectItem, onZoomEnd }: OverlayProps
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [map]);
+  }, [map, multiSelectMode]);
 
   // Get all entity types present in a group
   const getGroupEntityTypes = (group: MachineGroup) => {

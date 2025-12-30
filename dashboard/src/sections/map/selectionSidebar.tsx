@@ -1,5 +1,6 @@
-import { Box, Chip, Divider, Typography, useTheme } from '@mui/material';
-import { useState } from 'react';
+import { Box, Chip, Divider, IconButton, Typography, useTheme } from '@mui/material';
+import { Iconify } from 'src/components/iconify';
+import { useRef, useState } from 'react';
 import {
   Drone,
   DroneStation,
@@ -42,13 +43,82 @@ const getDockedDrones = (station: DroneStation, drones: Drone[]): Drone[] => {
   );
 };
 
-export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapItem | null }) => {
+type SelectionSidebarProps = {
+  selectedItem: SelectedMapItem | null;
+  isMobile?: boolean;
+  onClose?: () => void;
+};
+
+export const SelectionSidebar = ({
+  selectedItem,
+  isMobile = false,
+  onClose,
+}: SelectionSidebarProps) => {
   const theme = useTheme();
   const [activeView, setActiveView] = useState<SidebarView>('items');
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const dragStartY = useRef<number | null>(null);
 
-  // Get trains and drones from API context
+  // Get trains and drones from API context - MUST be before any conditional returns
   const trains = useContextSelector(ApiContext, (v) => v.trains) || [];
   const drones = useContextSelector(ApiContext, (v) => v.drones) || [];
+
+  // Animated close function
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      setIsExpanded(false);
+      onClose?.();
+    }, 250); // Match transition duration
+  };
+
+  // Touch handlers for drag-to-close/expand
+  const handleTouchStart = (e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (dragStartY.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - dragStartY.current;
+    // Positive diff = dragging down, negative diff = dragging up
+    setDragOffset(diff);
+  };
+
+  const handleTouchEnd = () => {
+    const threshold = 60;
+    const closeThreshold = 150; // Need to drag much further to close
+
+    if (isExpanded) {
+      // From expanded state: drag down to collapse
+      if (dragOffset > threshold) {
+        // Dragged down - collapse to default
+        setIsExpanded(false);
+      }
+      // Otherwise stay expanded
+    } else {
+      // From default state: drag up to expand, drag down far to close
+      if (dragOffset < -threshold) {
+        // Dragged up - expand
+        setIsExpanded(true);
+      } else if (dragOffset > closeThreshold) {
+        // Dragged down a lot - close with animation
+        handleClose();
+      }
+      // Otherwise stay at default
+    }
+
+    setDragOffset(0);
+    dragStartY.current = null;
+  };
+
+  // On mobile, don't render if nothing is selected (but allow closing animation)
+  if (isMobile && !selectedItem && !isClosing) {
+    return null;
+  }
 
   // Get total vehicles (docked trains + drones) for a group
   const getTotalVehicles = (group: MachineGroup) => {
@@ -105,7 +175,8 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
 
   // Aggregate building types from machine groups
   const getBuildingCounts = (groups: MachineGroup[]) => {
-    const counts: Record<string, number> = {};
+    // Use Object.create(null) to avoid prototype pollution (e.g., "constructor" key)
+    const counts: Record<string, number> = Object.create(null);
     groups.forEach((g) => {
       g.machines.forEach((m) => {
         counts[m.type] = (counts[m.type] || 0) + 1;
@@ -119,7 +190,8 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
     const generators = groups.flatMap((g) =>
       g.machines.filter((m) => m.category === MachineCategoryGenerator)
     );
-    const powerByType: Record<string, { count: number; production: number }> = {};
+    // Use Object.create(null) to avoid prototype pollution (e.g., "constructor" key)
+    const powerByType: Record<string, { count: number; production: number }> = Object.create(null);
     generators.forEach((gen) => {
       // Power is stored as an output item with name "Power"
       const production = gen.output.find((o) => o.name === 'Power')?.current || 0;
@@ -181,7 +253,7 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
             }}
           >
             <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Building</Box>
-            <Box sx={{ fontWeight: 'bold' }}>{machineGroup.machines[0].type}</Box>
+            <Box sx={{ fontWeight: 'bold' }}>{formatMachineType(machineGroup.machines[0].type)}</Box>
           </Box>
         ) : (
           <Box
@@ -1507,23 +1579,126 @@ export const SelectionSidebar = ({ selectedItem }: { selectedItem: SelectedMapIt
     </Box>
   );
 
+  // Desktop styles
+  const desktopStyles = {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    bottom: 16,
+    width: 300,
+    borderRadius: '10px',
+  };
+
+  // Mobile styles - bottom sheet with snap points
+  const defaultHeight = 33; // vh
+  const expandedHeight = 75; // vh
+
+  // Calculate visual height during drag
+  const dragHeightAdjust =
+    dragOffset < 0
+      ? Math.min(expandedHeight - defaultHeight, (Math.abs(dragOffset) / window.innerHeight) * 100)
+      : 0;
+  const visualHeight = isExpanded
+    ? expandedHeight -
+      (dragOffset > 0
+        ? Math.min((dragOffset / window.innerHeight) * 100, expandedHeight - defaultHeight)
+        : 0)
+    : defaultHeight + dragHeightAdjust;
+
+  const mobileStyles = {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: `${visualHeight}vh`,
+    borderRadius: '16px 16px 0 0',
+  };
+
   return (
     <Box
       sx={{
-        position: 'absolute',
-        top: 16,
-        right: 16,
-        bottom: 16,
-        width: 300,
+        ...(isMobile ? mobileStyles : desktopStyles),
         backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.95),
         backdropFilter: 'blur(8px)',
         zIndex: 1000,
         boxShadow: '0 0 15px rgba(0, 0, 0, 0.8)',
-        borderRadius: '10px',
         overflow: 'auto',
+        // Apply drag offset transform when dragging down from default state (closing)
+        ...(isMobile &&
+          !isExpanded &&
+          dragOffset > 0 &&
+          !isClosing && {
+            transform: `translateY(${dragOffset}px)`,
+          }),
+        // Closing animation - slide down off screen
+        ...(isMobile &&
+          isClosing && {
+            transform: 'translateY(100%)',
+            transition: 'transform 0.25s ease-in',
+          }),
+        // No transition during drag
+        ...(isMobile &&
+          dragOffset !== 0 &&
+          !isClosing && {
+            transition: 'none',
+          }),
+        // Smooth transition when snapping
+        ...(isMobile &&
+          dragOffset === 0 &&
+          !isClosing && {
+            transition: 'height 0.25s ease-out, transform 0.25s ease-out',
+          }),
       }}
     >
-      <Box sx={{ padding: 2 }}>
+      {/* Mobile drag handle area - sticky at top */}
+      {isMobile && (
+        <Box
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          sx={{
+            position: 'sticky',
+            top: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: 36,
+            cursor: 'grab',
+            touchAction: 'none',
+            backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.95),
+            backdropFilter: 'blur(8px)',
+            zIndex: 1,
+            borderRadius: '16px 16px 0 0',
+          }}
+        >
+          {/* Drag handle */}
+          <Box
+            sx={{
+              width: 40,
+              height: 4,
+              backgroundColor: theme.palette.grey[500],
+              borderRadius: 2,
+            }}
+          />
+          {/* Close button */}
+          <IconButton
+            onClick={handleClose}
+            size="small"
+            sx={{
+              position: 'absolute',
+              right: 8,
+              padding: 0.5,
+              color: theme.palette.grey[500],
+              '&:hover': {
+                color: theme.palette.grey[300],
+              },
+            }}
+          >
+            <Iconify icon="mdi:close" width={18} />
+          </IconButton>
+        </Box>
+      )}
+      <Box sx={{ padding: 2, pt: isMobile ? 1 : 2 }}>
         {!selectedItem && renderEmpty()}
         {selectedItem?.type === 'machineGroup' && renderMachineGroup()}
         {selectedItem?.type === 'machineGroups' && renderMachineGroups()}

@@ -12,6 +12,7 @@ import {
   Popover,
   Slider,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { CRS } from 'leaflet';
@@ -53,6 +54,7 @@ const filterCategories: { key: FilterCategory; label: string }[] = [
 
 export function MapView() {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const api = useContextSelector(ApiContext, (v) => {
     return {
       factoryStats: v.factoryStats,
@@ -75,6 +77,7 @@ export function MapView() {
   );
   const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
   const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
 
   // Calculate effective group distance
   const groupDistance = autoGroup ? zoomToGroupDistance(zoom) : manualGroupDistance;
@@ -146,6 +149,10 @@ export function MapView() {
 
   const handleSelectItem = (item: SelectedMapItem | null) => {
     setSelectedItem(item);
+    // Auto-disable multi-select mode after a selection is made
+    if (item && multiSelectMode) {
+      setMultiSelectMode(false);
+    }
   };
 
   return (
@@ -175,7 +182,7 @@ export function MapView() {
           sx={{
             position: 'fixed',
             top: 16,
-            left: 'calc(var(--layout-nav-vertical-width) + 16px)',
+            left: isMobile ? 16 : 'calc(var(--layout-nav-vertical-width) + 16px)',
             right: 16,
             bottom: 16,
             zIndex: 1,
@@ -186,26 +193,48 @@ export function MapView() {
             sx={{
               position: 'absolute',
               top: 16,
-              right: 324, // 300px sidebar + 24px margin
+              right: isMobile ? 16 : 324, // On mobile: no sidebar offset; Desktop: 300px sidebar + 24px margin
               zIndex: 1000,
               display: 'flex',
               gap: 1,
             }}
           >
-            {/* Help Button */}
+            {/* Multi-select toggle button (works alongside Ctrl+drag) */}
             <IconButton
-              onClick={(e) => setHelpAnchor(e.currentTarget)}
+              onClick={() => setMultiSelectMode(!multiSelectMode)}
               size="small"
               sx={{
-                backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
+                backgroundColor: multiSelectMode
+                  ? theme.palette.primary.main
+                  : varAlpha(theme.palette.background.paperChannel, 0.9),
                 backdropFilter: 'blur(8px)',
+                color: multiSelectMode ? theme.palette.primary.contrastText : 'inherit',
                 '&:hover': {
-                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
+                  backgroundColor: multiSelectMode
+                    ? theme.palette.primary.dark
+                    : varAlpha(theme.palette.background.paperChannel, 1),
                 },
               }}
             >
-              <Iconify icon="mdi:help-circle-outline" />
+              <Iconify icon="mdi:selection-drag" />
             </IconButton>
+
+            {/* Help Button (desktop only) */}
+            {!isMobile && (
+              <IconButton
+                onClick={(e) => setHelpAnchor(e.currentTarget)}
+                size="small"
+                sx={{
+                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
+                  backdropFilter: 'blur(8px)',
+                  '&:hover': {
+                    backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
+                  },
+                }}
+              >
+                <Iconify icon="mdi:help-circle-outline" />
+              </IconButton>
+            )}
 
             {/* Settings Menu Button */}
             <IconButton
@@ -394,10 +423,15 @@ export function MapView() {
               machineGroups={machineGroups}
               onSelectItem={handleSelectItem}
               onZoomEnd={setZoom}
+              multiSelectMode={multiSelectMode}
             />
           </MapContainer>
 
-          <SelectionSidebar selectedItem={selectedItem} />
+          <SelectionSidebar
+            selectedItem={selectedItem}
+            isMobile={isMobile}
+            onClose={() => setSelectedItem(null)}
+          />
         </Box>
       )}
     </DashboardContent>
