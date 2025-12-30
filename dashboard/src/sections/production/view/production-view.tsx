@@ -3,7 +3,9 @@ import {
   Box,
   Checkbox,
   CircularProgress,
-  FormControlLabel,
+  ListItemText,
+  MenuItem,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -22,6 +24,7 @@ import { Iconify } from 'src/components/iconify';
 import { ApiContext, ApiContextType } from 'src/contexts/api/useApi';
 import { useSettings } from 'src/hooks/use-settings';
 import { DashboardContent } from 'src/layouts/dashboard';
+import { alpha } from '@mui/material/styles';
 import { varAlpha } from 'src/theme/styles';
 import { fShortenNumber, MetricUnits, PerMinuteMetricUnits } from 'src/utils/format-number';
 import { useContextSelector } from 'use-context-selector';
@@ -69,7 +72,7 @@ function calculateTrend(data: number[]): number {
 }
 
 const columns: readonly Column[] = [
-  { id: 'icon', label: '', minWidth: 64, align: 'center' },
+  { id: 'icon', label: '', minWidth: 44, align: 'center' },
   { id: 'name', label: 'Name', minWidth: 100, align: 'left' },
 
   {
@@ -251,29 +254,29 @@ export function ProductionView() {
   };
 
   const sortedRows = React.useMemo(() => {
-    if (api.isLoading) {
+    if (api.isLoading || !api.prodStats?.items) {
       return [];
     }
 
-    const rows =
-      api.prodStats.items
-        .filter((item) => settings.productionView.includeItems || item.minable)
-        .filter((item) => settings.productionView.includeMinable || !item.minable)
-        .map((item) => ({
-          name: item.name,
-          inventory: item.count,
-          production: item.producedPerMinute,
-          consumption: item.consumedPerMinute,
-          'production efficiency': item.produceEfficiency,
-          'consumption efficiency': item.consumeEfficiency,
-        })) || [];
+    const rows = api.prodStats.items
+      .filter((item) => settings.productionView.includeItems || item.minable)
+      .filter((item) => settings.productionView.includeMinable || !item.minable)
+      .map((item, idx) => ({
+        id: `${item.name}-${item.minable}-${idx}`,
+        name: item.name,
+        inventory: item.count,
+        production: item.producedPerMinute,
+        consumption: item.consumedPerMinute,
+        'production efficiency': item.produceEfficiency,
+        'consumption efficiency': item.consumeEfficiency,
+      }));
 
     if (sortColumn == 'icon') {
       return rows;
     }
 
     if (sortColumn) {
-      rows.sort((a, b) => {
+      return [...rows].sort((a, b) => {
         const aValue = a[sortColumn];
         const bValue = b[sortColumn];
         const compareResult =
@@ -289,7 +292,14 @@ export function ProductionView() {
       });
     }
     return rows;
-  }, [api, sortColumn, sortDirection, settings.productionView.includeItems]);
+  }, [
+    api.isLoading,
+    api.prodStats?.items,
+    sortColumn,
+    sortDirection,
+    settings.productionView.includeItems,
+    settings.productionView.includeMinable,
+  ]);
 
   const filteredRows = sortedRows.filter((row) => {
     return Object.values(row).some((value) =>
@@ -312,15 +322,94 @@ export function ProductionView() {
 
       {!api.isLoading && (
         <DashboardContent maxWidth="xl">
+          {/* Search and Filters */}
+          <Box display="flex" alignItems="center" gap={2} sx={{ mb: 2 }}>
+            <TextField
+              label="Search"
+              size="small"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              sx={{ flex: 1, minWidth: 0 }}
+            />
+
+            <Select
+              multiple
+              size="small"
+              value={[
+                ...(settings.productionView.includeMinable ? ['minable'] : []),
+                ...(settings.productionView.includeItems ? ['items'] : []),
+                ...(settings.productionView.showTrend ? ['trends'] : []),
+              ]}
+              onChange={(event) => {
+                const value = event.target.value as string[];
+                saveSettings({
+                  ...settings,
+                  productionView: {
+                    ...settings.productionView,
+                    includeMinable: value.includes('minable'),
+                    includeItems: value.includes('items'),
+                    showTrend: value.includes('trends'),
+                  },
+                });
+              }}
+              displayEmpty
+              renderValue={(selected) => {
+                if (selected.length === 0) return 'Filters';
+                return `${selected.length} filter${selected.length > 1 ? 's' : ''}`;
+              }}
+              sx={{ minWidth: 120 }}
+            >
+              <MenuItem value="minable">
+                <Checkbox checked={settings.productionView.includeMinable} />
+                <ListItemText primary="Minable" />
+              </MenuItem>
+              <MenuItem value="items">
+                <Checkbox checked={settings.productionView.includeItems} />
+                <ListItemText primary="Items" />
+              </MenuItem>
+              <MenuItem value="trends">
+                <Checkbox checked={settings.productionView.showTrend} />
+                <ListItemText primary="Show Trends" />
+              </MenuItem>
+            </Select>
+          </Box>
+
           <TableContainer
             sx={{
               backgroundColor: theme.palette.background.neutral,
-              height: 'calc(100vh - 200px)',
+              maxHeight: 'calc(100vh - 280px)',
               borderTopLeftRadius: 15,
               borderTopRightRadius: 15,
+              // Overlay scrollbar styling
+              overflow: 'overlay',
+              scrollbarGutter: 'stable',
+              '&::-webkit-scrollbar': {
+                width: 8,
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: alpha(theme.palette.grey[600], 0.5),
+                borderRadius: 4,
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                backgroundColor: alpha(theme.palette.grey[600], 0.8),
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: 'transparent',
+              },
             }}
           >
-            <Table stickyHeader aria-label="sticky table">
+            <Table
+              stickyHeader
+              aria-label="sticky table"
+              sx={{
+                '& .MuiTableCell-root': {
+                  paddingLeft: 1,
+                  paddingRight: 1,
+                  paddingBottom: 0.5,
+                  paddingTop: 0.5,
+                },
+              }}
+            >
               <TableHead>
                 <TableRow>
                   {columns.map((column) => (
@@ -329,8 +418,8 @@ export function ProductionView() {
                       align={column.align}
                       style={{
                         minWidth: column.minWidth,
-                        backgroundColor: theme.palette.primary.darker,
-                        color: theme.palette.primary.contrastText,
+                        backgroundColor: theme.palette.background.default,
+                        color: theme.palette.text.primary,
                         cursor: column.id !== 'icon' ? 'pointer' : 'default',
                       }}
                       onClick={() => {
@@ -359,7 +448,7 @@ export function ProductionView() {
                             fontSize="small"
                             sx={{
                               ml: 0.5,
-                              color: sortColumn === column.id ? 'white' : 'transparent',
+                              color: sortColumn === column.id ? 'text.primary' : 'transparent',
                             }}
                           />
                         ) : (
@@ -368,7 +457,7 @@ export function ProductionView() {
                             fontSize="small"
                             sx={{
                               ml: 0.5,
-                              color: sortColumn === column.id ? 'white' : 'transparent',
+                              color: sortColumn === column.id ? 'text.primary' : 'transparent',
                             }}
                           />
                         )}
@@ -386,7 +475,7 @@ export function ProductionView() {
                         hover
                         role="checkbox"
                         tabIndex={-1}
-                        key={row.name}
+                        key={row.id}
                         sx={{
                           backgroundColor:
                             index % 2 === 0
@@ -400,9 +489,8 @@ export function ProductionView() {
                               <TableCell key={column.id} align={column.align}>
                                 <div
                                   style={{
-                                    marginLeft: '10px',
-                                    width: '50px',
-                                    height: '50px',
+                                    width: '36px',
+                                    height: '36px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -412,8 +500,8 @@ export function ProductionView() {
                                     src={`assets/images/satisfactory/64x64/${row.name}.png`}
                                     alt={row.name}
                                     style={{
-                                      width: '50px',
-                                      height: '50px',
+                                      width: '36px',
+                                      height: '36px',
                                     }}
                                   />
                                 </div>
@@ -513,96 +601,14 @@ export function ProductionView() {
           </TableContainer>
           <Box
             display="flex"
-            justifyContent="space-between"
+            justifyContent="flex-end"
             alignItems="center"
             sx={{
               backgroundColor: theme.palette.background.neutral,
-              color: theme.palette.primary.contrastText,
               borderBottomLeftRadius: 20,
               borderBottomRightRadius: 20,
             }}
           >
-            <Box display="flex" alignItems="center" sx={{ marginLeft: 4, height: 75 }}>
-              <TextField
-                label="Search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                sx={{ color: 'white', marginRight: 4 }}
-              />
-
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={settings.productionView.includeMinable}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: 'transparent', // Removes hover background color
-                      },
-                    }}
-                  />
-                }
-                label="Minable"
-                sx={{ color: 'white', marginRight: 4 }}
-                onChange={(event: any) =>
-                  saveSettings({
-                    ...settings,
-                    productionView: {
-                      ...settings.productionView,
-                      includeMinable: event.target.checked,
-                    },
-                  })
-                }
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={settings.productionView.includeItems}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: 'transparent', // Removes hover background color
-                      },
-                    }}
-                  />
-                }
-                label="Items"
-                // No hover color
-                sx={{ color: 'white', marginRight: 4 }}
-                onChange={(event: any) =>
-                  saveSettings({
-                    ...settings,
-                    productionView: {
-                      ...settings.productionView,
-                      includeItems: event.target.checked,
-                    },
-                  })
-                }
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={settings.productionView.showTrend}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: 'transparent', // Removes hover background color
-                      },
-                    }}
-                  />
-                }
-                label="Show Trends"
-                // No hover color
-                sx={{ color: 'white', marginRight: 4 }}
-                onChange={(event: any) =>
-                  saveSettings({
-                    ...settings,
-                    productionView: {
-                      ...settings.productionView,
-                      showTrend: event.target.checked,
-                    },
-                  })
-                }
-              />
-            </Box>
-
             <TablePagination
               rowsPerPageOptions={[10, 25, 100]}
               component="div"
@@ -611,7 +617,6 @@ export function ProductionView() {
               page={page}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
-              sx={{ color: 'white' }}
             />
           </Box>
         </DashboardContent>
