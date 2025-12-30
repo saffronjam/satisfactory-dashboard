@@ -41,9 +41,9 @@ export interface Circuit {
 // source: drone.go
 
 export type DroneStatus = string;
-export const DroneStatusIdle: DroneStatus = 'idle';
-export const DroneStatusFlying: DroneStatus = 'flying';
-export const DroneStatusDocking: DroneStatus = 'docking';
+export const DroneStatusIdle: DroneStatus = "idle";
+export const DroneStatusFlying: DroneStatus = "flying";
+export const DroneStatusDocking: DroneStatus = "docking";
 export interface Drone extends Partial<Location> {
   name: string;
   speed: number /* float64 */;
@@ -91,7 +91,7 @@ export interface DroneSetupDTO {
 // source: error.go
 
 export interface BindingError {
-  validationErrors: { [key: string]: string[] };
+  validationErrors: { [key: string]: string[]};
 }
 export interface ErrorResponse {
   errors: ApiError[];
@@ -127,18 +127,18 @@ export interface FactoryStats {
 // source: generator_stats.go
 
 export type PowerType = string;
-export const PowerTypeBiomass: PowerType = 'biomass';
-export const PowerTypeCoal: PowerType = 'coal';
-export const PowerTypeFuel: PowerType = 'fuel';
-export const PowerTypeGeothermal: PowerType = 'geothermal';
-export const PowerTypeNuclear: PowerType = 'nuclear';
-export const PowerTypeUnknown: PowerType = 'unknown';
+export const PowerTypeBiomass: PowerType = "biomass";
+export const PowerTypeCoal: PowerType = "coal";
+export const PowerTypeFuel: PowerType = "fuel";
+export const PowerTypeGeothermal: PowerType = "geothermal";
+export const PowerTypeNuclear: PowerType = "nuclear";
+export const PowerTypeUnknown: PowerType = "unknown";
 export interface PowerSource {
   count: number /* int */;
   totalProduction: number /* float64 */;
 }
 export interface GeneratorStats {
-  sources: { [key: PowerType]: PowerSource };
+  sources: { [key: PowerType]: PowerSource};
   machines: Machine[];
 }
 
@@ -164,33 +164,33 @@ export interface Location {
 // source: machine.go
 
 export type MachineType = string;
-export const MachineTypeAssembler: MachineType = 'assembler';
-export const MachineTypeConstructor: MachineType = 'constructor';
-export const MachineTypeFoundry: MachineType = 'foundry';
-export const MachineTypeManufacturer: MachineType = 'manufacturer';
-export const MachineTypeRefinery: MachineType = 'refinery';
-export const MachineTypeSmelter: MachineType = 'smelter';
-export const MachineTypeBlender: MachineType = 'blender';
-export const MachineTypePackager: MachineType = 'packager';
-export const MachineTypeParticleAccelerator: MachineType = 'particleAccelerator';
-export const MachineTypeMiner: MachineType = 'miner';
-export const MachineTypeOilExtractor: MachineType = 'oilExtractor';
-export const MachineTypeWaterExtractor: MachineType = 'waterExtractor';
-export const MachineTypeBiomassBurner: MachineType = 'biomassBurner';
-export const MachineTypeCoalGenerator: MachineType = 'coalGenerator';
-export const MachineTypeFuelGenerator: MachineType = 'fuelGenerator';
-export const MachineTypeGeothermalGenerator: MachineType = 'geothermalGenerator';
-export const MachineTypeNuclearPowerPlant: MachineType = 'nuclearPowerPlant';
+export const MachineTypeAssembler: MachineType = "assembler";
+export const MachineTypeConstructor: MachineType = "constructor";
+export const MachineTypeFoundry: MachineType = "foundry";
+export const MachineTypeManufacturer: MachineType = "manufacturer";
+export const MachineTypeRefinery: MachineType = "refinery";
+export const MachineTypeSmelter: MachineType = "smelter";
+export const MachineTypeBlender: MachineType = "blender";
+export const MachineTypePackager: MachineType = "packager";
+export const MachineTypeParticleAccelerator: MachineType = "particleAccelerator";
+export const MachineTypeMiner: MachineType = "miner";
+export const MachineTypeOilExtractor: MachineType = "oilExtractor";
+export const MachineTypeWaterExtractor: MachineType = "waterExtractor";
+export const MachineTypeBiomassBurner: MachineType = "biomassBurner";
+export const MachineTypeCoalGenerator: MachineType = "coalGenerator";
+export const MachineTypeFuelGenerator: MachineType = "fuelGenerator";
+export const MachineTypeGeothermalGenerator: MachineType = "geothermalGenerator";
+export const MachineTypeNuclearPowerPlant: MachineType = "nuclearPowerPlant";
 export type MachineCategory = string;
-export const MachineCategoryFactory: MachineCategory = 'factory';
-export const MachineCategoryExtractor: MachineCategory = 'extractor';
-export const MachineCategoryGenerator: MachineCategory = 'generator';
+export const MachineCategoryFactory: MachineCategory = "factory";
+export const MachineCategoryExtractor: MachineCategory = "extractor";
+export const MachineCategoryGenerator: MachineCategory = "generator";
 export type MachineStatus = string;
-export const MachineStatusOperating: MachineStatus = 'operating';
-export const MachineStatusIdle: MachineStatus = 'idle';
-export const MachineStatusPaused: MachineStatus = 'paused';
-export const MachineStatusUnconfigured: MachineStatus = 'unconfigured';
-export const MachineStatusUnknown: MachineStatus = 'unknown';
+export const MachineStatusOperating: MachineStatus = "operating";
+export const MachineStatusIdle: MachineStatus = "idle";
+export const MachineStatusPaused: MachineStatus = "paused";
+export const MachineStatusUnconfigured: MachineStatus = "unconfigured";
+export const MachineStatusUnknown: MachineStatus = "unknown";
 export interface MachineProdStats {
   name: string;
   stored: number /* float64 */;
@@ -240,21 +240,21 @@ export interface ProdStats {
 // source: satisfactory_event.go
 
 export type SatisfactoryEventType = string;
-export const SatisfactoryEventApiStatus: SatisfactoryEventType = 'satisfactoryApiCheck';
-export const SatisfactoryEventCircuits: SatisfactoryEventType = 'circuits';
-export const SatisfactoryEventFactoryStats: SatisfactoryEventType = 'factoryStats';
-export const SatisfactoryEventProdStats: SatisfactoryEventType = 'prodStats';
-export const SatisfactoryEventSinkStats: SatisfactoryEventType = 'sinkStats';
-export const SatisfactoryEventPlayers: SatisfactoryEventType = 'players';
-export const SatisfactoryEventGeneratorStats: SatisfactoryEventType = 'generatorStats';
-export const SatisfactoryEventTrains: SatisfactoryEventType = 'trains';
-export const SatisfactoryEventTrainStations: SatisfactoryEventType = 'trainsStations';
-export const SatisfactoryEventTrainSetup: SatisfactoryEventType = 'trainSetup';
-export const SatisfactoryEventDrones: SatisfactoryEventType = 'drones';
-export const SatisfactoryEventDroneStations: SatisfactoryEventType = 'droneStations';
-export const SatisfactoryEventDroneSetup: SatisfactoryEventType = 'droneSetup';
-export const SatisfactoryEventSessionUpdate: SatisfactoryEventType = 'sessionUpdate';
-export const SatisfactoryEventKey: string = 'satisfactory_events';
+export const SatisfactoryEventApiStatus: SatisfactoryEventType = "satisfactoryApiCheck";
+export const SatisfactoryEventCircuits: SatisfactoryEventType = "circuits";
+export const SatisfactoryEventFactoryStats: SatisfactoryEventType = "factoryStats";
+export const SatisfactoryEventProdStats: SatisfactoryEventType = "prodStats";
+export const SatisfactoryEventSinkStats: SatisfactoryEventType = "sinkStats";
+export const SatisfactoryEventPlayers: SatisfactoryEventType = "players";
+export const SatisfactoryEventGeneratorStats: SatisfactoryEventType = "generatorStats";
+export const SatisfactoryEventTrains: SatisfactoryEventType = "trains";
+export const SatisfactoryEventTrainStations: SatisfactoryEventType = "trainsStations";
+export const SatisfactoryEventTrainSetup: SatisfactoryEventType = "trainSetup";
+export const SatisfactoryEventDrones: SatisfactoryEventType = "drones";
+export const SatisfactoryEventDroneStations: SatisfactoryEventType = "droneStations";
+export const SatisfactoryEventDroneSetup: SatisfactoryEventType = "droneSetup";
+export const SatisfactoryEventSessionUpdate: SatisfactoryEventType = "sessionUpdate";
+export const SatisfactoryEventKey: string = "satisfactory_events";
 export interface SatisfactoryEvent {
   type: SatisfactoryEventType;
   data: any;
@@ -364,15 +364,15 @@ export interface State {
 // source: train.go
 
 export type TrainType = string;
-export const TrainTypeFreight: TrainType = 'freight';
-export const TrainTypeLocomotive: TrainType = 'locomotive';
+export const TrainTypeFreight: TrainType = "freight";
+export const TrainTypeLocomotive: TrainType = "locomotive";
 export type TrainStatus = string;
-export const TrainStatusSelfDriving: TrainStatus = 'selfDriving';
-export const TrainStatusManualDriving: TrainStatus = 'manualDriving';
-export const TrainStatusParked: TrainStatus = 'parked';
-export const TrainStatusDocking: TrainStatus = 'docking';
-export const TrainStatusDerailed: TrainStatus = 'derailed';
-export const TrainStatusUnknown: TrainStatus = 'unknown';
+export const TrainStatusSelfDriving: TrainStatus = "selfDriving";
+export const TrainStatusManualDriving: TrainStatus = "manualDriving";
+export const TrainStatusParked: TrainStatus = "parked";
+export const TrainStatusDocking: TrainStatus = "docking";
+export const TrainStatusDerailed: TrainStatus = "derailed";
+export const TrainStatusUnknown: TrainStatus = "unknown";
 export interface TrainVehicle {
   type: TrainType;
   capacity: number /* float64 */;

@@ -1,11 +1,11 @@
-# Commander API - Backend Makefile
+# Satisfactory Dashboard API - Backend Makefile
 # Run from api/ directory
 
 .PHONY: help run run-live build lint format clean generate test tidy
 
 # Default target - show help
 help:
-	@echo "Commander API - Backend Commands"
+	@echo "Satisfactory Dashboard API - Backend Commands"
 	@echo ""
 	@echo "Development:"
 	@echo "  make run          - Run backend server"
@@ -27,11 +27,11 @@ help:
 
 # Development
 run:
-	@echo "Starting Commander API..."
+	@echo "Starting Satisfactory Dashboard API..."
 	go run main.go -api -publisher
 
 run-live:
-	@echo "Starting Commander API with hot reload..."
+	@echo "Starting Satisfactory Dashboard API with hot reload..."
 	@echo "Watching for changes in api/ directory"
 	$(shell go env GOPATH)/bin/air
 
@@ -54,7 +54,7 @@ tidy:
 
 # Build
 build:
-	@echo "Building Commander API binary..."
+	@echo "Building Satisfactory Dashboard API binary..."
 	go build -o bin/api main.go
 	@echo "Backend binary: bin/api"
 

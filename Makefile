@@ -1,4 +1,4 @@
-# Commander - Unified Development Makefile
+# Satisfactory Dashboard - Unified Development Makefile
 # Run from project root directory
 
 # Use bun from ~/.bun/bin if not in PATH
@@ -8,7 +8,7 @@ BUN := $(shell command -v bun 2>/dev/null || echo "$(HOME)/.bun/bin/bun")
 
 # Default target - show help
 help:
-	@echo "Commander Development Commands"
+	@echo "Satisfactory Dashboard Development Commands"
 	@echo ""
 	@echo "Main Commands:"
 	@echo "  make run              - Run both frontend and backend with hot reload"
@@ -42,19 +42,19 @@ help:
 # ============================================================================
 
 run:
-	@echo "Starting Commander (frontend + backend with hot reload)..."
+	@echo "Starting Satisfactory Dashboard (frontend + backend with hot reload)..."
 	@echo "   Frontend: http://localhost:3039"
 	@echo "   Backend:  http://localhost:8081"
 	@echo "   Press Ctrl+C to stop both servers"
 	@echo ""
 	@trap 'kill 0' SIGINT; \
 		$(MAKE) -C api run-live & \
-		(cd commander && $(BUN) run dev) & \
+		(cd dashboard && $(BUN) run dev) & \
 		wait
 
 frontend:
 	@echo "Starting frontend development server..."
-	cd commander && $(BUN) run dev
+	cd dashboard && $(BUN) run dev
 
 backend:
 	@echo "Starting backend server..."
@@ -84,7 +84,7 @@ lint-backend:
 
 lint-frontend:
 	@echo "Running frontend linting (oxlint)..."
-	cd commander && $(BUN) run lint
+	cd dashboard && $(BUN) run lint
 	@echo "Frontend linting complete"
 
 format: format-backend format-frontend
@@ -96,7 +96,7 @@ format-backend:
 
 format-frontend:
 	@echo "Formatting frontend TypeScript code..."
-	cd commander && $(BUN) run format:fix
+	cd dashboard && $(BUN) run format:fix
 	@echo "Frontend formatting complete"
 
 # ============================================================================
@@ -112,8 +112,8 @@ backend-build:
 
 frontend-build:
 	@echo "Building frontend for production..."
-	cd commander && $(BUN) run build
-	@echo "Frontend build: commander/dist/"
+	cd dashboard && $(BUN) run build
+	@echo "Frontend build: dashboard/dist/"
 
 # ============================================================================
 # Cleanup
@@ -122,7 +122,7 @@ frontend-build:
 clean:
 	@echo "Cleaning build artifacts..."
 	$(MAKE) -C api clean
-	cd commander && rm -rf dist build
+	cd dashboard && rm -rf dist build
 	@echo "Cleanup complete"
 
 # ============================================================================
@@ -136,7 +136,7 @@ generate:
 install:
 	@echo "Installing all dependencies..."
 	$(MAKE) -C api tidy
-	cd commander && $(BUN) install
+	cd dashboard && $(BUN) install
 	@echo "All dependencies installed"
 
 tidy:

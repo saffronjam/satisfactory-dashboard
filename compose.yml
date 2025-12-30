@@ -1,8 +1,8 @@
 services:
-  commander:
+  dashboard:
     build:
-      context: ./commander
-    container_name: commander
+      context: ./dashboard
+    container_name: dashboard
     ports:
       - "3000:3000"
     environment:

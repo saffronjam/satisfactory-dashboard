@@ -1,4 +1,4 @@
-# Commander - Frontend Dashboard
+# Satisfactory Dashboard - Frontend
 
 This document provides guidance for working with the React frontend application.
 
@@ -25,7 +25,7 @@ React-based dashboard for monitoring Satisfactory factory operations. Features r
 ### Directory Structure
 
 ```
-commander/src/
+dashboard/src/
 ├── pages/                    # Page components (home, map, production, power, trains, drones, players, settings)
 ├── components/               # Reusable components
 │   ├── color-utils/         # Color picker and preview
@@ -215,7 +215,7 @@ export default function ProductionPage() {
     return (
         <>
             <Helmet>
-                <title>Production | Commander</title>
+                <title>Production | Satisfactory Dashboard</title>
             </Helmet>
 
             <Container maxWidth="xl">
@@ -297,7 +297,7 @@ Defined in `theme/core/shadows.ts`:
        return (
            <>
                <Helmet>
-                   <title>New Feature | Commander</title>
+                   <title>New Feature | Satisfactory Dashboard</title>
                </Helmet>
                <Container maxWidth="xl">
                    {/* Page content */}

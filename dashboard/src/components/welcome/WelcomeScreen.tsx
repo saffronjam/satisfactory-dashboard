@@ -61,7 +61,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
           </Box>
 
           <Typography variant="h4" sx={{ mb: 1 }}>
-            Welcome to Commander
+            Welcome to Satisfactory Dashboard
           </Typography>
 
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -92,7 +92,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
           </Box>
 
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 3 }}>
-            Sessions are shared across all users of this Commander instance
+            Sessions are shared across all users of this Satisfactory Dashboard instance
           </Typography>
         </CardContent>
       </Card>

@@ -1,10 +1,10 @@
-# API - Commander Backend
+# API - Satisfactory Dashboard Backend
 
 This document provides guidance for working with the Go backend API server.
 
 ## Overview
 
-Go-based REST API server for the Commander dashboard. Provides real-time factory data from Satisfactory via SSE streaming, with Redis caching and Prometheus metrics.
+Go-based REST API server for the Satisfactory Dashboard. Provides real-time factory data from Satisfactory via SSE streaming, with Redis caching and Prometheus metrics.
 
 ## Go Coding Standards
 
@@ -104,7 +104,7 @@ tygo generate                 # Generate TypeScript types
 ```
 
 Config: `export/tygo.yml`
-Output: `../commander/src/apiTypes.ts`
+Output: `../dashboard/src/apiTypes.ts`
 
 ## Key Development Patterns
 
@@ -388,5 +388,5 @@ CMD ["/app/main"]
 ## Related Documentation
 
 - **Root CLAUDE.md**: Full-stack architecture overview
-- **commander/CLAUDE.md**: Frontend architecture
+- **dashboard/CLAUDE.md**: Frontend architecture
 - **Swagger UI**: `/v2/docs/` for API documentation

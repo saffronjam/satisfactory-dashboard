@@ -10,6 +10,6 @@ export type ConfigValue = {
 // ----------------------------------------------------------------------
 
 export const CONFIG: ConfigValue = {
-  appName: 'Commander',
+  appName: 'Satisfactory Dashboard',
   appVersion: packageJson.version,
 };

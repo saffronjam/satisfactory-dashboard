@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Commander is a real-time dashboard application for monitoring and managing a Satisfactory game factory. Features: factory statistics visualization, power circuit monitoring, drone/train tracking, player management, interactive map with Leaflet, and real-time updates via Server-Sent Events (SSE).
+Satisfactory Dashboard is a real-time dashboard application for monitoring and managing a Satisfactory game factory. Features: factory statistics visualization, power circuit monitoring, drone/train tracking, player management, interactive map with Leaflet, and real-time updates via Server-Sent Events (SSE).
 
-Architecture: React frontend (Commander) with Vite + Material-UI, Go backend (API) with Gin framework, Redis for caching and event streaming.
+Architecture: React frontend (Dashboard) with Vite + Material-UI, Go backend (API) with Gin framework, Redis for caching and event streaming.
 
 ## Quick Start
 
@@ -109,5 +109,5 @@ docker compose logs -f api          # Follow API logs
 ## Detailed Documentation
 
 - **api/CLAUDE.md**: Backend architecture, patterns, and development guide
-- **commander/CLAUDE.md**: Frontend architecture, patterns, and development guide
+- **dashboard/CLAUDE.md**: Frontend architecture, patterns, and development guide
 - **Swagger UI**: `/v2/docs/` when API is running

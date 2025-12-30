@@ -1,7 +1,7 @@
-# Commander
+# Satisfactory Dashboard
 
 <div align="center">
-  <img src="docs/images/dashboard.png" alt="Commander Dashboard" width="800">
+  <img src="docs/images/dashboard.png" alt="Satisfactory Dashboard" width="800">
 </div>
 
 A real-time dashboard for monitoring and managing your Satisfactory factory.

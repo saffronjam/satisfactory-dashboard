@@ -247,7 +247,7 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
               </Button>
 
               <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                Try Commander with simulated data
+                Try Satisfactory Dashboard with simulated data
               </Typography>
             </>
           )}

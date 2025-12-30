@@ -11,7 +11,7 @@ func SetupEnvironment(appMode string) error {
 		return fmt.Errorf("failed to set up environment. details: %w", err)
 	}
 
-	filepath, ok := os.LookupEnv("COMMANDER_API_CONFIG_FILE")
+	filepath, ok := os.LookupEnv("SATISFACTORY_DASHBOARD_API_CONFIG_FILE")
 	if !ok || filepath == "" {
 		filepath = "config.local.yml"
 	}

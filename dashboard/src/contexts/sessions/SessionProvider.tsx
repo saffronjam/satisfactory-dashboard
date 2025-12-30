@@ -3,7 +3,7 @@ import { Session, SessionInfo } from 'src/apiTypes';
 import { sessionApi } from 'src/services/sessionApi';
 import { SessionContext, SessionContextType } from './SessionContext';
 
-const SELECTED_SESSION_KEY = 'commander-selected-session';
+const SELECTED_SESSION_KEY = 'satisfactory-dashboard-selected-session';
 const SESSION_POLL_INTERVAL = 10000; // Poll session status every 10 seconds
 
 interface SessionProviderProps {
