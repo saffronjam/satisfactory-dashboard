@@ -4,7 +4,7 @@
   <img src="docs/images/dashboard.png" alt="Satisfactory Dashboard" width="800">
 </div>
 
-A real-time dashboard for monitoring and managing your Satisfactory factory.
+A real-time scalable dashboard for monitoring and managing your Satisfactory factory.
 
 ## Requirements
 
@@ -22,6 +22,32 @@ Use [Satisfactory Mod Manager](https://docs.ficsit.app/) to install and manage m
 - Player management
 - Interactive map with Leaflet
 - Real-time updates via Server-Sent Events
+- **Multi-session support:** Connect to multiple FRM endpoints simultaneously - like your friends FRM endpoints
+
+## Architecture
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ Satisfactory│     │             │     │    Redis    │     │   Browser   │
+│   (FRM)     │◄────│  API Poller │────►│   Pub/Sub   │◄────│   Clients   │
+│             │     │             │     │             │     │    (SSE)    │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+     1 poll              1 API              N subscribers        N clients
+```
+
+The dashboard is designed so that **client browsers never directly communicate with the FRM API**. Instead:
+
+1. **API Poller:** A single poller in the API server periodically fetches data from your Satisfactory FRM endpoint
+2. **Redis Pub/Sub:** The poller publishes updates to a Redis pub/sub queue
+3. **SSE Stream:** Each browser client establishes a Server-Sent Events connection to the API, which proxies events from Redis
+
+This architecture means that **many dashboard clients will never affect your Satisfactory game performance** - the game only sees a single polling connection regardless of how many people are viewing the dashboard. The load scales on Redis (which is highly scalable) and the API server, not on your game.
+
+### Current Limitations
+
+> **Single API Instance:** The API should currently run as a single instance. Running multiple instances would create duplicate pollers for the same session. (To be implemented: distributed polling coordination)
+
+> **Server-wide Sessions:** When a session is added, it's visible to all users of that dashboard instance - there are no user-scoped sessions. This dashboard is intended for private/trusted hosting. (To be implemented: user authentication and scoped sessions)
 
 ## Quick Start
 
