@@ -1,12 +1,15 @@
 import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 import type { Breakpoint, SxProps, Theme } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AddSessionDialog } from 'src/components/session-dialog';
 import { SessionSelector } from 'src/components/session-selector';
 import { SessionStatusBar } from 'src/components/session-status-bar';
 import { WelcomeScreen } from 'src/components/welcome';
+import { CONFIG } from 'src/config-global';
 import { useSession } from 'src/contexts/sessions';
 import { layoutClasses } from '../classes';
 import { MenuButton } from '../components/menu-button';
@@ -65,6 +68,18 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
     <SessionSelector onAddSession={() => setAddSessionDialogOpen(true)} />
   );
 
+  const versionSlot = (
+    <Box sx={{ p: 2, pb: 6 }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: 'block', textAlign: 'center' }}
+      >
+        {CONFIG.appVersion}
+      </Typography>
+    </Box>
+  );
+
   return (
     <>
       <AddSessionDialog
@@ -116,7 +131,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
                       data={navData}
                       open={navOpen}
                       onClose={() => setNavOpen(false)}
-                      slots={{ topArea: sessionSelectorSlot }}
+                      slots={{ topArea: sessionSelectorSlot, bottomArea: versionSlot }}
                     />
                   </>
                 ),
@@ -131,7 +146,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
           <NavDesktop
             data={navData}
             layoutQuery={layoutQuery}
-            slots={{ topArea: sessionSelectorSlot }}
+            slots={{ topArea: sessionSelectorSlot, bottomArea: versionSlot }}
           />
         }
         /** **************************************

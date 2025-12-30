@@ -1,4 +1,5 @@
-import packageJson from '../package.json';
+// Injected at build time by Vite
+declare const __BUILD_VERSION__: string;
 
 // ----------------------------------------------------------------------
 
@@ -11,5 +12,5 @@ export type ConfigValue = {
 
 export const CONFIG: ConfigValue = {
   appName: 'Satisfactory Dashboard',
-  appVersion: packageJson.version,
+  appVersion: __BUILD_VERSION__,
 };

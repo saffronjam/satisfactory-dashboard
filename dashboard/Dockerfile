@@ -7,6 +7,9 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
+ARG VITE_BUILD_VERSION=localbuild
+ENV VITE_BUILD_VERSION=${VITE_BUILD_VERSION}
+
 RUN bun run build
 
 FROM nginx:alpine AS production
