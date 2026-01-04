@@ -31,6 +31,7 @@ func GetCachedState(sessionID string) *models.State {
 		Explorers:       []models.Explorer{},
 		VehiclePaths:    []models.VehiclePath{},
 		RadarTowers:     []models.RadarTower{},
+		ResourceNodes:   []models.ResourceNode{},
 	}
 
 	// Helper to get cached data and unmarshal
@@ -62,6 +63,7 @@ func GetCachedState(sessionID string) *models.State {
 	getCached(models.SatisfactoryEventVehiclePaths, &state.VehiclePaths)
 	getCached(models.SatisfactoryEventSpaceElevator, &state.SpaceElevator)
 	getCached(models.SatisfactoryEventRadarTowers, &state.RadarTowers)
+	getCached(models.SatisfactoryEventResourceNodes, &state.ResourceNodes)
 
 	return state
 }
@@ -92,6 +94,7 @@ func ClearCachedState(sessionID string) {
 		models.SatisfactoryEventVehiclePaths,
 		models.SatisfactoryEventSpaceElevator,
 		models.SatisfactoryEventRadarTowers,
+		models.SatisfactoryEventResourceNodes,
 	}
 
 	for _, eventType := range eventTypes {

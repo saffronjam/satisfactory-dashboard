@@ -24,6 +24,7 @@ const (
 	SatisfactoryEventVehiclePaths    SatisfactoryEventType = "vehiclePaths"
 	SatisfactoryEventSpaceElevator   SatisfactoryEventType = "spaceElevator"
 	SatisfactoryEventRadarTowers     SatisfactoryEventType = "radarTowers"
+	SatisfactoryEventResourceNodes   SatisfactoryEventType = "resourceNodes"
 
 	SatisfactoryEventKey string = "satisfactory_events"
 )
