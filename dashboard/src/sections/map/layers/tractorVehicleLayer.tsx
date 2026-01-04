@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { Marker } from 'react-leaflet';
 import {
   Tractor,
@@ -7,16 +7,18 @@ import {
   TractorStatusParked,
   TractorStatusSelfDriving,
 } from 'src/apiTypes';
+import { BuildingColorMode, getGridFillColor } from 'src/utils/gridColors';
 import { ConvertToMapCoords2 } from '../bounds';
 import { AnimatedPosition, useVehicleAnimation } from '../hooks/useVehicleAnimation';
 
 type TractorVehicleLayerProps = {
   tractors: Tractor[];
   enabled: boolean;
-  onTractorClick?: (tractor: Tractor) => void;
-  onPositionsUpdate?: (positions: Map<string, AnimatedPosition>) => void;
+  onTractorClick?: (tractor: Tractor, animatedPos: AnimatedPosition) => void;
+  onSelectedPositionUpdate?: (position: AnimatedPosition | null) => void;
   selectedName?: string | null;
   showNames?: boolean;
+  buildingColorMode?: BuildingColorMode;
 };
 
 // Tractor icon SVG (mdi:tractor)
@@ -36,14 +38,15 @@ const getTractorColor = (status: string): string => {
   }
 };
 
+// Icon creation WITHOUT rotation - rotation is applied via DOM manipulation to prevent icon replacement
 const createTractorIcon = (
-  rotation: number,
   status: string,
   isSelected: boolean,
   showName: boolean,
-  name: string
+  name: string,
+  colorOverride?: string
 ) => {
-  const color = getTractorColor(status);
+  const color = colorOverride ?? getTractorColor(status);
   const size = 24;
   const containerSize = size + 12;
   const labelHeight = showName ? 18 : 0;
@@ -58,7 +61,7 @@ const createTractorIcon = (
         display: flex;
         flex-direction: column;
         align-items: center;
-        pointer-events: none;
+        pointer-events: auto;
       ">
         <div style="
           width: ${containerSize}px;
@@ -82,10 +85,9 @@ const createTractorIcon = (
           `
               : ''
           }
-          <div style="
+          <div class="vehicle-icon-rotate" style="
             width: ${size}px;
             height: ${size}px;
-            transform: rotate(${rotation}deg);
             color: ${color};
             filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
           ">
@@ -119,51 +121,128 @@ const createTractorIcon = (
   });
 };
 
+// Individual tractor marker component that handles rotation via ref
+interface TractorMarkerProps {
+  tractor: Tractor;
+  animatedPos: AnimatedPosition;
+  isSelected: boolean;
+  showNames: boolean;
+  onTractorClick?: (tractor: Tractor, animatedPos: AnimatedPosition) => void;
+  colorOverride?: string;
+}
+
+function TractorMarkerComponent({
+  tractor,
+  animatedPos,
+  isSelected,
+  showNames,
+  onTractorClick,
+  colorOverride,
+}: TractorMarkerProps) {
+  const markerRef = useRef<L.Marker>(null);
+
+  // Memoize icon to prevent recreation when only rotation changes
+  const icon = useMemo(
+    () => createTractorIcon(tractor.status, isSelected, showNames, tractor.name, colorOverride),
+    [tractor.status, isSelected, showNames, tractor.name, colorOverride]
+  );
+
+  // Update rotation via DOM manipulation instead of recreating icon
+  useEffect(() => {
+    if (markerRef.current) {
+      const element = markerRef.current.getElement();
+      const rotateEl = element?.querySelector('.vehicle-icon-rotate') as HTMLElement;
+      if (rotateEl) {
+        rotateEl.style.transform = `rotate(${animatedPos.rotation}deg)`;
+      }
+    }
+  }, [animatedPos.rotation, icon]);
+
+  const mapPosition = ConvertToMapCoords2(animatedPos.x, animatedPos.y);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={mapPosition}
+      icon={icon}
+      interactive={true}
+      bubblingMouseEvents={false}
+      eventHandlers={{
+        click: (e) => {
+          e.originalEvent.stopPropagation();
+          e.originalEvent.preventDefault();
+          onTractorClick?.(tractor, animatedPos);
+        },
+        mouseover: (e) => {
+          e.originalEvent.stopPropagation();
+        },
+        mouseout: (e) => {
+          e.originalEvent.stopPropagation();
+        },
+      }}
+    />
+  );
+}
+
 function TractorVehicleLayerInner({
   tractors,
   enabled,
   onTractorClick,
-  onPositionsUpdate,
+  onSelectedPositionUpdate,
   selectedName,
   showNames = false,
+  buildingColorMode = 'type',
 }: TractorVehicleLayerProps) {
   const animatedPositions = useVehicleAnimation(tractors, enabled);
+  const prevSelectedPosRef = useRef<AnimatedPosition | null>(null);
 
+  // Only update parent with SELECTED vehicle's position to avoid 60fps cascade
   useEffect(() => {
-    if (onPositionsUpdate) {
-      onPositionsUpdate(animatedPositions);
+    if (!onSelectedPositionUpdate) return;
+
+    if (!selectedName) {
+      if (prevSelectedPosRef.current !== null) {
+        prevSelectedPosRef.current = null;
+        onSelectedPositionUpdate(null);
+      }
+      return;
     }
-  }, [animatedPositions, onPositionsUpdate]);
+
+    const selectedPos = animatedPositions.get(selectedName);
+    if (selectedPos) {
+      const prev = prevSelectedPosRef.current;
+      // Only update if position changed meaningfully
+      if (
+        !prev ||
+        Math.abs(prev.x - selectedPos.x) > 0.01 ||
+        Math.abs(prev.y - selectedPos.y) > 0.01
+      ) {
+        prevSelectedPosRef.current = { ...selectedPos };
+        onSelectedPositionUpdate(selectedPos);
+      }
+    }
+  }, [animatedPositions, selectedName, onSelectedPositionUpdate]);
 
   return (
     <>
-      {tractors.map((tractor, index) => {
+      {tractors.map((tractor) => {
         const animatedPos = animatedPositions.get(tractor.name);
         if (!animatedPos) return null;
 
-        const mapPosition = ConvertToMapCoords2(animatedPos.x, animatedPos.y);
         const isSelected = selectedName === tractor.name;
-        const icon = createTractorIcon(
-          animatedPos.rotation,
-          tractor.status,
-          isSelected,
-          showNames,
-          tractor.name
-        );
+        // Determine color override for grid mode
+        const colorOverride =
+          buildingColorMode === 'grid' ? getGridFillColor(tractor.circuitGroupId) : undefined;
 
         return (
-          <Marker
-            key={`tractor-${index}-${tractor.name}`}
-            position={mapPosition}
-            icon={icon}
-            interactive={true}
-            bubblingMouseEvents={false}
-            eventHandlers={{
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onTractorClick?.(tractor);
-              },
-            }}
+          <TractorMarkerComponent
+            key={`tractor-${tractor.id}`}
+            tractor={tractor}
+            animatedPos={animatedPos}
+            isSelected={isSelected}
+            showNames={showNames}
+            onTractorClick={onTractorClick}
+            colorOverride={colorOverride}
           />
         );
       })}

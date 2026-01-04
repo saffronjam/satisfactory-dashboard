@@ -1,17 +1,19 @@
 import L from 'leaflet';
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { Marker } from 'react-leaflet';
 import { Drone, DroneStatusDocking, DroneStatusFlying, DroneStatusIdle } from 'src/apiTypes';
+import { BuildingColorMode, getGridFillColor } from 'src/utils/gridColors';
 import { ConvertToMapCoords2 } from '../bounds';
 import { AnimatedPosition, useVehicleAnimation } from '../hooks/useVehicleAnimation';
 
 type DroneVehicleLayerProps = {
   drones: Drone[];
   enabled: boolean;
-  onDroneClick?: (drone: Drone) => void;
-  onPositionsUpdate?: (positions: Map<string, AnimatedPosition>) => void;
+  onDroneClick?: (drone: Drone, animatedPos: AnimatedPosition) => void;
+  onSelectedPositionUpdate?: (position: AnimatedPosition | null) => void;
   selectedName?: string | null;
   showNames?: boolean;
+  buildingColorMode?: BuildingColorMode;
 };
 
 // Drone icon SVG
@@ -32,14 +34,15 @@ const getDroneColor = (status: string): string => {
   }
 };
 
+// Icon creation WITHOUT rotation - rotation is applied via DOM manipulation to prevent icon replacement
 const createDroneIcon = (
-  rotation: number,
   status: string,
   isSelected: boolean,
   showName: boolean,
-  name: string
+  name: string,
+  colorOverride?: string
 ) => {
-  const color = getDroneColor(status);
+  const color = colorOverride ?? getDroneColor(status);
   const size = 24;
   const containerSize = size + 12; // Extra space for selection circle
   const labelHeight = showName && name ? 18 : 0;
@@ -54,7 +57,7 @@ const createDroneIcon = (
         display: flex;
         flex-direction: column;
         align-items: center;
-        pointer-events: none;
+        pointer-events: auto;
       ">
         <div style="
           width: ${containerSize}px;
@@ -78,10 +81,9 @@ const createDroneIcon = (
           `
               : ''
           }
-          <div style="
+          <div class="vehicle-icon-rotate" style="
             width: ${size}px;
             height: ${size}px;
-            transform: rotate(${rotation}deg);
             color: ${color};
             filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
           ">
@@ -115,53 +117,128 @@ const createDroneIcon = (
   });
 };
 
+// Individual drone marker component that handles rotation via ref
+interface DroneMarkerProps {
+  drone: Drone;
+  animatedPos: AnimatedPosition;
+  isSelected: boolean;
+  showNames: boolean;
+  onDroneClick?: (drone: Drone, animatedPos: AnimatedPosition) => void;
+  colorOverride?: string;
+}
+
+function DroneMarkerComponent({
+  drone,
+  animatedPos,
+  isSelected,
+  showNames,
+  onDroneClick,
+  colorOverride,
+}: DroneMarkerProps) {
+  const markerRef = useRef<L.Marker>(null);
+
+  // Memoize icon to prevent recreation when only rotation changes
+  const icon = useMemo(
+    () => createDroneIcon(drone.status, isSelected, showNames, drone.name, colorOverride),
+    [drone.status, isSelected, showNames, drone.name, colorOverride]
+  );
+
+  // Update rotation via DOM manipulation instead of recreating icon
+  useEffect(() => {
+    if (markerRef.current) {
+      const element = markerRef.current.getElement();
+      const rotateEl = element?.querySelector('.vehicle-icon-rotate') as HTMLElement;
+      if (rotateEl) {
+        rotateEl.style.transform = `rotate(${animatedPos.rotation}deg)`;
+      }
+    }
+  }, [animatedPos.rotation, icon]);
+
+  const mapPosition = ConvertToMapCoords2(animatedPos.x, animatedPos.y);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={mapPosition}
+      icon={icon}
+      interactive={true}
+      bubblingMouseEvents={false}
+      eventHandlers={{
+        click: (e) => {
+          e.originalEvent.stopPropagation();
+          e.originalEvent.preventDefault();
+          onDroneClick?.(drone, animatedPos);
+        },
+        mouseover: (e) => {
+          e.originalEvent.stopPropagation();
+        },
+        mouseout: (e) => {
+          e.originalEvent.stopPropagation();
+        },
+      }}
+    />
+  );
+}
+
 function DroneVehicleLayerInner({
   drones,
   enabled,
   onDroneClick,
-  onPositionsUpdate,
+  onSelectedPositionUpdate,
   selectedName,
   showNames = false,
+  buildingColorMode = 'type',
 }: DroneVehicleLayerProps) {
   const animatedPositions = useVehicleAnimation(drones, enabled);
+  const prevSelectedPosRef = useRef<AnimatedPosition | null>(null);
 
-  // Pass animated positions to parent - use useEffect to avoid calling during render
+  // Only update parent with SELECTED vehicle's position to avoid 60fps cascade
   useEffect(() => {
-    if (onPositionsUpdate) {
-      onPositionsUpdate(animatedPositions);
+    if (!onSelectedPositionUpdate) return;
+
+    if (!selectedName) {
+      if (prevSelectedPosRef.current !== null) {
+        prevSelectedPosRef.current = null;
+        onSelectedPositionUpdate(null);
+      }
+      return;
     }
-  }, [animatedPositions, onPositionsUpdate]);
+
+    const selectedPos = animatedPositions.get(selectedName);
+    if (selectedPos) {
+      const prev = prevSelectedPosRef.current;
+      // Only update if position changed meaningfully
+      if (
+        !prev ||
+        Math.abs(prev.x - selectedPos.x) > 0.01 ||
+        Math.abs(prev.y - selectedPos.y) > 0.01
+      ) {
+        prevSelectedPosRef.current = { ...selectedPos };
+        onSelectedPositionUpdate(selectedPos);
+      }
+    }
+  }, [animatedPositions, selectedName, onSelectedPositionUpdate]);
 
   return (
     <>
-      {drones.map((drone, index) => {
+      {drones.map((drone) => {
         const animatedPos = animatedPositions.get(drone.name);
         if (!animatedPos) return null;
 
-        const mapPosition = ConvertToMapCoords2(animatedPos.x, animatedPos.y);
         const isSelected = selectedName === drone.name;
-        const icon = createDroneIcon(
-          animatedPos.rotation,
-          drone.status,
-          isSelected,
-          showNames,
-          drone.name
-        );
+        // Determine color override for grid mode
+        const colorOverride =
+          buildingColorMode === 'grid' ? getGridFillColor(drone.circuitGroupId) : undefined;
 
         return (
-          <Marker
-            key={`drone-${index}-${drone.name}`}
-            position={mapPosition}
-            icon={icon}
-            interactive={true}
-            bubblingMouseEvents={false}
-            eventHandlers={{
-              click: (e) => {
-                console.log('Drone clicked:', drone.name);
-                e.originalEvent.stopPropagation();
-                onDroneClick?.(drone);
-              },
-            }}
+          <DroneMarkerComponent
+            key={`drone-${drone.name}`}
+            drone={drone}
+            animatedPos={animatedPos}
+            isSelected={isSelected}
+            showNames={showNames}
+            onDroneClick={onDroneClick}
+            colorOverride={colorOverride}
           />
         );
       })}

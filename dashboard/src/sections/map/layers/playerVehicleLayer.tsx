@@ -48,7 +48,7 @@ const createPlayerIcon = (color: string, isSelected: boolean, showName: boolean,
         display: flex;
         flex-direction: column;
         align-items: center;
-        pointer-events: none;
+        pointer-events: auto;
       ">
         <div style="
           width: ${containerSize}px;
@@ -160,7 +160,14 @@ function PlayerVehicleLayerInner({
             eventHandlers={{
               click: (e) => {
                 e.originalEvent.stopPropagation();
+                e.originalEvent.preventDefault();
                 onPlayerClick?.(player);
+              },
+              mouseover: (e) => {
+                e.originalEvent.stopPropagation();
+              },
+              mouseout: (e) => {
+                e.originalEvent.stopPropagation();
               },
             }}
           />

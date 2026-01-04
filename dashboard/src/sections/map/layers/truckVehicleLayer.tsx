@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { Marker } from 'react-leaflet';
 import {
   Truck,
@@ -7,16 +7,18 @@ import {
   TruckStatusParked,
   TruckStatusSelfDriving,
 } from 'src/apiTypes';
+import { BuildingColorMode, getGridFillColor } from 'src/utils/gridColors';
 import { ConvertToMapCoords2 } from '../bounds';
 import { AnimatedPosition, useVehicleAnimation } from '../hooks/useVehicleAnimation';
 
 type TruckVehicleLayerProps = {
   trucks: Truck[];
   enabled: boolean;
-  onTruckClick?: (truck: Truck) => void;
-  onPositionsUpdate?: (positions: Map<string, AnimatedPosition>) => void;
+  onTruckClick?: (truck: Truck, animatedPos: AnimatedPosition) => void;
+  onSelectedPositionUpdate?: (position: AnimatedPosition | null) => void;
   selectedName?: string | null;
   showNames?: boolean;
+  buildingColorMode?: BuildingColorMode;
 };
 
 // Truck icon SVG
@@ -36,14 +38,15 @@ const getTruckColor = (status: string): string => {
   }
 };
 
+// Icon creation WITHOUT rotation - rotation is applied via DOM manipulation to prevent icon replacement
 const createTruckIcon = (
-  rotation: number,
   status: string,
   isSelected: boolean,
   showName: boolean,
-  name: string
+  name: string,
+  colorOverride?: string
 ) => {
-  const color = getTruckColor(status);
+  const color = colorOverride ?? getTruckColor(status);
   const size = 26;
   const containerSize = size + 12; // Extra space for selection circle
   const labelHeight = showName ? 18 : 0;
@@ -58,7 +61,7 @@ const createTruckIcon = (
         display: flex;
         flex-direction: column;
         align-items: center;
-        pointer-events: none;
+        pointer-events: auto;
       ">
         <div style="
           width: ${containerSize}px;
@@ -82,10 +85,9 @@ const createTruckIcon = (
           `
               : ''
           }
-          <div style="
+          <div class="vehicle-icon-rotate" style="
             width: ${size}px;
             height: ${size}px;
-            transform: rotate(${rotation}deg);
             color: ${color};
             filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
           ">
@@ -119,53 +121,128 @@ const createTruckIcon = (
   });
 };
 
+// Individual truck marker component that handles rotation via ref
+interface TruckMarkerProps {
+  truck: Truck;
+  animatedPos: AnimatedPosition;
+  isSelected: boolean;
+  showNames: boolean;
+  onTruckClick?: (truck: Truck, animatedPos: AnimatedPosition) => void;
+  colorOverride?: string;
+}
+
+function TruckMarkerComponent({
+  truck,
+  animatedPos,
+  isSelected,
+  showNames,
+  onTruckClick,
+  colorOverride,
+}: TruckMarkerProps) {
+  const markerRef = useRef<L.Marker>(null);
+
+  // Memoize icon to prevent recreation when only rotation changes
+  const icon = useMemo(
+    () => createTruckIcon(truck.status, isSelected, showNames, truck.name, colorOverride),
+    [truck.status, isSelected, showNames, truck.name, colorOverride]
+  );
+
+  // Update rotation via DOM manipulation instead of recreating icon
+  useEffect(() => {
+    if (markerRef.current) {
+      const element = markerRef.current.getElement();
+      const rotateEl = element?.querySelector('.vehicle-icon-rotate') as HTMLElement;
+      if (rotateEl) {
+        rotateEl.style.transform = `rotate(${animatedPos.rotation}deg)`;
+      }
+    }
+  }, [animatedPos.rotation, icon]);
+
+  const mapPosition = ConvertToMapCoords2(animatedPos.x, animatedPos.y);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={mapPosition}
+      icon={icon}
+      interactive={true}
+      bubblingMouseEvents={false}
+      eventHandlers={{
+        click: (e) => {
+          e.originalEvent.stopPropagation();
+          e.originalEvent.preventDefault();
+          onTruckClick?.(truck, animatedPos);
+        },
+        mouseover: (e) => {
+          e.originalEvent.stopPropagation();
+        },
+        mouseout: (e) => {
+          e.originalEvent.stopPropagation();
+        },
+      }}
+    />
+  );
+}
+
 function TruckVehicleLayerInner({
   trucks,
   enabled,
   onTruckClick,
-  onPositionsUpdate,
+  onSelectedPositionUpdate,
   selectedName,
   showNames = false,
+  buildingColorMode = 'type',
 }: TruckVehicleLayerProps) {
   const animatedPositions = useVehicleAnimation(trucks, enabled);
+  const prevSelectedPosRef = useRef<AnimatedPosition | null>(null);
 
-  // Pass animated positions to parent - use useEffect to avoid calling during render
+  // Only update parent with SELECTED vehicle's position to avoid 60fps cascade
   useEffect(() => {
-    if (onPositionsUpdate) {
-      onPositionsUpdate(animatedPositions);
+    if (!onSelectedPositionUpdate) return;
+
+    if (!selectedName) {
+      if (prevSelectedPosRef.current !== null) {
+        prevSelectedPosRef.current = null;
+        onSelectedPositionUpdate(null);
+      }
+      return;
     }
-  }, [animatedPositions, onPositionsUpdate]);
+
+    const selectedPos = animatedPositions.get(selectedName);
+    if (selectedPos) {
+      const prev = prevSelectedPosRef.current;
+      // Only update if position changed meaningfully
+      if (
+        !prev ||
+        Math.abs(prev.x - selectedPos.x) > 0.01 ||
+        Math.abs(prev.y - selectedPos.y) > 0.01
+      ) {
+        prevSelectedPosRef.current = { ...selectedPos };
+        onSelectedPositionUpdate(selectedPos);
+      }
+    }
+  }, [animatedPositions, selectedName, onSelectedPositionUpdate]);
 
   return (
     <>
-      {trucks.map((truck, index) => {
+      {trucks.map((truck) => {
         const animatedPos = animatedPositions.get(truck.name);
         if (!animatedPos) return null;
 
-        const mapPosition = ConvertToMapCoords2(animatedPos.x, animatedPos.y);
         const isSelected = selectedName === truck.name;
-        const icon = createTruckIcon(
-          animatedPos.rotation,
-          truck.status,
-          isSelected,
-          showNames,
-          truck.name
-        );
+        // Determine color override for grid mode
+        const colorOverride =
+          buildingColorMode === 'grid' ? getGridFillColor(truck.circuitGroupId) : undefined;
 
         return (
-          <Marker
-            key={`truck-${index}-${truck.name}`}
-            position={mapPosition}
-            icon={icon}
-            interactive={true}
-            bubblingMouseEvents={false}
-            eventHandlers={{
-              click: (e) => {
-                console.log('Truck clicked:', truck.name);
-                e.originalEvent.stopPropagation();
-                onTruckClick?.(truck);
-              },
-            }}
+          <TruckMarkerComponent
+            key={`truck-${truck.id}`}
+            truck={truck}
+            animatedPos={animatedPos}
+            isSelected={isSelected}
+            showNames={showNames}
+            onTruckClick={onTruckClick}
+            colorOverride={colorOverride}
           />
         );
       })}
