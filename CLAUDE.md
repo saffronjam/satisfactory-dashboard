@@ -68,6 +68,15 @@ make generate  # Generate TypeScript types from Go structs
 | `GET /v1/factoryStats`         | Factory statistics       |
 | `GET /v1/sinkStats`            | Sink statistics          |
 
+**Infrastructure Endpoints**
+
+| Endpoint                       | Description              |
+| ------------------------------ | ------------------------ |
+| `GET /v1/belts`                | Conveyor belts & splitters |
+| `GET /v1/pipes`                | Pipes & junctions        |
+| `GET /v1/cables`               | Power cables             |
+| `GET /v1/trainRails`           | Train rail network       |
+
 **Internal**
 
 | Endpoint                       | Description              |

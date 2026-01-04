@@ -121,3 +121,6 @@ PACKAGE_INFO
 # Custom
 scripts/scrape_map/output/
 *.tsbuildinfo
+scripts/scrape_images/venv/
+scripts/scrape_images/output/
+scripts/scrape_images/html/

@@ -4,6 +4,9 @@
 # Use bun from ~/.bun/bin if not in PATH
 BUN := $(shell command -v bun 2>/dev/null || echo "$(HOME)/.bun/bin/bun")
 
+# Container runtime: set CONTAINER_CMD=podman to use podman instead of docker
+CONTAINER_CMD ?= docker
+
 .PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down
 
 # Default target - show help
@@ -149,12 +152,12 @@ tidy:
 
 deps:
 	@echo "Starting Redis..."
-	docker compose up -d redis
+	$(CONTAINER_CMD) compose up -d redis
 	@echo "Redis available at localhost:6379"
 
 deps-down:
 	@echo "Stopping Redis..."
-	docker compose down redis
+	$(CONTAINER_CMD) compose down redis
 
 # ============================================================================
 # Docker (full stack)
@@ -162,16 +165,16 @@ deps-down:
 
 docker-build:
 	@echo "Building Docker images..."
-	docker compose build
+	$(CONTAINER_CMD) compose build
 
 docker-up:
 	@echo "Starting all Docker containers..."
-	docker compose up -d
+	$(CONTAINER_CMD) compose up -d
 
 docker-down:
 	@echo "Stopping all Docker containers..."
-	docker compose down
+	$(CONTAINER_CMD) compose down
 
 docker-logs:
 	@echo "Showing Docker logs..."
-	docker compose logs -f
+	$(CONTAINER_CMD) compose logs -f
