@@ -4,8 +4,8 @@ import { ApiContext } from 'src/contexts/api/useApi';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { varAlpha } from 'src/theme/styles';
 import { useContextSelector } from 'use-context-selector';
-import { AnalyticsCouponsProgress } from '../analytics-coupon-progress';
 import { AnalyticsPieChart } from '../analytics-pie-chart';
+import { AnalyticsSpaceElevatorProgress } from '../analytics-space-elevator-progress';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 
 // ----------------------------------------------------------------------
@@ -18,6 +18,7 @@ export function OverviewAnalyticsView() {
       sinkStats: v.sinkStats,
       generatorStats: v.generatorStats,
       factoryStats: v.factoryStats,
+      spaceElevator: v.spaceElevator,
       history: v.history,
       isLoading: v.isLoading,
       isOnline: v.isOnline,
@@ -44,6 +45,7 @@ export function OverviewAnalyticsView() {
       <Backdrop
         open={!api || api.isLoading === true}
         sx={{
+          position: 'absolute',
           color: theme.palette.primary.main,
           backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.5),
           zIndex: (t) => t.zIndex.drawer + 1,
@@ -188,10 +190,9 @@ export function OverviewAnalyticsView() {
             </Grid>
 
             <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-              <AnalyticsCouponsProgress
-                title="Coupon Progress"
-                progress={api.sinkStats?.nextCouponProgress || 0}
-                available={api.sinkStats?.coupons || 0}
+              <AnalyticsSpaceElevatorProgress
+                title="Space Elevator"
+                spaceElevator={api.spaceElevator}
               />
             </Grid>
           </Grid>

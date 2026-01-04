@@ -19,6 +19,7 @@ export const PerMinuteMetricUnits = [
 ];
 export const WattUnits = ['W', 'KW', 'MW', 'GW', 'TW', 'PW', 'EW', 'ZW', 'YW'];
 export const WattHoursUnits = ['', 'KWh', 'MWh', 'GWh', 'TWh', 'PWh', 'EWh', 'ZWh', 'YWh'];
+export const LengthUnits = ['m', 'km'];
 
 type Options = (Intl.NumberFormatOptions | undefined) & {
   ensureConstantDecimals?: boolean;

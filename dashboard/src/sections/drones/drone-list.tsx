@@ -282,11 +282,11 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
               {fNumber(drone.speed, { decimals: 0 })} km/h
             </Typography>
           </Box>
-          {drone.home?.fuelName && (
+          {drone.home?.fuel?.Name && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Iconify icon="mdi:fuel" sx={{ color: theme.palette.text.secondary }} />
               <Typography variant="body2" color="textSecondary">
-                {drone.home.fuelName}
+                {drone.home.fuel.Name}
               </Typography>
             </Box>
           )}

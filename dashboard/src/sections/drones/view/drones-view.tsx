@@ -79,6 +79,7 @@ export function DronesView() {
       <Backdrop
         open={api.isLoading === true}
         sx={{
+          position: 'absolute',
           color: theme.palette.primary.main,
           backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.5),
           zIndex: (t) => t.zIndex.drawer + 1,

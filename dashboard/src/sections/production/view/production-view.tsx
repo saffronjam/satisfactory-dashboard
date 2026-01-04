@@ -34,11 +34,13 @@ type Column = {
     | 'icon'
     | 'name'
     | 'inventory'
+    | 'cloudInventory'
     | 'production'
     | 'consumption'
     | 'production efficiency'
     | 'consumption efficiency';
   label: string;
+  labelIcon?: string;
   minWidth?: number;
   align?: 'left' | 'right' | 'center';
   format?: (value: number) => string;
@@ -78,6 +80,7 @@ const columns: readonly Column[] = [
   {
     id: 'inventory',
     label: 'Inventory',
+    labelIcon: 'mdi:earth',
     minWidth: 150,
     align: 'center',
     format: (value) => fShortenNumber(value, MetricUnits, { decimals: 2 }),
@@ -99,6 +102,15 @@ const columns: readonly Column[] = [
       // Calculate the trend
       return calculateTrend(itemProdHistoryCount) * itemProdHistory.length;
     },
+  },
+  {
+    id: 'cloudInventory',
+    label: 'Cloud',
+    labelIcon: 'mdi:cloud',
+    minWidth: 120,
+    align: 'center',
+    format: (value) => fShortenNumber(value, MetricUnits, { decimals: 2 }),
+    severity: (_value: number | string) => Severity.none,
   },
   {
     id: 'production',
@@ -265,6 +277,7 @@ export function ProductionView() {
         id: `${item.name}-${item.minable}-${idx}`,
         name: item.name,
         inventory: item.count,
+        cloudInventory: item.cloudCount,
         production: item.producedPerMinute,
         consumption: item.consumedPerMinute,
         'production efficiency': item.produceEfficiency,
@@ -312,6 +325,7 @@ export function ProductionView() {
       <Backdrop
         open={api.isLoading}
         sx={{
+          position: 'absolute',
           color: theme.palette.primary.main,
           backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.5),
           zIndex: (t) => t.zIndex.drawer + 1,
@@ -441,6 +455,9 @@ export function ProductionView() {
                           msUserSelect: 'none', // For older IE versions
                         }}
                       >
+                        {column.labelIcon && (
+                          <Iconify icon={column.labelIcon} sx={{ mr: 0.5, fontSize: 16 }} />
+                        )}
                         {column.label}
                         {sortDirection === 'asc' ? (
                           <Iconify
