@@ -13,6 +13,7 @@ import {
   Player,
   ProdStats,
   RadarTower,
+  ResourceNode,
   SinkStats,
   SpaceElevator,
   SplitterMerger,
@@ -56,6 +57,7 @@ export type ApiData = {
   vehiclePaths: VehiclePath[];
   spaceElevator?: SpaceElevator;
   radarTowers: RadarTower[];
+  resourceNodes: ResourceNode[];
 };
 
 export type ApiContextType = ApiData & {
@@ -91,6 +93,7 @@ export const DefaultApiContext: ApiContextType = {
   vehiclePaths: [],
   spaceElevator: undefined,
   radarTowers: [],
+  resourceNodes: [],
 
   history: [
     {
@@ -120,6 +123,7 @@ export const DefaultApiContext: ApiContextType = {
       vehiclePaths: [],
       spaceElevator: undefined,
       radarTowers: [],
+      resourceNodes: [],
     },
   ] as any,
 };

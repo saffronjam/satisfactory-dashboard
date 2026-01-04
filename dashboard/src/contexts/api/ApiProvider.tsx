@@ -32,6 +32,8 @@ const DEFAULT_DATA: ApiData = {
   explorers: [],
   vehiclePaths: [],
   spaceElevator: undefined,
+  radarTowers: [],
+  resourceNodes: [],
 };
 
 interface ApiProviderProps {
@@ -117,6 +119,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             dataRef.current.explorers = fullState.explorers ?? [];
             dataRef.current.vehiclePaths = fullState.vehiclePaths ?? [];
             dataRef.current.spaceElevator = fullState.spaceElevator;
+            dataRef.current.radarTowers = fullState.radarTowers ?? [];
+            dataRef.current.resourceNodes = fullState.resourceNodes ?? [];
             dataRef.current.isLoading = false;
             setData({ ...dataRef.current });
           })
@@ -217,6 +221,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             break;
           case API.SatisfactoryEventRadarTowers:
             dataRef.current.radarTowers = parsed.data;
+            break;
+          case API.SatisfactoryEventResourceNodes:
+            dataRef.current.resourceNodes = parsed.data;
             break;
           case API.SatisfactoryEventSessionUpdate:
             if (onSessionUpdateRef.current) {
