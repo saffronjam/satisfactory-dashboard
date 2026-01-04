@@ -1,4 +1,4 @@
-.PHONY: help venv deps clean run dry-run download scale
+.PHONY: help venv deps clean scrape dry-run download scale
 
 # Virtual environment directory
 VENV := venv
@@ -10,7 +10,7 @@ help:
 	@echo ""
 	@echo "  make venv        - Create virtual environment and install dependencies"
 	@echo "  make deps        - Install/update dependencies in existing venv"
-	@echo "  make run         - Run scraper to generate image_source.json"
+	@echo "  make scrape      - Run scraper to generate image_source.json"
 	@echo "  make dry-run     - Run scraper in dry mode (no manifest generation)"
 	@echo "  make download    - Download images from image_source.json"
 	@echo "  make scale       - Scale downloaded images to multiple resolutions"
@@ -18,7 +18,7 @@ help:
 	@echo "  make help        - Show this help message"
 	@echo ""
 	@echo "Workflow:"
-	@echo "  1. make run       # Generate image_source.json from wiki"
+	@echo "  1. make scrape    # Generate image_source.json from wiki"
 	@echo "  2. make download  # Download all images"
 	@echo "  3. make scale     # Scale images to 16x16, 32x32, etc."
 	@echo ""
@@ -46,7 +46,7 @@ deps: $(VENV)/bin/activate
 	@echo "✓ Dependencies updated!"
 
 # Run scraper in normal mode
-run: $(VENV)/bin/activate
+scrape: $(VENV)/bin/activate
 	@echo "Running image scraper..."
 	$(PYTHON) extract_images_wiki_gg.py
 
@@ -69,6 +69,6 @@ scale: $(VENV)/bin/activate
 clean:
 	@echo "Removing virtual environment..."
 	rm -rf $(VENV)
-	@echo "Removing cache directory..."
-	rm -rf /tmp/satisfactory-wiki-cache
+	@echo "Removing downloads directory..."
+	rm -rf downloads
 	@echo "✓ Cleanup complete!"

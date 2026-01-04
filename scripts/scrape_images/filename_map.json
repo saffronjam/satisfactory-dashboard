@@ -1,0 +1,35 @@
+{
+  "_comment": "Maps source filenames to one or more target filenames. Source files are copied (not moved) to create the targets.",
+  "mappings": {
+    "Aqua Spitter.png": [
+      "Small Aquatic Spitter.png"
+    ],
+    "Desert Spitter.png": [
+      "Small Desert Spitter.png"
+    ],
+    "Forest Spitter.png": [
+      "Small Forest Spitter.png"
+    ],
+    "Red Forest Spitter.png": [
+      "Small Red Forest Spitter.png"
+    ],
+    "Aqua Alpha Spitter.png": [
+      "Alpha Aquatic Spitter.png"
+    ],
+    "Desert Alpha Spitter.png": [
+      "Alpha Desert Spitter.png"
+    ],
+    "Forest Alpha Spitter.png": [
+      "Alpha Forest Spitter.png"
+    ],
+    "Red Forest Alpha Spitter.png": [
+      "Alpha Red Forest Spitter.png"
+    ],
+    "Fluffy-tailed Hog.png": [
+      "Fluffy-Tailed Hog.png"
+    ],
+    "Elite Stinger.png": [
+      "Gas Stinger.png"
+    ]
+  }
+}

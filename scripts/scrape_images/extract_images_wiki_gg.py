@@ -111,6 +111,7 @@ class ImageScraper:
         dry_mode: bool = False,
         force_refresh: bool = False,
         request_delay: float = 0.5,
+        filename_map_file: Optional[str] = None,
     ):
         self.html_dir = Path(html_dir)
         self.output_file = Path(output_file)
@@ -120,12 +121,83 @@ class ImageScraper:
         self.request_delay = request_delay
         self.last_request_time = 0.0
         self.warnings: List[str] = []
+        self.filename_map: Dict[str, List[str]] = {}
         self.stats = {
             "total_links": 0,
             "after_dedup": 0,
             "successfully_processed": 0,
             "rate_limited": 0,
+            "mapped_copies": 0,
         }
+
+        # Load filename mappings if provided
+        if filename_map_file:
+            self._load_filename_map(filename_map_file)
+
+    def _load_filename_map(self, filepath: str) -> None:
+        """Load filename mappings from JSON file."""
+        map_path = Path(filepath)
+        if not map_path.exists():
+            ColoredLogger.warning(f"Filename map not found: {filepath}")
+            return
+
+        try:
+            with open(map_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            # Extract mappings, ignoring _comment and other non-mapping keys
+            if "mappings" in data:
+                self.filename_map = data["mappings"]
+            else:
+                # Support flat structure (no "mappings" wrapper)
+                self.filename_map = {k: v for k, v in data.items() if not k.startswith("_")}
+
+            if self.filename_map:
+                ColoredLogger.info(f"Loaded {len(self.filename_map)} filename mappings from {filepath}")
+        except json.JSONDecodeError as e:
+            ColoredLogger.warning(f"Failed to parse filename map: {e}")
+        except Exception as e:
+            ColoredLogger.warning(f"Failed to load filename map: {e}")
+
+    def apply_filename_mappings(self, image_entries: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """
+        Apply filename mappings to create additional entries with custom names.
+
+        For each image entry, if its name has mappings defined, create additional
+        entries with the mapped names pointing to the same URL.
+
+        Args:
+            image_entries: List of {"name": filename, "url": image_url} dictionaries
+
+        Returns:
+            Extended list with additional mapped entries
+        """
+        if not self.filename_map:
+            return image_entries
+
+        ColoredLogger.plain(f"\nApplying filename mappings...")
+        extended_entries = list(image_entries)  # Copy original entries
+        mapped_count = 0
+
+        for entry in image_entries:
+            original_name = entry["name"]
+            if original_name in self.filename_map:
+                mapped_names = self.filename_map[original_name]
+                for mapped_name in mapped_names:
+                    extended_entries.append({
+                        "name": mapped_name,
+                        "url": entry["url"],
+                    })
+                    mapped_count += 1
+                    ColoredLogger.plain(
+                        f"  {ColoredLogger.filename(original_name)} → {ColoredLogger.filename(mapped_name)}"
+                    )
+
+        self.stats["mapped_copies"] = mapped_count
+        if mapped_count > 0:
+            ColoredLogger.info(f"  Created {mapped_count} additional mapped entries")
+
+        return extended_entries
 
     def run(self) -> int:
         """Main entry point for the scraper."""
@@ -148,15 +220,20 @@ class ImageScraper:
         ColoredLogger.plain(f"\nTotal raw image links: {len(file_page_links)}")
         self.stats["total_links"] = len(file_page_links)
 
-        # Deduplicate images
+        # Deduplicate and sort images alphabetically
         unique_links = self.deduplicate_images(file_page_links)
-        ColoredLogger.plain(f"\nDeduplicating images...")
+        unique_links.sort(key=lambda x: x[0].lower())
+        ColoredLogger.plain(f"\nDeduplicating and sorting images...")
         ColoredLogger.info(f"  After deduplication: {len(unique_links)} unique images")
         self.stats["after_dedup"] = len(unique_links)
 
         # Fetch File: pages and extract image URLs
         ColoredLogger.plain(f"\nFetching File: pages...")
         image_entries = self.process_file_pages(unique_links)
+
+        # Apply filename mappings to create additional copies
+        if self.filename_map:
+            image_entries = self.apply_filename_mappings(image_entries)
 
         # Generate or display manifest
         if self.dry_mode:
@@ -500,6 +577,10 @@ class ImageScraper:
         ColoredLogger.plain(f"  Total image links found: {self.stats['total_links']}")
         ColoredLogger.plain(f"  After deduplication: {self.stats['after_dedup']}")
         ColoredLogger.success(f"Successfully processed: {self.stats['successfully_processed']}")
+        if self.stats['mapped_copies'] > 0:
+            ColoredLogger.info(f"  Additional mapped copies: {self.stats['mapped_copies']}")
+            total = self.stats['successfully_processed'] + self.stats['mapped_copies']
+            ColoredLogger.success(f"Total entries in manifest: {total}")
         if self.stats['rate_limited'] > 0:
             ColoredLogger.info(f"Rate limited and retried: {self.stats['rate_limited']} times")
         if len(self.warnings) > 0:
@@ -521,6 +602,14 @@ Example usage:
   python extract_images_wiki_gg.py --force-refresh
   python extract_images_wiki_gg.py --delay 1.0  # Wait 1 second between requests
   python extract_images_wiki_gg.py --html-dir ./html --output-file images.json
+  python extract_images_wiki_gg.py --filename-map ./filename_map.json  # Use custom filename mappings
+
+Filename map format (filename_map.json):
+  {
+    "mappings": {
+      "Assembler.png": ["Assembler Alt.png", "Assembler Copy.png"]
+    }
+  }
 
 After generating image_source.json:
   python download_images.py    # Download all images from manifest
@@ -545,8 +634,8 @@ After generating image_source.json:
     parser.add_argument(
         "--cache-dir",
         type=str,
-        default="/tmp/satisfactory-wiki-cache",
-        help="Cache directory for File: pages (default: /tmp/satisfactory-wiki-cache)",
+        default="./downloads/cache",
+        help="Cache directory for File: pages (default: ./downloads/cache)",
     )
 
     parser.add_argument(
@@ -568,6 +657,13 @@ After generating image_source.json:
         help="Delay between requests in seconds (default: 0.5). Use higher values to avoid rate limiting.",
     )
 
+    parser.add_argument(
+        "--filename-map",
+        type=str,
+        default="./filename_map.json",
+        help="JSON file with filename mappings for creating additional copies (default: ./filename_map.json)",
+    )
+
     args = parser.parse_args()
 
     # Set up signal handler for graceful Ctrl+C
@@ -587,6 +683,7 @@ After generating image_source.json:
         dry_mode=args.dry_mode,
         force_refresh=args.force_refresh,
         request_delay=args.delay,
+        filename_map_file=args.filename_map,
     )
 
     return scraper.run()
