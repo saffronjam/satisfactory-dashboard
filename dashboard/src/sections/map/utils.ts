@@ -1,6 +1,29 @@
 import { DroneStation, Machine, MachineCategoryGenerator, TrainStation } from 'src/apiTypes';
 import { MachineGroup } from 'src/types';
 
+// Rotate a point around a pivot point
+export function rotatePoint(
+  px: number,
+  py: number,
+  pivotX: number,
+  pivotY: number,
+  angleRad: number
+): { x: number; y: number } {
+  const cos = Math.cos(angleRad);
+  const sin = Math.sin(angleRad);
+  const dx = px - pivotX;
+  const dy = py - pivotY;
+  return {
+    x: pivotX + dx * cos - dy * sin,
+    y: pivotY + dx * sin + dy * cos,
+  };
+}
+
+// Convert rotation degrees to radians (with 90° offset for map coordinate system)
+export function toRotationRad(rotationDegrees: number): number {
+  return Math.PI / 2 + ((rotationDegrees || 0) * Math.PI) / 180;
+}
+
 // Entity type for unified grouping
 type GroupableEntity =
   | { type: 'machine'; data: Machine; x: number; y: number }
