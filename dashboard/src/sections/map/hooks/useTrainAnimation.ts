@@ -16,6 +16,7 @@ interface AnimatedTrain {
 }
 
 const ANIMATION_DURATION = 4500; // ms - slightly longer than 4s poll interval
+const POSITION_THRESHOLD = 0.01; // Only update if position changed by this much
 
 function lerp(start: number, end: number, t: number): number {
   return start + (end - start) * Math.min(Math.max(t, 0), 1);
@@ -34,21 +35,53 @@ function lerpAngle(start: number, end: number, t: number): number {
   return normalizedStart + diff * Math.min(Math.max(t, 0), 1);
 }
 
+function positionsEqual(
+  a: Map<string, AnimatedPosition>,
+  b: Map<string, AnimatedPosition>
+): boolean {
+  if (a.size !== b.size) return false;
+  for (const [key, posA] of a) {
+    const posB = b.get(key);
+    if (!posB) return false;
+    if (
+      Math.abs(posA.x - posB.x) > POSITION_THRESHOLD ||
+      Math.abs(posA.y - posB.y) > POSITION_THRESHOLD ||
+      Math.abs(posA.rotation - posB.rotation) > POSITION_THRESHOLD
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function useTrainAnimation(
   trains: Train[],
   enabled: boolean = true
 ): Map<string, AnimatedPosition> {
   const animatedTrainsRef = useRef<Map<string, AnimatedTrain>>(new Map());
   const [positions, setPositions] = useState<Map<string, AnimatedPosition>>(new Map());
+  const lastPositionsRef = useRef<Map<string, AnimatedPosition>>(new Map());
   const rafRef = useRef<number>();
+  const prevTrainHashRef = useRef<string>('');
+  const lastUpdateTimeRef = useRef<number>(0);
 
   // Update targets when train data changes
   useEffect(() => {
     if (!enabled) {
       animatedTrainsRef.current.clear();
       setPositions(new Map());
+      prevTrainHashRef.current = '';
       return;
     }
+
+    // Create a hash of train positions to detect actual data changes (not just reference changes)
+    const trainHash = trains.map((t) => `${t.name}:${t.x}:${t.y}:${t.rotation}`).join('|');
+
+    // Skip if train data hasn't actually changed - prevents infinite re-render loop
+    if (trainHash === prevTrainHashRef.current) {
+      return;
+    }
+    prevTrainHashRef.current = trainHash;
 
     const now = performance.now();
 
@@ -124,7 +157,15 @@ export function useTrainAnimation(
         newPositions.set(name, { ...animated.currentPosition });
       }
 
-      setPositions(newPositions);
+      // Only update state if enough time has passed (throttle to ~20fps) and positions changed
+      // This prevents "Maximum update depth exceeded" warnings from too-frequent state updates
+      const timeSinceLastUpdate = time - lastUpdateTimeRef.current;
+      if (timeSinceLastUpdate >= 50 && !positionsEqual(newPositions, lastPositionsRef.current)) {
+        lastPositionsRef.current = newPositions;
+        lastUpdateTimeRef.current = time;
+        setPositions(newPositions);
+      }
+
       rafRef.current = requestAnimationFrame(animate);
     };
 
