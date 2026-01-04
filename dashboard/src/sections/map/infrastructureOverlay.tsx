@@ -17,6 +17,7 @@ import {
   TrainStation,
   TruckStation,
 } from 'src/apiTypes';
+import { BuildingColorMode, getGridColor } from 'src/utils/gridColors';
 import { ConvertToMapCoords2 } from './bounds';
 import { HoveredItem } from './hoverTooltip';
 import { BuildingsCanvasLayer, MachineHoverEvent } from './layers/buildingsCanvasLayer';
@@ -86,7 +87,6 @@ type InfrastructureOverlayProps = {
   storages?: Storage[];
   visibleBuildingCategories: Set<MachineCategory>;
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
   showBelts?: boolean;
   showPipes?: boolean;
   showRailway?: boolean;
@@ -97,7 +97,8 @@ type InfrastructureOverlayProps = {
   showTrainStations?: boolean;
   showDroneStations?: boolean;
   showTruckStations?: boolean;
-  colorBuildingsByStatus?: boolean;
+  buildingColorMode?: BuildingColorMode;
+  buildingOpacity?: number;
   spaceElevator?: SpaceElevator | null;
   showSpaceElevator?: boolean;
 };
@@ -112,11 +113,9 @@ const convertSplineToMapCoords = (spline: Location[]): LatLngExpression[] => {
 function BeltLayer({
   belts,
   onItemHover,
-  onItemClick,
 }: {
   belts: Belt[];
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
 }) {
   return (
     <>
@@ -145,13 +144,6 @@ function BeltLayer({
                   position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                 }),
               mouseout: () => onItemHover?.({ item: null, position: null }),
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onItemClick?.({
-                  item: { type: 'belt', data: belt },
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
             }}
           />
         );
@@ -165,12 +157,10 @@ function PipeLayer({
   pipes,
   pipeJunctions,
   onItemHover,
-  onItemClick,
 }: {
   pipes: Pipe[];
   pipeJunctions: PipeJunction[];
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
 }) {
   return (
     <>
@@ -200,13 +190,6 @@ function PipeLayer({
                   position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                 }),
               mouseout: () => onItemHover?.({ item: null, position: null }),
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onItemClick?.({
-                  item: { type: 'pipe', data: pipe },
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
             }}
           />
         );
@@ -234,13 +217,6 @@ function PipeLayer({
                   position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                 }),
               mouseout: () => onItemHover?.({ item: null, position: null }),
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onItemClick?.({
-                  item: { type: 'pipeJunction', data: junction },
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
             }}
           />
         );
@@ -253,11 +229,9 @@ function PipeLayer({
 function TrainRailLayer({
   trainRails,
   onItemHover,
-  onItemClick,
 }: {
   trainRails: TrainRail[];
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
 }) {
   return (
     <>
@@ -286,13 +260,6 @@ function TrainRailLayer({
                   position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                 }),
               mouseout: () => onItemHover?.({ item: null, position: null }),
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onItemClick?.({
-                  item: { type: 'trainRail', data: rail },
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
             }}
           />
         );
@@ -305,11 +272,9 @@ function TrainRailLayer({
 function SplitterMergerLayer({
   splitterMergers,
   onItemHover,
-  onItemClick,
 }: {
   splitterMergers: SplitterMerger[];
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
 }) {
   return (
     <>
@@ -338,13 +303,6 @@ function SplitterMergerLayer({
                   position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                 }),
               mouseout: () => onItemHover?.({ item: null, position: null }),
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onItemClick?.({
-                  item: { type: 'splitterMerger', data: sm },
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
             }}
           />
         );
@@ -357,11 +315,13 @@ function SplitterMergerLayer({
 function TrainStationLayer({
   trainStations,
   onItemHover,
-  onItemClick,
+  opacity = 0.5,
+  buildingColorMode = 'type',
 }: {
   trainStations: TrainStation[];
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
+  opacity?: number;
+  buildingColorMode?: BuildingColorMode;
 }) {
   return (
     <>
@@ -375,15 +335,22 @@ function TrainStationLayer({
           station.rotation
         );
 
+        // Determine color based on mode
+        const gridColors = getGridColor(station.circuitGroupId);
+        const stationColor =
+          buildingColorMode === 'grid' ? gridColors.fill : TRAIN_STATION_COLOR;
+        const platformColor =
+          buildingColorMode === 'grid' ? gridColors.stroke : TRAIN_STATION_PLATFORM_COLOR;
+
         return (
           <React.Fragment key={`train-station-${station.name}-${index}`}>
             {/* Main station bounding box (rotated) */}
             <Polygon
               positions={stationCorners}
               pathOptions={{
-                color: TRAIN_STATION_COLOR,
-                fillColor: TRAIN_STATION_COLOR,
-                fillOpacity: 0.3,
+                color: stationColor,
+                fillColor: stationColor,
+                fillOpacity: opacity,
                 weight: 2,
               }}
               eventHandlers={{
@@ -393,13 +360,6 @@ function TrainStationLayer({
                     position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                   }),
                 mouseout: () => onItemHover?.({ item: null, position: null }),
-                click: (e) => {
-                  e.originalEvent.stopPropagation();
-                  onItemClick?.({
-                    item: { type: 'trainStation', data: station },
-                    position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                  });
-                },
               }}
             />
             {/* Platform bounding boxes (rotated) */}
@@ -416,9 +376,9 @@ function TrainStationLayer({
                   key={`platform-${platformIndex}`}
                   positions={platformCorners}
                   pathOptions={{
-                    color: TRAIN_STATION_PLATFORM_COLOR,
-                    fillColor: TRAIN_STATION_PLATFORM_COLOR,
-                    fillOpacity: 0.25,
+                    color: platformColor,
+                    fillColor: platformColor,
+                    fillOpacity: opacity * 0.8,
                     weight: 1,
                   }}
                   eventHandlers={{
@@ -428,13 +388,6 @@ function TrainStationLayer({
                         position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                       }),
                     mouseout: () => onItemHover?.({ item: null, position: null }),
-                    click: (e) => {
-                      e.originalEvent.stopPropagation();
-                      onItemClick?.({
-                        item: { type: 'trainStation', data: station },
-                        position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                      });
-                    },
                   }}
                 />
               );
@@ -450,11 +403,13 @@ function TrainStationLayer({
 function DroneStationLayer({
   droneStations,
   onItemHover,
-  onItemClick,
+  opacity = 0.5,
+  buildingColorMode = 'type',
 }: {
   droneStations: DroneStation[];
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
+  opacity?: number;
+  buildingColorMode?: BuildingColorMode;
 }) {
   return (
     <>
@@ -467,14 +422,20 @@ function DroneStationLayer({
           station.boundingBox.max.x,
           station.boundingBox.max.y
         ) as [number, number];
+
+        // Determine color based on mode
+        const gridColors = getGridColor(station.circuitGroupId);
+        const stationColor =
+          buildingColorMode === 'grid' ? gridColors.fill : DRONE_STATION_COLOR;
+
         return (
           <Rectangle
             key={`drone-station-${station.name}-${index}`}
             bounds={[corner1, corner2]}
             pathOptions={{
-              color: DRONE_STATION_COLOR,
-              fillColor: DRONE_STATION_COLOR,
-              fillOpacity: 0.3,
+              color: stationColor,
+              fillColor: stationColor,
+              fillOpacity: opacity,
               weight: 2,
             }}
             eventHandlers={{
@@ -484,13 +445,6 @@ function DroneStationLayer({
                   position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                 }),
               mouseout: () => onItemHover?.({ item: null, position: null }),
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onItemClick?.({
-                  item: { type: 'droneStation', data: station },
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
             }}
           />
         );
@@ -503,11 +457,13 @@ function DroneStationLayer({
 function TruckStationLayer({
   truckStations,
   onItemHover,
-  onItemClick,
+  opacity = 0.5,
+  buildingColorMode = 'type',
 }: {
   truckStations: TruckStation[];
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
+  opacity?: number;
+  buildingColorMode?: BuildingColorMode;
 }) {
   return (
     <>
@@ -520,14 +476,20 @@ function TruckStationLayer({
           station.boundingBox.max.x,
           station.boundingBox.max.y
         ) as [number, number];
+
+        // Determine color based on mode
+        const gridColors = getGridColor(station.circuitGroupId);
+        const stationColor =
+          buildingColorMode === 'grid' ? gridColors.fill : TRUCK_STATION_COLOR;
+
         return (
           <Rectangle
             key={`truck-station-${station.name}-${index}`}
             bounds={[corner1, corner2]}
             pathOptions={{
-              color: TRUCK_STATION_COLOR,
-              fillColor: TRUCK_STATION_COLOR,
-              fillOpacity: 0.3,
+              color: stationColor,
+              fillColor: stationColor,
+              fillOpacity: opacity,
               weight: 2,
             }}
             eventHandlers={{
@@ -537,13 +499,6 @@ function TruckStationLayer({
                   position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                 }),
               mouseout: () => onItemHover?.({ item: null, position: null }),
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onItemClick?.({
-                  item: { type: 'truckStation', data: station },
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
             }}
           />
         );
@@ -556,11 +511,9 @@ function TruckStationLayer({
 function CableLayer({
   cables,
   onItemHover,
-  onItemClick,
 }: {
   cables: Cable[];
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
 }) {
   return (
     <>
@@ -586,13 +539,6 @@ function CableLayer({
                   position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                 }),
               mouseout: () => onItemHover?.({ item: null, position: null }),
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onItemClick?.({
-                  item: { type: 'cable', data: cable },
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
             }}
           />
         );
@@ -605,11 +551,11 @@ function CableLayer({
 function StorageLayer({
   storages,
   onItemHover,
-  onItemClick,
+  opacity = 0.5,
 }: {
   storages: Storage[];
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
+  opacity?: number;
 }) {
   return (
     <>
@@ -628,7 +574,7 @@ function StorageLayer({
             pathOptions={{
               color: STORAGE_COLOR,
               fillColor: STORAGE_COLOR,
-              fillOpacity: 0.3,
+              fillOpacity: opacity,
               weight: 1,
             }}
             eventHandlers={{
@@ -638,13 +584,6 @@ function StorageLayer({
                   position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
                 }),
               mouseout: () => onItemHover?.({ item: null, position: null }),
-              click: (e) => {
-                e.originalEvent.stopPropagation();
-                onItemClick?.({
-                  item: { type: 'storage', data: storage },
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
             }}
           />
         );
@@ -657,11 +596,11 @@ function StorageLayer({
 function SpaceElevatorLayer({
   spaceElevator,
   onItemHover,
-  onItemClick,
+  opacity = 0.5,
 }: {
   spaceElevator: SpaceElevator | null | undefined;
   onItemHover?: (event: HoverEvent) => void;
-  onItemClick?: (event: HoverEvent) => void;
+  opacity?: number;
 }) {
   if (!spaceElevator) return null;
 
@@ -679,7 +618,7 @@ function SpaceElevatorLayer({
       pathOptions={{
         color: SPACE_ELEVATOR_COLOR,
         fillColor: SPACE_ELEVATOR_COLOR,
-        fillOpacity: 0.3,
+        fillOpacity: opacity,
         weight: 2,
       }}
       eventHandlers={{
@@ -689,13 +628,6 @@ function SpaceElevatorLayer({
             position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
           }),
         mouseout: () => onItemHover?.({ item: null, position: null }),
-        click: (e) => {
-          e.originalEvent.stopPropagation();
-          onItemClick?.({
-            item: { type: 'spaceElevator', data: spaceElevator },
-            position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-          });
-        },
       }}
     />
   );
@@ -713,7 +645,8 @@ function arePropsEqual(
     prev.showTrainStations !== next.showTrainStations ||
     prev.showDroneStations !== next.showDroneStations ||
     prev.showTruckStations !== next.showTruckStations ||
-    prev.colorBuildingsByStatus !== next.colorBuildingsByStatus ||
+    prev.buildingColorMode !== next.buildingColorMode ||
+    prev.buildingOpacity !== next.buildingOpacity ||
     prev.showSpaceElevator !== next.showSpaceElevator
   ) {
     return false;
@@ -770,7 +703,6 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
   storages = [],
   visibleBuildingCategories,
   onItemHover,
-  onItemClick,
   showBelts: showBeltsProp = false,
   showPipes: showPipesProp = false,
   showRailway = false,
@@ -781,7 +713,8 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
   showTrainStations = false,
   showDroneStations = false,
   showTruckStations = false,
-  colorBuildingsByStatus = false,
+  buildingColorMode = 'type',
+  buildingOpacity = 0.5,
   spaceElevator,
   showSpaceElevator = false,
 }: InfrastructureOverlayProps) {
@@ -812,19 +745,6 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
     [onItemHover]
   );
 
-  // Handle machine click from canvas layer
-  const handleMachineClick = React.useCallback(
-    (event: MachineHoverEvent) => {
-      if (event.machine && event.position) {
-        onItemClick?.({
-          item: { type: 'machine', data: event.machine },
-          position: event.position,
-        });
-      }
-    },
-    [onItemClick]
-  );
-
   // Don't render anything if no layers are enabled
   if (
     !showBeltsLayer &&
@@ -849,13 +769,13 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
         enabled={showBuildings}
         visibleCategories={visibleBuildingCategories}
         onMachineHover={handleMachineHover}
-        onMachineClick={handleMachineClick}
-        colorByStatus={colorBuildingsByStatus}
+        buildingColorMode={buildingColorMode}
+        opacity={buildingOpacity}
       />
 
       {/* Storage containers */}
       {showStoragesLayer && (
-        <StorageLayer storages={storages} onItemHover={onItemHover} onItemClick={onItemClick} />
+        <StorageLayer storages={storages} onItemHover={onItemHover} opacity={buildingOpacity} />
       )}
 
       {/* Train rails (thicker lines) */}
@@ -863,18 +783,17 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
         <TrainRailLayer
           trainRails={trainRails}
           onItemHover={onItemHover}
-          onItemClick={onItemClick}
         />
       )}
 
       {/* Power cables */}
       {showPower && (
-        <CableLayer cables={cables} onItemHover={onItemHover} onItemClick={onItemClick} />
+        <CableLayer cables={cables} onItemHover={onItemHover} />
       )}
 
       {/* Belts */}
       {showBeltsLayer && (
-        <BeltLayer belts={belts} onItemHover={onItemHover} onItemClick={onItemClick} />
+        <BeltLayer belts={belts} onItemHover={onItemHover} />
       )}
 
       {/* Splitter/Mergers (rendered with belts layer) */}
@@ -882,7 +801,6 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
         <SplitterMergerLayer
           splitterMergers={splitterMergers}
           onItemHover={onItemHover}
-          onItemClick={onItemClick}
         />
       )}
 
@@ -892,7 +810,6 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
           pipes={pipes}
           pipeJunctions={pipeJunctions}
           onItemHover={onItemHover}
-          onItemClick={onItemClick}
         />
       )}
 
@@ -901,7 +818,8 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
         <TrainStationLayer
           trainStations={trainStations}
           onItemHover={onItemHover}
-          onItemClick={onItemClick}
+          opacity={buildingOpacity}
+          buildingColorMode={buildingColorMode}
         />
       )}
 
@@ -910,7 +828,8 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
         <DroneStationLayer
           droneStations={droneStations}
           onItemHover={onItemHover}
-          onItemClick={onItemClick}
+          opacity={buildingOpacity}
+          buildingColorMode={buildingColorMode}
         />
       )}
 
@@ -919,7 +838,8 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
         <TruckStationLayer
           truckStations={truckStations}
           onItemHover={onItemHover}
-          onItemClick={onItemClick}
+          opacity={buildingOpacity}
+          buildingColorMode={buildingColorMode}
         />
       )}
 
@@ -928,7 +848,7 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
         <SpaceElevatorLayer
           spaceElevator={spaceElevator}
           onItemHover={onItemHover}
-          onItemClick={onItemClick}
+          opacity={buildingOpacity}
         />
       )}
     </>

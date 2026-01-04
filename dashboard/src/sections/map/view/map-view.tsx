@@ -7,9 +7,13 @@ import {
   Chip,
   CircularProgress,
   Collapse,
+  Divider,
+  FormControl,
   FormControlLabel,
   IconButton,
+  MenuItem,
   Popover,
+  Select,
   Slider,
   Switch,
   Tooltip,
@@ -24,12 +28,31 @@ import {
   MachineCategoryExtractor,
   MachineCategoryFactory,
   MachineCategoryGenerator,
+  ResourceNodePurity,
+  ResourceNodePurityImpure,
+  ResourceNodePurityNormal,
+  ResourceNodePurityPure,
+  ResourceType,
+  ResourceTypeIronOre,
+  ResourceTypeCopperOre,
+  ResourceTypeLimestone,
+  ResourceTypeCoal,
+  ResourceTypeSAM,
+  ResourceTypeSulfur,
+  ResourceTypeCateriumOre,
+  ResourceTypeBauxite,
+  ResourceTypeRawQuartz,
+  ResourceTypeUranium,
+  ResourceTypeCrudeOil,
+  ResourceTypeGeyser,
+  ResourceTypeNitrogenGas,
 } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
 import { ApiContext } from 'src/contexts/api/useApi';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { varAlpha } from 'src/theme/styles';
 import { MachineGroup, SelectedMapItem } from 'src/types';
+import { BuildingColorMode } from 'src/utils/gridColors';
 import { useContextSelector } from 'use-context-selector';
 import { MapBounds } from '../bounds';
 import { FilterCategory, Overlay } from '../overlay';
@@ -64,7 +87,41 @@ const filterCategories: { key: FilterCategory; label: string }[] = [
 ];
 
 // Map layer types
-export type MapLayer = 'machineGroups' | 'buildings' | 'infrastructure' | 'vehicles' | 'power';
+export type MapLayer = 'machineGroups' | 'buildings' | 'infrastructure' | 'vehicles' | 'power' | 'resources';
+
+// Resource sub-layers
+export type ResourceSubLayer = 'nodes';
+
+// Resource node filter state
+export type ResourceNodeFilter = {
+  enabledCells: Set<string>; // Keys: "${resourceType}:${purity}"
+  exploitedFilter: 'all' | 'exploited' | 'notExploited';
+  radarVisibilityFilter: 'all' | 'visible' | 'notVisible';
+};
+
+// All resource types for the filter UI
+const allResourceTypes: { key: ResourceType; label: string; color: string }[] = [
+  { key: ResourceTypeIronOre, label: 'Iron', color: '#8B4513' },
+  { key: ResourceTypeCopperOre, label: 'Copper', color: '#B87333' },
+  { key: ResourceTypeLimestone, label: 'Limestone', color: '#D4C4A8' },
+  { key: ResourceTypeCoal, label: 'Coal', color: '#2C2C2C' },
+  { key: ResourceTypeSulfur, label: 'Sulfur', color: '#FFFF00' },
+  { key: ResourceTypeCateriumOre, label: 'Caterium', color: '#FFD700' },
+  { key: ResourceTypeRawQuartz, label: 'Quartz', color: '#FFB6C1' },
+  { key: ResourceTypeBauxite, label: 'Bauxite', color: '#CD853F' },
+  { key: ResourceTypeUranium, label: 'Uranium', color: '#00FF00' },
+  { key: ResourceTypeSAM, label: 'SAM', color: '#9400D3' },
+  { key: ResourceTypeCrudeOil, label: 'Oil', color: '#1C1C1C' },
+  { key: ResourceTypeNitrogenGas, label: 'Nitrogen', color: '#87CEEB' },
+  { key: ResourceTypeGeyser, label: 'Geyser', color: '#FF6347' },
+];
+
+// All purity levels
+const allPurities: { key: ResourceNodePurity; label: string; color: string }[] = [
+  { key: ResourceNodePurityImpure, label: 'Impure', color: '#EF4444' },
+  { key: ResourceNodePurityNormal, label: 'Normal', color: '#F59E0B' },
+  { key: ResourceNodePurityPure, label: 'Pure', color: '#22C55E' },
+];
 
 // Building sub-layers
 export type BuildingSubLayer =
@@ -97,6 +154,11 @@ const layerOptions: { key: MapLayer; label: string; expandable?: boolean }[] = [
   { key: 'infrastructure', label: 'Infrastructure', expandable: true },
   { key: 'vehicles', label: 'Vehicles', expandable: true },
   { key: 'power', label: 'Power' },
+  { key: 'resources', label: 'Resources', expandable: true },
+];
+
+const resourceSubLayerOptions: { key: ResourceSubLayer; label: string; color: string }[] = [
+  { key: 'nodes', label: 'Resource Nodes', color: '#10B981' },
 ];
 
 const buildingSubLayerOptions: { key: BuildingSubLayer; label: string; color: string }[] = [
@@ -160,6 +222,7 @@ export function MapView() {
       storages: v.storages,
       spaceElevator: v.spaceElevator,
       radarTowers: v.radarTowers,
+      resourceNodes: v.resourceNodes,
     };
   });
   const [machineGroups, setMachineGroups] = useState<MachineGroup[]>([]);
@@ -179,8 +242,18 @@ export function MapView() {
     Set<InfrastructureSubLayer>
   >(new Set());
   const [vehicleSubLayers, setVehicleSubLayers] = useState<Set<VehicleSubLayer>>(new Set());
-  const [showVehicleNames, setShowVehicleNames] = useState(false);
-  const [colorBuildingsByStatus, setColorBuildingsByStatus] = useState(false);
+  const [resourceSubLayers, setResourceSubLayers] = useState<Set<ResourceSubLayer>>(new Set());
+  const [resourceNodeFilter, setResourceNodeFilter] = useState<ResourceNodeFilter>({
+    enabledCells: new Set(
+      allResourceTypes.flatMap((rt) => allPurities.map((p) => `${rt.key}:${p.key}`))
+    ),
+    exploitedFilter: 'all',
+    radarVisibilityFilter: 'all',
+  });
+  const [showVehicleNames, setShowVehicleNames] = useState(true);
+  const [buildingColorMode, setBuildingColorMode] = useState<BuildingColorMode>('type');
+  const [buildingOpacity, setBuildingOpacity] = useState(0.5);
+  const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
   const [expandedLayers, setExpandedLayers] = useState<Set<MapLayer>>(new Set());
 
   const [isDragging, setIsDragging] = useState(false);
@@ -223,10 +296,31 @@ export function MapView() {
         // Disable multi-select mode when machine groups layer is turned off
         if (layer === 'machineGroups') {
           setMultiSelectMode(false);
+          // Clear selection if it's a machine group selection
+          setSelectedItem((prevSelected) => {
+            if (
+              prevSelected?.type === 'machineGroup' ||
+              prevSelected?.type === 'machineGroups' ||
+              prevSelected?.type === 'multiSelection'
+            ) {
+              return null;
+            }
+            return prevSelected;
+          });
         }
         // When buildings layer is turned off, turn off all sub-layers
         if (layer === 'buildings') {
           setBuildingSubLayers(new Set());
+          // Clear selection if it's a building-related selection
+          setSelectedItem((prevSelected) => {
+            if (
+              prevSelected?.type === 'trainStation' ||
+              prevSelected?.type === 'droneStation'
+            ) {
+              return null;
+            }
+            return prevSelected;
+          });
         }
         // When infrastructure layer is turned off, turn off all sub-layers
         if (layer === 'infrastructure') {
@@ -235,6 +329,10 @@ export function MapView() {
         // When vehicles layer is turned off, turn off all sub-layers
         if (layer === 'vehicles') {
           setVehicleSubLayers(new Set());
+        }
+        // When resources layer is turned off, turn off all sub-layers
+        if (layer === 'resources') {
+          setResourceSubLayers(new Set());
         }
       } else {
         next.add(layer);
@@ -264,9 +362,80 @@ export function MapView() {
             new Set(['trains', 'drones', 'trucks', 'tractors', 'explorers', 'players', 'paths'])
           );
         }
+        // When resources layer is turned on, turn on all sub-layers
+        if (layer === 'resources') {
+          setResourceSubLayers(new Set(['nodes']));
+        }
       }
       return next;
     });
+  };
+
+  // Toggle resource sub-layer
+  const toggleResourceSubLayer = (subLayer: ResourceSubLayer) => {
+    setResourceSubLayers((prev) => {
+      const next = new Set(prev);
+      if (next.has(subLayer)) {
+        next.delete(subLayer);
+      } else {
+        next.add(subLayer);
+      }
+      // Update parent resources layer based on sub-layers
+      if (next.size === 0) {
+        setEnabledLayers((prevLayers) => {
+          const nextLayers = new Set(prevLayers);
+          nextLayers.delete('resources');
+          return nextLayers;
+        });
+      } else if (!enabledLayers.has('resources')) {
+        setEnabledLayers((prevLayers) => {
+          const nextLayers = new Set(prevLayers);
+          nextLayers.add('resources');
+          return nextLayers;
+        });
+      }
+      return next;
+    });
+  };
+
+  // Cell-based filter helpers for resource nodes
+  const getCellKey = (resourceType: ResourceType, purity: ResourceNodePurity) =>
+    `${resourceType}:${purity}`;
+
+  const isCellEnabled = (resourceType: ResourceType, purity: ResourceNodePurity) =>
+    resourceNodeFilter.enabledCells.has(getCellKey(resourceType, purity));
+
+  const toggleCell = (resourceType: ResourceType, purity: ResourceNodePurity) => {
+    const key = getCellKey(resourceType, purity);
+    setResourceNodeFilter((prev) => {
+      const next = new Set(prev.enabledCells);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return { ...prev, enabledCells: next };
+    });
+  };
+
+  // Map ResourceType to image filename
+  const getResourceImageName = (resourceType: ResourceType): string => {
+    const mapping: Record<ResourceType, string> = {
+      [ResourceTypeIronOre]: 'Iron Ore',
+      [ResourceTypeCopperOre]: 'Copper Ore',
+      [ResourceTypeLimestone]: 'Limestone',
+      [ResourceTypeCoal]: 'Coal',
+      [ResourceTypeSulfur]: 'Sulfur',
+      [ResourceTypeCateriumOre]: 'Caterium Ore',
+      [ResourceTypeRawQuartz]: 'Raw Quartz',
+      [ResourceTypeBauxite]: 'Bauxite',
+      [ResourceTypeUranium]: 'Uranium',
+      [ResourceTypeSAM]: 'SAM',
+      [ResourceTypeCrudeOil]: 'Crude Oil',
+      [ResourceTypeNitrogenGas]: 'Nitrogen Gas',
+      [ResourceTypeGeyser]: 'Geyser',
+    };
+    return mapping[resourceType] ?? resourceType;
   };
 
   // Toggle building sub-layer
@@ -275,6 +444,23 @@ export function MapView() {
       const next = new Set(prev);
       if (next.has(subLayer)) {
         next.delete(subLayer);
+        // Clear selection if it's related to the disabled sub-layer
+        if (subLayer === 'trainStation') {
+          setSelectedItem((prevSelected) => {
+            if (prevSelected?.type === 'trainStation') {
+              return null;
+            }
+            return prevSelected;
+          });
+        }
+        if (subLayer === 'droneStation') {
+          setSelectedItem((prevSelected) => {
+            if (prevSelected?.type === 'droneStation') {
+              return null;
+            }
+            return prevSelected;
+          });
+        }
       } else {
         next.add(subLayer);
       }
@@ -567,6 +753,23 @@ export function MapView() {
                 <Iconify icon="mdi:help-circle-outline" />
               </IconButton>
             )}
+
+            {/* Settings Button */}
+            <Tooltip title="Map Settings">
+              <IconButton
+                onClick={(e) => setSettingsAnchor(e.currentTarget)}
+                size="small"
+                sx={{
+                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
+                  backdropFilter: 'blur(8px)',
+                  '&:hover': {
+                    backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
+                  },
+                }}
+              >
+                <Iconify icon="mdi:cog" width={20} />
+              </IconButton>
+            </Tooltip>
           </Box>
 
           {/* Help Popover */}
@@ -787,27 +990,6 @@ export function MapView() {
                                 }
                                 sx={{ ml: 0, my: -0.5 }}
                               />
-                              {/* Color by status option under Factory */}
-                              {subLayer.key === 'factory' && buildingSubLayers.has('factory') && (
-                                <FormControlLabel
-                                  control={
-                                    <Switch
-                                      checked={colorBuildingsByStatus}
-                                      onChange={(e) => setColorBuildingsByStatus(e.target.checked)}
-                                      size="small"
-                                    />
-                                  }
-                                  label={
-                                    <Typography
-                                      variant="caption"
-                                      sx={{ color: 'text.secondary', fontSize: '0.7rem' }}
-                                    >
-                                      Color by status
-                                    </Typography>
-                                  }
-                                  sx={{ ml: 3, my: -0.5 }}
-                                />
-                              )}
                             </Box>
                           ))}
                         </Box>
@@ -903,9 +1085,251 @@ export function MapView() {
                         </Box>
                       </Collapse>
                     )}
+                    {/* Resources sub-layers */}
+                    {layer.key === 'resources' && (
+                      <Collapse in={expandedLayers.has('resources')}>
+                        <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                          {resourceSubLayerOptions.map((subLayer) => (
+                            <FormControlLabel
+                              key={subLayer.key}
+                              control={
+                                <Checkbox
+                                  checked={resourceSubLayers.has(subLayer.key)}
+                                  onChange={() => toggleResourceSubLayer(subLayer.key)}
+                                  size="small"
+                                  sx={{
+                                    color: subLayer.color,
+                                    '&.Mui-checked': {
+                                      color: subLayer.color,
+                                    },
+                                  }}
+                                />
+                              }
+                              label={
+                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                  {subLayer.label}
+                                </Typography>
+                              }
+                              sx={{ ml: 0, my: -0.5 }}
+                            />
+                          ))}
+                          {/* Resource matrix filter */}
+                          {resourceSubLayers.has('nodes') && (
+                            <Box sx={{ mt: 1 }}>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1.5 }}>
+                                {allResourceTypes.map((rt) => (
+                                  <Box
+                                    key={rt.key}
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      gap: 1,
+                                    }}
+                                  >
+                                    {/* Resource name - left aligned, muted color */}
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: 'text.secondary',
+                                        fontSize: '0.65rem',
+                                        minWidth: 60,
+                                      }}
+                                    >
+                                      {rt.label}
+                                    </Typography>
+
+                                    {/* Purity icons - right aligned */}
+                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                      {allPurities.map((p) => (
+                                        <IconButton
+                                          key={p.key}
+                                          size="small"
+                                          onClick={() => toggleCell(rt.key, p.key)}
+                                          sx={{
+                                            width: 24,
+                                            height: 24,
+                                            p: 0,
+                                            border: `2px solid ${p.color}`,
+                                            borderRadius: '50%',
+                                            opacity: isCellEnabled(rt.key, p.key) ? 1 : 0.3,
+                                            backgroundColor: 'rgba(0,0,0,0.5)',
+                                            '&:hover': {
+                                              backgroundColor: 'rgba(0,0,0,0.7)',
+                                            },
+                                          }}
+                                        >
+                                          <Box
+                                            component="img"
+                                            src={`assets/images/satisfactory/64x64/${getResourceImageName(rt.key)}.png`}
+                                            sx={{ width: 16, height: 16, objectFit: 'contain' }}
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                          />
+                                        </IconButton>
+                                      ))}
+                                    </Box>
+                                  </Box>
+                                ))}
+                              </Box>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ mb: 0.5, display: 'block' }}
+                              >
+                                Filters
+                              </Typography>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                <Chip
+                                  label="Exploited"
+                                  onClick={() =>
+                                    setResourceNodeFilter((prev) => ({
+                                      ...prev,
+                                      exploitedFilter:
+                                        prev.exploitedFilter === 'exploited' ? 'all' : 'exploited',
+                                    }))
+                                  }
+                                  size="small"
+                                  variant={
+                                    resourceNodeFilter.exploitedFilter === 'exploited'
+                                      ? 'filled'
+                                      : 'outlined'
+                                  }
+                                  color={
+                                    resourceNodeFilter.exploitedFilter === 'exploited'
+                                      ? 'success'
+                                      : 'default'
+                                  }
+                                  sx={{ fontSize: '0.65rem', height: 22 }}
+                                />
+                                <Chip
+                                  label="Not Exploited"
+                                  onClick={() =>
+                                    setResourceNodeFilter((prev) => ({
+                                      ...prev,
+                                      exploitedFilter:
+                                        prev.exploitedFilter === 'notExploited' ? 'all' : 'notExploited',
+                                    }))
+                                  }
+                                  size="small"
+                                  variant={
+                                    resourceNodeFilter.exploitedFilter === 'notExploited'
+                                      ? 'filled'
+                                      : 'outlined'
+                                  }
+                                  color={
+                                    resourceNodeFilter.exploitedFilter === 'notExploited'
+                                      ? 'warning'
+                                      : 'default'
+                                  }
+                                  sx={{ fontSize: '0.65rem', height: 22 }}
+                                />
+                                <Chip
+                                  label="Radar Visible"
+                                  onClick={() =>
+                                    setResourceNodeFilter((prev) => ({
+                                      ...prev,
+                                      radarVisibilityFilter:
+                                        prev.radarVisibilityFilter === 'visible' ? 'all' : 'visible',
+                                    }))
+                                  }
+                                  size="small"
+                                  variant={
+                                    resourceNodeFilter.radarVisibilityFilter === 'visible'
+                                      ? 'filled'
+                                      : 'outlined'
+                                  }
+                                  color={
+                                    resourceNodeFilter.radarVisibilityFilter === 'visible'
+                                      ? 'info'
+                                      : 'default'
+                                  }
+                                  sx={{ fontSize: '0.65rem', height: 22 }}
+                                />
+                                <Chip
+                                  label="Not Radar Visible"
+                                  onClick={() =>
+                                    setResourceNodeFilter((prev) => ({
+                                      ...prev,
+                                      radarVisibilityFilter:
+                                        prev.radarVisibilityFilter === 'notVisible' ? 'all' : 'notVisible',
+                                    }))
+                                  }
+                                  size="small"
+                                  variant={
+                                    resourceNodeFilter.radarVisibilityFilter === 'notVisible'
+                                      ? 'filled'
+                                      : 'outlined'
+                                  }
+                                  color={
+                                    resourceNodeFilter.radarVisibilityFilter === 'notVisible'
+                                      ? 'secondary'
+                                      : 'default'
+                                  }
+                                  sx={{ fontSize: '0.65rem', height: 22 }}
+                                />
+                              </Box>
+                            </Box>
+                          )}
+                        </Box>
+                      </Collapse>
+                    )}
                   </Box>
                 ))}
               </Box>
+            </Box>
+          </Popover>
+
+          {/* Settings Popover */}
+          <Popover
+            open={Boolean(settingsAnchor)}
+            anchorEl={settingsAnchor}
+            onClose={() => setSettingsAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            slotProps={{
+              paper: {
+                sx: {
+                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
+                  backdropFilter: 'blur(8px)',
+                  mt: 1,
+                },
+              },
+            }}
+          >
+            <Box sx={{ p: 2, minWidth: 200 }}>
+              <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                Map Settings
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Building Opacity
+              </Typography>
+              <Slider
+                value={buildingOpacity}
+                onChange={(_, value) => setBuildingOpacity(value as number)}
+                min={0}
+                max={1}
+                step={0.1}
+                marks
+                valueLabelDisplay="auto"
+                valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
+                size="small"
+              />
+              <Divider sx={{ my: 1.5 }} />
+              <Typography variant="caption" color="text.secondary">
+                Building Color Mode
+              </Typography>
+              <FormControl size="small" fullWidth sx={{ mt: 0.5 }}>
+                <Select
+                  value={buildingColorMode}
+                  onChange={(e) => setBuildingColorMode(e.target.value as BuildingColorMode)}
+                >
+                  <MenuItem value="type">By Type</MenuItem>
+                  <MenuItem value="status">By Status</MenuItem>
+                  <MenuItem value="grid">By Power Grid</MenuItem>
+                </Select>
+              </FormControl>
             </Box>
           </Popover>
 
@@ -945,6 +1369,7 @@ export function MapView() {
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               multiSelectMode={multiSelectMode}
+              isMobile={isMobile}
               enabledLayers={enabledLayers}
               belts={displayData.belts}
               pipes={displayData.pipes}
@@ -969,9 +1394,13 @@ export function MapView() {
               truckStations={displayData.truckStations}
               buildingSubLayers={buildingSubLayers}
               showVehicleNames={showVehicleNames}
-              colorBuildingsByStatus={colorBuildingsByStatus}
+              buildingColorMode={buildingColorMode}
+              buildingOpacity={buildingOpacity}
               spaceElevator={displayData.spaceElevator}
               radarTowers={displayData.radarTowers}
+              resourceNodes={displayData.resourceNodes}
+              resourceSubLayers={resourceSubLayers}
+              resourceNodeFilter={resourceNodeFilter}
             />
           </MapContainer>
 

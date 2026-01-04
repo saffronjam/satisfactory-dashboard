@@ -1,5 +1,5 @@
-import { Box, IconButton, Paper, Typography } from '@mui/material';
-import { memo, useEffect, useRef } from 'react';
+import { Box, Paper, Typography } from '@mui/material';
+import { memo } from 'react';
 import {
   Belt,
   Cable,
@@ -10,6 +10,7 @@ import {
   MachineStatusPaused,
   Pipe,
   PipeJunction,
+  ResourceNode,
   SpaceElevator,
   SplitterMerger,
   Storage,
@@ -20,6 +21,7 @@ import {
   TrainStationPlatformTypeFluidFreight,
   TruckStation,
 } from 'src/apiTypes';
+import { getPurityLabel, PURITY_COLORS } from './utils/radarTowerUtils';
 import { Iconify } from 'src/components/iconify';
 import { fShortenNumber, MetricUnits, WattUnits } from 'src/utils/format-number';
 
@@ -47,13 +49,12 @@ export type HoveredItem =
   | { type: 'trainStation'; data: TrainStation }
   | { type: 'droneStation'; data: DroneStation }
   | { type: 'truckStation'; data: TruckStation }
-  | { type: 'spaceElevator'; data: SpaceElevator };
+  | { type: 'spaceElevator'; data: SpaceElevator }
+  | { type: 'resourceNode'; data: ResourceNode };
 
 interface HoverTooltipProps {
   item: HoveredItem;
   position: { x: number; y: number };
-  isPinned?: boolean;
-  onClose?: () => void;
 }
 
 // Format length for display
@@ -77,30 +78,7 @@ const formatMachineType = (type: string): string => {
     .replace(/^./, (str) => str.toUpperCase());
 };
 
-function HoverTooltipInner({ item, position, isPinned = false, onClose }: HoverTooltipProps) {
-  const popoverRef = useRef<HTMLDivElement>(null);
-
-  // Click-outside detection
-  useEffect(() => {
-    if (!isPinned || !onClose) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    // 100ms delay prevents the click that pins from immediately closing
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isPinned, onClose]);
-
+function HoverTooltipInner({ item, position }: HoverTooltipProps) {
   const renderContent = () => {
     switch (item.type) {
       case 'belt':
@@ -307,11 +285,22 @@ function HoverTooltipInner({ item, position, isPinned = false, onClose }: HoverT
                 {formatMachineType(item.data.type)}
               </Typography>
             </Box>
-            {/* Recipe (output item) */}
+            {/* Recipe (output item) with icon */}
             {recipe && (
-              <Typography variant="caption" color="text.primary" sx={{ fontSize: '0.65rem' }}>
-                {recipe}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Box
+                  component="img"
+                  src={`assets/images/satisfactory/64x64/${recipe}.png`}
+                  alt={recipe}
+                  sx={{ width: 14, height: 14, objectFit: 'contain', flexShrink: 0 }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <Typography variant="caption" color="text.primary" sx={{ fontSize: '0.65rem' }}>
+                  {recipe}
+                </Typography>
+              </Box>
             )}
             {/* Efficiency section */}
             {avgEfficiency !== null && (
@@ -758,39 +747,79 @@ function HoverTooltipInner({ item, position, isPinned = false, onClose }: HoverT
           </>
         );
       }
+
+      case 'resourceNode': {
+        const purityColor =
+          PURITY_COLORS[item.data.purity as keyof typeof PURITY_COLORS] || PURITY_COLORS.default;
+        const purityLabel = getPurityLabel(item.data.purity);
+
+        return (
+          <>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+              Resource Node
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 1,
+                mt: 0.25,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Box
+                  component="img"
+                  src={`assets/images/satisfactory/64x64/${item.data.name}.png`}
+                  alt={item.data.name}
+                  sx={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0 }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <Typography
+                  variant="body2"
+                  fontWeight="medium"
+                  sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}
+                >
+                  {item.data.name}
+                </Typography>
+              </Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: '0.65rem',
+                  lineHeight: 1.2,
+                  color: purityColor,
+                  opacity: 0.85,
+                  fontWeight: 500,
+                }}
+              >
+                {purityLabel}
+              </Typography>
+            </Box>
+          </>
+        );
+      }
     }
   };
 
   return (
     <Paper
-      ref={popoverRef}
-      elevation={isPinned ? 8 : 4}
+      elevation={4}
       sx={{
         position: 'fixed',
         left: position.x + 8,
         top: position.y + 8,
-        zIndex: isPinned ? 1600 : 1400,
+        zIndex: 1400,
         p: 1,
-        pr: isPinned ? 3.5 : 1,
         minWidth: 80,
         maxWidth: 280,
         backgroundColor: 'background.paper',
         borderRadius: 0.5,
-        pointerEvents: isPinned ? 'auto' : 'none',
-        border: isPinned ? '2px solid' : undefined,
-        borderColor: isPinned ? 'primary.main' : undefined,
+        pointerEvents: 'none',
       }}
     >
-      {/* Close button */}
-      {isPinned && onClose && (
-        <IconButton
-          size="small"
-          onClick={onClose}
-          sx={{ position: 'absolute', top: 4, right: 4, zIndex: 1 }}
-        >
-          <Iconify icon="mdi:close" width={16} />
-        </IconButton>
-      )}
       {renderContent()}
     </Paper>
   );
