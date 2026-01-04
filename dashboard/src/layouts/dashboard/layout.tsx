@@ -1,19 +1,19 @@
 import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
 import type { Breakpoint, SxProps, Theme } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
-import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AddSessionDialog } from 'src/components/session-dialog';
 import { SessionSelector } from 'src/components/session-selector';
+import { SessionInitOverlay } from 'src/components/session-init-overlay';
 import { SessionStatusBar } from 'src/components/session-status-bar';
+import { VersionDisplay } from 'src/components/version-display/VersionDisplay';
 import { WelcomeScreen } from 'src/components/welcome';
-import { CONFIG } from 'src/config-global';
+import { useDebug } from 'src/contexts/debug/DebugContext';
 import { useSession } from 'src/contexts/sessions';
 import { layoutClasses } from '../classes';
 import { MenuButton } from '../components/menu-button';
-import { navData } from '../config-nav-dashboard';
+import { getNavData } from '../config-nav-dashboard';
 import { HeaderSection } from '../core/header-section';
 import { LayoutSection } from '../core/layout-section';
 import { Main } from './main';
@@ -42,6 +42,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
   const theme = useTheme();
   const location = useLocation();
   const { sessions, isLoading: sessionsLoading } = useSession();
+  const { isDebugMode } = useDebug();
 
   const [navOpen, setNavOpen] = useState(false);
   const [addSessionDialogOpen, setAddSessionDialogOpen] = useState(false);
@@ -50,6 +51,9 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
 
   // Hide header on map page for full-screen experience
   const hideHeader = location.pathname === '/map';
+
+  // Get nav data based on debug mode
+  const navData = getNavData(isDebugMode);
 
   // Show welcome screen when no sessions exist
   if (!sessionsLoading && sessions.length === 0) {
@@ -68,17 +72,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
     <SessionSelector onAddSession={() => setAddSessionDialogOpen(true)} />
   );
 
-  const versionSlot = (
-    <Box sx={{ p: 2, pb: 6 }}>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: 'block', textAlign: 'center' }}
-      >
-        {CONFIG.appVersion}
-      </Typography>
-    </Box>
-  );
+  const versionSlot = <VersionDisplay />;
 
   return (
     <>
@@ -174,6 +168,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
         <Main>{children}</Main>
       </LayoutSection>
       <SessionStatusBar />
+      <SessionInitOverlay />
     </>
   );
 }
