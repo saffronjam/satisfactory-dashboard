@@ -118,9 +118,12 @@ tsconfig.tsbuildinfo
 
 PACKAGE_INFO
 
+# Python
+__pycache__/
+
 # Custom
 scripts/scrape_map/output/
 *.tsbuildinfo
 scripts/scrape_images/venv/
 scripts/scrape_images/output/
-scripts/scrape_images/html/
+scripts/scrape_images/downloads/
