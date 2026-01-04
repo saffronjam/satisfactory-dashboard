@@ -2,21 +2,16 @@ package service
 
 import (
 	"api/service/client"
-	"api/service/implClient"
-	"api/service/mockClient"
+	"api/service/frm_client"
+	"api/service/mock_client"
 )
-
-// NewClient creates a new client using the config URL
-func NewClient() client.Client {
-	return implClient.NewClient()
-}
 
 // NewClientWithAddress creates a new client with a custom address
 func NewClientWithAddress(address string) client.Client {
-	return implClient.NewClientWithAddress(address)
+	return frm_client.NewClientWithAddress(address)
 }
 
 // NewMockClient creates a new mock client for testing
 func NewMockClient() client.Client {
-	return mockClient.NewClient()
+	return mock_client.NewClient()
 }

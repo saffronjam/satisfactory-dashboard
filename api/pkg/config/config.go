@@ -11,10 +11,6 @@ type Type struct {
 	ExternalURL string `json:"externalUrl"`
 	Filepath    string `json:"filepath"`
 
-	SatisfactoryAPI struct {
-		URL string `json:"url"`
-	} `json:"satisfactoryApi"`
-
 	Redis struct {
 		URL      string `json:"url"`
 		Password string `json:"password,default=default"`

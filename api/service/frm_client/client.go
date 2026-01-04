@@ -1,0 +1,438 @@
+package frm_client
+
+import (
+	"api/models/models"
+	"api/pkg/log"
+	"api/service/frm_client/frm_models"
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"net/http"
+	"net/url"
+	"strings"
+	"sync"
+	"time"
+)
+
+const (
+	apiTimeout         = 10 * time.Second // Timeout for regular API calls
+	infraApiTimeout    = 20 * time.Second // Longer timeout for infrastructure endpoints (belts, pipes, etc.)
+	statusCheckTimeout = 2 * time.Second  // Timeout for the basic status check
+)
+
+// Client handles interactions with the Satisfactory Mod API
+type Client struct {
+	httpClient    *http.Client
+	apiIsUp       bool
+	apiStatusLock sync.RWMutex
+	apiUrl        string
+	requestQueue  *RequestQueue
+}
+
+// NewClientWithAddress creates a new Satisfactory API service instance with a custom URL
+func NewClientWithAddress(address string) *Client {
+	// Ensure the address has a protocol prefix
+	apiUrl := address
+	if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
+		apiUrl = "http://" + address
+	}
+
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: apiTimeout,
+		},
+		apiIsUp:      false,
+		apiUrl:       apiUrl,
+		requestQueue: NewRequestQueue(apiUrl),
+	}
+}
+
+// GetAddress returns the API URL this client is connected to
+func (client *Client) GetAddress() string {
+	return client.apiUrl
+}
+
+func (client *Client) isApiUp() bool {
+	client.apiStatusLock.RLock()
+	defer client.apiStatusLock.RUnlock()
+	return client.apiIsUp
+}
+
+func (client *Client) setApiUp(isUp bool) {
+	client.apiStatusLock.Lock()
+	defer client.apiStatusLock.Unlock()
+	if client.apiIsUp != isUp {
+		isUpStr := fmt.Sprintf("%sdown%s", log.Red, log.Reset)
+		if isUp {
+			isUpStr = fmt.Sprintf("%sup%s", log.Green, log.Reset)
+		}
+		log.Printf("Satisfactory API status changed: %s", isUpStr)
+		client.apiIsUp = isUp
+	}
+}
+
+// satisfactoryStatusToTrainStatus converts raw train data to models.TrainStatus
+func satisfactoryStatusToTrainStatus(trainData *frm_models.Train, relevantTrainStations []models.TrainStation) models.TrainStatus {
+	if trainData.Derailed {
+		return models.TrainStatusDerailed
+	}
+
+	// Check proximity to stations for Docking status
+	for _, station := range relevantTrainStations {
+		if math.Abs(trainData.Location.Z-station.Z) < 0.1 &&
+			math.Abs(trainData.Location.X-station.X) < 10 &&
+			math.Abs(trainData.Location.Y-station.Y) < 10 {
+			return models.TrainStatusDocking
+		}
+	}
+
+	switch trainData.Status {
+	case "Self-Driving":
+		return models.TrainStatusSelfDriving
+	case "Manual Driving":
+		return models.TrainStatusManualDriving
+	case "Parked":
+		return models.TrainStatusParked
+	default:
+		log.Warnf("Unknown train status received: %s", trainData.Status)
+		return models.TrainStatusUnknown
+	}
+}
+
+// satisfactoryStatusToDroneStatus converts raw drone data to models.DroneStatus
+func satisfactoryStatusToDroneStatus(droneData *frm_models.Drone, relevantDroneStations []models.DroneStation) models.DroneStatus {
+	// Check proximity to stations for Docking status
+	for _, station := range relevantDroneStations {
+		// Note: Increased Z tolerance based on TS code
+		if math.Abs(droneData.Location.Z-station.Z) < 1000 &&
+			math.Abs(droneData.Location.X-station.X) < 10 &&
+			math.Abs(droneData.Location.Y-station.Y) < 10 {
+			return models.DroneStatusDocking
+		}
+	}
+
+	// Assuming if not docking, it's flying. API might provide more detailed status.
+	return models.DroneStatusFlying
+}
+
+// SetupEventStream starts polling endpoints and sends data via the callback
+func (client *Client) SetupEventStream(ctx context.Context, callback func(*models.SatisfactoryEvent)) error {
+	endpoints := []struct {
+		Type     models.SatisfactoryEventType
+		Endpoint func(context.Context) (interface{}, error)
+		Interval time.Duration
+	}{
+		{
+			Type:     models.SatisfactoryEventApiStatus,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetSatisfactoryApiStatus(c) },
+			Interval: 5 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventCircuits,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListCircuits(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventFactoryStats,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetFactoryStats(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventProdStats,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetProdStats(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventSinkStats,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetSinkStats(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventPlayers,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListPlayers(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventGeneratorStats,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetGeneratorStats(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventMachines,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetMachines(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventVehicles,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetVehicles(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventVehicleStations,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetVehicleStations(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventBelts,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetBelts(c) },
+			Interval: 120 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventPipes,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetPipes(c) },
+			Interval: 120 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventTrainRails,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListTrainRails(c) },
+			Interval: 120 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventCables,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListCables(c) },
+			Interval: 120 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventStorages,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListStorageContainers(c) },
+			Interval: 120 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventTractors,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListTractors(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventExplorers,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListExplorers(c) },
+			Interval: 4 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventVehiclePaths,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListVehiclePaths(c) },
+			Interval: 30 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventSpaceElevator,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetSpaceElevator(c) },
+			Interval: 30 * time.Second,
+		},
+		{
+			Type:     models.SatisfactoryEventRadarTowers,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListRadarTowers(c) },
+			Interval: 4 * time.Second,
+		},
+	}
+
+	log.Infoln("Starting event listeners for Satisfactory API")
+
+	var wg sync.WaitGroup
+	for idx, ep := range endpoints {
+		wg.Add(1)
+
+		log.Debugf("(%d/%d) Starting event listener for %s%s%s", idx+1, len(endpoints), log.Cyan, ep.Type, log.Reset)
+		go func(endpoint struct {
+			Type     models.SatisfactoryEventType
+			Endpoint func(context.Context) (interface{}, error)
+			Interval time.Duration
+		}) {
+			defer wg.Done()
+			ticker := time.NewTicker(endpoint.Interval)
+			defer ticker.Stop()
+
+			// Fetch immediately on start, then continue with ticker
+			fetchData := func() {
+				endpointType := string(endpoint.Type)
+				executed, err := client.requestQueue.Enqueue(endpointType, func() error {
+					data, fetchErr := endpoint.Endpoint(ctx)
+					if fetchErr == nil {
+						callback(&models.SatisfactoryEvent{Type: endpoint.Type, Data: data})
+					}
+					return fetchErr
+				})
+
+				if executed && err != nil {
+					log.PrettyError(fmt.Errorf("failed to fetch %s data. details: %w", endpoint.Type, err))
+					if endpoint.Type == models.SatisfactoryEventApiStatus {
+						callback(&models.SatisfactoryEvent{
+							Type: models.SatisfactoryEventApiStatus,
+							Data: &models.SatisfactoryApiStatus{Running: false},
+						})
+					}
+				}
+			}
+
+			// Execute immediately on start
+			fetchData()
+
+			for {
+				select {
+				case <-ticker.C:
+					fetchData()
+				case <-ctx.Done():
+					log.Printf("Stopping event listener for: %s client", endpoint.Type)
+					return // Exit goroutine
+				}
+			}
+		}(ep)
+	}
+
+	// Stop the request queue when context is cancelled
+	go func() {
+		<-ctx.Done()
+		client.requestQueue.Stop()
+	}()
+
+	return nil
+}
+
+// GetSatisfactoryApiStatus checks if the API root endpoint is reachable
+func (client *Client) GetSatisfactoryApiStatus(ctx context.Context) (*models.SatisfactoryApiStatus, error) {
+	// Use a shorter timeout for the basic check
+	reqCtx, cancel := context.WithTimeout(ctx, statusCheckTimeout)
+	defer cancel()
+
+	apiUrl, err := url.JoinPath(client.apiUrl, "/")
+	if err != nil {
+		log.Warnln("Failed to join URL path:", err)
+		return nil, models.NewSatisfactoryApiError("Failed to join URL path")
+	}
+
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, apiUrl, nil)
+	if err != nil {
+		client.setApiUp(false) // Should not happen, but good practice
+		return nil, models.NewSatisfactoryApiError("Failed to create request for API status check")
+	}
+
+	resp, err := client.httpClient.Do(req)
+	if err != nil {
+		client.setApiUp(false)
+		// Don't wrap error here, the caller (event loop) handles ApiError specifically
+		return nil, models.NewSatisfactoryApiError("API status check failed")
+	}
+	defer resp.Body.Close()
+
+	// Consider any 2xx status as "up" for this basic check
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		client.setApiUp(true)
+		return &models.SatisfactoryApiStatus{Running: true}, nil
+	} else {
+		client.setApiUp(false)
+		return nil, models.NewSatisfactoryApiError("API status check returned non-2xx status")
+	}
+}
+
+// makeSatisfactoryCall performs a GET request and decodes the JSON response
+// It updates the API status based on success/failure.
+func (client *Client) makeSatisfactoryCall(ctx context.Context, path string, target interface{}) error {
+	return client.makeSatisfactoryCallWithTimeout(ctx, path, target, client.httpClient.Timeout)
+}
+
+// makeSatisfactoryCallWithTimeout performs a GET request with a custom timeout
+func (client *Client) makeSatisfactoryCallWithTimeout(ctx context.Context, path string, target interface{}, timeout time.Duration) error {
+	reqCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	apiUrl, err := url.JoinPath(client.apiUrl, path)
+	if err != nil {
+		log.Warnln("Failed to join URL path:", err)
+		return models.NewSatisfactoryApiError(fmt.Sprintf("Failed to join URL path for %s: %v", path, err))
+	}
+
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, apiUrl, nil)
+	if err != nil {
+		client.setApiUp(false)
+		return models.NewSatisfactoryApiError(fmt.Sprintf("Failed to create request for %s: %v", path, err))
+	}
+
+	startTime := time.Now()
+	resp, err := client.httpClient.Do(req)
+	elapsed := time.Since(startTime)
+
+	// Log DEBUG warning if request took longer than 10 seconds
+	if elapsed > 10*time.Second {
+		log.Debugf("FRM API request to %s took %v (> 10s threshold)", path, elapsed)
+	}
+
+	if err != nil {
+		client.setApiUp(false)
+		return models.NewSatisfactoryApiError(fmt.Sprintf("Failed to make request to %s: %v", path, err))
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		statusCode := resp.StatusCode
+		if statusCode == http.StatusServiceUnavailable || statusCode == http.StatusNotFound {
+			client.setApiUp(false)
+		}
+		return models.NewSatisfactoryApiError(fmt.Sprintf("API call to %s failed with status code %d", path, statusCode))
+	}
+
+	// Decode JSON response
+	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
+		// API responded with OK, but body is invalid JSON or doesn't match target struct
+		// This is less likely an "API down" scenario, more likely a data or code issue.
+		// We don't necessarily setApiUp(false) here, as the endpoint might be partially functional.
+		return models.NewSatisfactoryApiError(fmt.Sprintf("Failed to decode JSON response from %s: %v", path, err))
+	}
+
+	// If we reached here, the call was successful
+	// We don't necessarily setApiUp(true) here, as the main status check handles that.
+	// This prevents flapping if only one endpoint works.
+	return nil
+}
+
+// blueprintGeneratorNameToType maps generator names to PowerType enums
+func (client *Client) blueprintGeneratorNameToType(name string) models.PowerType {
+	lowerName := strings.ToLower(name)
+	if strings.Contains(lowerName, "bio") {
+		return models.PowerTypeBiomass
+	}
+	if strings.Contains(lowerName, "coal") {
+		return models.PowerTypeCoal
+	}
+	if strings.Contains(lowerName, "fuel") {
+		return models.PowerTypeFuel
+	}
+	if strings.Contains(lowerName, "geo") {
+		return models.PowerTypeGeothermal
+	}
+	if strings.Contains(lowerName, "nuclear") {
+		return models.PowerTypeNuclear
+	}
+	log.Warnf("Unknown generator type name: %slient", name)
+	return models.PowerTypeUnknown // Return a specific "Unknown" type
+}
+
+// isMinableResource checks if an item name corresponds to a raw, minable resource
+func (client *Client) isMinableResource(name string) bool {
+	includes := []string{" ore"} // Note the leading space for whole word matching
+	equals := []string{
+		"water",
+		"sulfur",
+		"coal",
+		"caterium",
+		"raw quartz",
+		"bauxite",
+		"crude oil",
+		"limestone",
+		"nitrogen gas",
+	}
+
+	lowerName := strings.ToLower(name)
+
+	for _, suffix := range includes {
+		if strings.HasSuffix(lowerName, suffix) {
+			return true
+		}
+	}
+
+	for _, match := range equals {
+		if lowerName == match {
+			return true
+		}
+	}
+
+	return false
+}
