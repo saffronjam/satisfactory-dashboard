@@ -29,6 +29,7 @@ type TrainTimetableEntry struct {
 }
 
 type Train struct {
+	ID               string                `json:"id"`
 	Name             string                `json:"name"`
 	Speed            float64               `json:"speed"`
 	Status           TrainStatus           `json:"status"`
