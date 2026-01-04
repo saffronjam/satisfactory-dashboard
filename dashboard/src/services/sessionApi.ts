@@ -1,4 +1,4 @@
-import { CreateSessionRequest, Session, SessionInfo } from 'src/apiTypes';
+import { CreateSessionRequest, SessionDTO, SessionInfo } from 'src/apiTypes';
 import { config } from 'src/config';
 
 const API_URL = config.apiUrl;
@@ -11,7 +11,7 @@ export const sessionApi = {
   /**
    * List all sessions
    */
-  list: async (): Promise<Session[]> => {
+  list: async (): Promise<SessionDTO[]> => {
     const response = await fetch(`${API_URL}/sessions`);
     if (!response.ok) {
       throw new Error('Failed to fetch sessions');
@@ -22,7 +22,7 @@ export const sessionApi = {
   /**
    * Get a specific session by ID
    */
-  get: async (id: string): Promise<Session> => {
+  get: async (id: string): Promise<SessionDTO> => {
     const response = await fetch(`${API_URL}/sessions/${id}`);
     if (!response.ok) {
       throw new Error('Failed to fetch session');
@@ -33,7 +33,7 @@ export const sessionApi = {
   /**
    * Create a new session (real server)
    */
-  create: async (name: string, address: string): Promise<Session> => {
+  create: async (name: string, address: string): Promise<SessionDTO> => {
     const body: CreateSessionRequest = { name, address, isMock: false };
     const response = await fetch(`${API_URL}/sessions`, {
       method: 'POST',
@@ -50,7 +50,7 @@ export const sessionApi = {
   /**
    * Create a mock session
    */
-  createMock: async (name: string): Promise<Session> => {
+  createMock: async (name: string): Promise<SessionDTO> => {
     const body: CreateSessionRequest = { name, address: '', isMock: true };
     const response = await fetch(`${API_URL}/sessions`, {
       method: 'POST',
@@ -81,7 +81,10 @@ export const sessionApi = {
   /**
    * Update a session (name and/or paused state)
    */
-  update: async (id: string, updates: { name?: string; isPaused?: boolean }): Promise<Session> => {
+  update: async (
+    id: string,
+    updates: { name?: string; isPaused?: boolean }
+  ): Promise<SessionDTO> => {
     const response = await fetch(`${API_URL}/sessions/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

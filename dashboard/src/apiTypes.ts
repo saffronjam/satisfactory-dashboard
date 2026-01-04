@@ -9,6 +9,38 @@ export interface SatisfactoryApiStatus {
 }
 
 //////////
+// source: belt.go
+
+export interface Belt {
+  id: string;
+  name: string;
+  location0: Location;
+  location1: Location;
+  connected0: boolean;
+  connected1: boolean;
+  splineData: Location[];
+  length: number /* float64 */;
+  itemsPerMinute: number /* float64 */;
+}
+export interface Belts {
+  belts: Belt[];
+  splitterMergers: SplitterMerger[];
+}
+
+//////////
+// source: cable.go
+
+export interface Cable {
+  id: string;
+  name: string;
+  location0: Location;
+  location1: Location;
+  connected0: boolean;
+  connected1: boolean;
+  length: number /* float64 */;
+}
+
+//////////
 // source: circuit.go
 
 export interface CircuitConsumption {
@@ -38,27 +70,42 @@ export interface Circuit {
 }
 
 //////////
+// source: circuit_ids.go
+
+export interface CircuitIDs {
+  circuitId: number /* int */;
+  circuitGroupId?: number /* int */;
+}
+
+//////////
 // source: drone.go
 
 export type DroneStatus = string;
 export const DroneStatusIdle: DroneStatus = 'idle';
 export const DroneStatusFlying: DroneStatus = 'flying';
 export const DroneStatusDocking: DroneStatus = 'docking';
-export interface Drone extends Partial<Location> {
+export interface Drone extends Location, CircuitIDs {
   name: string;
   speed: number /* float64 */;
   status: DroneStatus;
   home: DroneStation;
   paired?: DroneStation;
   destination?: DroneStation;
+  circuitId: number /* int */;
+  circuitGroupId: number /* int */;
 }
 
 //////////
 // source: drone_station.go
 
-export interface DroneStation extends Location {
+export interface DroneStation extends Location, CircuitIDs {
   name: string;
-  fuelName?: string;
+  fuel?: Fuel;
+  boundingBox: BoundingBox;
+  incomingRate: number /* float64 */; // Average incoming items/minute
+  outgoingRate: number /* float64 */; // Average outgoing items/minute
+  inputInventory: ItemStats[]; // Items being received
+  outputInventory: ItemStats[]; // Items being sent
 }
 
 //////////
@@ -68,6 +115,7 @@ export type SatisfactoryApiStatusDTO = SatisfactoryApiStatus;
 export type CircuitDTO = Circuit;
 export type DroneDTO = Drone;
 export type DroneStationDTO = DroneStation;
+export type ExplorerDTO = Explorer;
 export type FactoryStatsDTO = FactoryStats;
 export type GeneratorStatsDTO = GeneratorStats;
 export type MachineDTO = Machine;
@@ -75,16 +123,35 @@ export type MachineProdStatsDTO = MachineProdStats;
 export type PlayerDTO = Player;
 export type ProdStatsDTO = ProdStats;
 export type SinkStatsDTO = SinkStats;
+export type TractorDTO = Tractor;
 export type TrainDTO = Train;
 export type TrainStationDTO = TrainStation;
+export type TruckDTO = Truck;
+export type VehiclePathDTO = VehiclePath;
 export type StateDTO = State;
+export type BeltDTO = Belt;
+export type PipeDTO = Pipe;
+export type PipeJunctionDTO = PipeJunction;
+export type TrainRailDTO = TrainRail;
+export type SplitterMergerDTO = SplitterMerger;
+export type CableDTO = Cable;
+export type VehiclesDTO = Vehicles;
+export type VehicleStationsDTO = VehicleStations;
+export interface DroneSetupDTO {
+  drones: DroneDTO[];
+  droneStations: DroneStationDTO[];
+}
 export interface TrainSetupDTO {
   trains: TrainDTO[];
   trainStations: TrainStationDTO[];
 }
-export interface DroneSetupDTO {
-  drones: DroneDTO[];
-  droneStations: DroneStationDTO[];
+export interface BeltsDTO {
+  belts: BeltDTO[];
+  splitterMerges: SplitterMergerDTO[];
+}
+export interface PipesDTO {
+  pipes: PipeDTO[];
+  pipeJunctions: PipeJunctionDTO[];
 }
 
 //////////
@@ -108,6 +175,22 @@ export interface SatisfactoryApiError {
 }
 
 //////////
+// source: explorer.go
+
+export type ExplorerStatus = string;
+export const ExplorerStatusSelfDriving: ExplorerStatus = 'selfDriving';
+export const ExplorerStatusManualDriving: ExplorerStatus = 'manualDriving';
+export const ExplorerStatusParked: ExplorerStatus = 'parked';
+export const ExplorerStatusUnknown: ExplorerStatus = 'unknown';
+export interface Explorer extends Location, CircuitIDs {
+  name: string;
+  speed: number /* float64 */;
+  status: ExplorerStatus;
+  fuel?: Fuel;
+  inventory: ItemStats[];
+}
+
+//////////
 // source: factory_stats.go
 
 export interface MachineEfficiency {
@@ -120,7 +203,14 @@ export interface MachineEfficiency {
 export interface FactoryStats {
   totalMachines: number /* int */;
   efficiency: MachineEfficiency;
-  machines: Machine[];
+}
+
+//////////
+// source: fuel.go
+
+export interface Fuel {
+  Name: string;
+  amount: number /* float64 */;
 }
 
 //////////
@@ -139,7 +229,6 @@ export interface PowerSource {
 }
 export interface GeneratorStats {
   sources: { [key: PowerType]: PowerSource };
-  machines: Machine[];
 }
 
 //////////
@@ -158,6 +247,10 @@ export interface Location {
   y: number /* float64 */;
   z: number /* float64 */;
   rotation: number /* float64 */;
+}
+export interface BoundingBox {
+  min: Location;
+  max: Location;
 }
 
 //////////
@@ -198,18 +291,47 @@ export interface MachineProdStats {
   max: number /* float64 */;
   efficiency: number /* float64 */;
 }
-export interface Machine extends Location {
+export interface Machine extends Location, CircuitIDs {
   type: MachineType;
   status: MachineStatus;
   category: MachineCategory;
+  productivity: number /* float64 */; // 0-1
   input: MachineProdStats[];
   output: MachineProdStats[];
+  boundingBox: BoundingBox;
+}
+
+//////////
+// source: pipe.go
+
+export interface Pipe {
+  id: string;
+  name: string;
+  location0: Location;
+  location1: Location;
+  connected0: boolean;
+  connected1: boolean;
+  splineData: Location[];
+  length: number /* float64 */;
+  itemsPerMinute: number /* float64 */;
+}
+export interface Pipes {
+  pipes: Pipe[];
+  pipeJunctions: PipeJunction[];
+}
+
+//////////
+// source: pipe_junction.go
+
+export interface PipeJunction extends Location {
+  id: string;
+  name: string;
 }
 
 //////////
 // source: player.go
 
-export interface Player {
+export interface Player extends Location {
   id: string;
   name: string;
   health: number /* float64 */;
@@ -226,6 +348,7 @@ export interface ItemProdStats extends ItemStats {
   consumedPerMinute: number /* float64 */;
   maxConsumePerMinute: number /* float64 */;
   consumeEfficiency: number /* float64 */;
+  cloudCount: number /* float64 */;
   minable: boolean;
 }
 export interface ProdStats {
@@ -234,6 +357,99 @@ export interface ProdStats {
   itemsProducedPerMinute: number /* float64 */;
   itemsConsumedPerMinute: number /* float64 */;
   items: ItemProdStats[];
+}
+
+//////////
+// source: radar_tower.go
+
+/**
+ * Resource Node Purity
+ */
+export type ResourceNodePurity = string;
+export const ResourceNodePurityImpure: ResourceNodePurity = 'Impure';
+export const ResourceNodePurityNormal: ResourceNodePurity = 'Normal';
+export const ResourceNodePurityPure: ResourceNodePurity = 'Pure';
+export type ResourceNodeType = string;
+export const ResourceNodeTypeIronOre: ResourceNodeType = 'IronOre';
+export const ResourceNodeTypeCopperOre: ResourceNodeType = 'CopperOre';
+export const ResourceNodeTypeLimestone: ResourceNodeType = 'Limestone';
+export const ResourceNodeTypeCoal: ResourceNodeType = 'Coal';
+export const ResourceNodeTypeSAM: ResourceNodeType = 'SAM';
+export const ResourceNodeTypeSulfur: ResourceNodeType = 'Sulfur';
+export const ResourceNodeTypeCateriumOre: ResourceNodeType = 'CateriumOre';
+export const ResourceNodeTypeBauxite: ResourceNodeType = 'Bauxite';
+export const ResourceNodeTypeRawQuartz: ResourceNodeType = 'RawQuartz';
+export const ResourceNodeTypeUranium: ResourceNodeType = 'Uranium';
+export const ResourceNodeTypeCrudeOil: ResourceNodeType = 'CrudeOil';
+export const ResourceNodeTypeGeyser: ResourceNodeType = 'Geyser';
+export type FaunaType = string;
+export const FaunaTypeLizardDoggo: FaunaType = 'LizardDoggo';
+export const FaunaTypeFluffyTailedHog: FaunaType = 'FluffyTailedHog';
+export const FaunaTypeSpitter: FaunaType = 'Spitter';
+export const FaunaTypeStinger: FaunaType = 'Stinger';
+export const FaunaTypeFlyingCrab: FaunaType = 'FlyingCrab';
+export const FaunaTypeNonFlyingBird: FaunaType = 'NonFlyingBird';
+export const FaunaTypeSpaceGiraffe: FaunaType = 'SpaceGiraffe';
+export const FaunaTypeSporeFlower: FaunaType = 'SporeFlower';
+export const FaunaTypeLeafBug: FaunaType = 'LeafBug';
+export const FaunaTypeGrassSprite: FaunaType = 'GrassSprite';
+export const FaunaTypeCaveBat: FaunaType = 'CaveBat';
+export const FaunaTypeGiantFlyingManta: FaunaType = 'GiantFlyingManta';
+export const FaunaTypeLakeShark: FaunaType = 'LakeShark';
+export const FaunaTypeWalker: FaunaType = 'Walker';
+export type FloraType = string;
+export const FloraTypeTree: FloraType = 'Tree';
+export const FloraTypeLeaves: FloraType = 'Leaves';
+export const FloraTypeFlowerPetals: FloraType = 'FlowerPetals';
+export const FloraTypeBaconAgaric: FloraType = 'BaconAgaric';
+export const FloraTypePaleberry: FloraType = 'Paleberry';
+export const FloraTypeBerylNut: FloraType = 'BerylNut';
+export const FloraTypeMycelia: FloraType = 'Mycelia';
+export const FloraTypeVineLadder: FloraType = 'VineLadder';
+export const FloraTypeBlueCapMushroom: FloraType = 'BlueCapMushroom';
+export const FloraTypePinkJellyfish: FloraType = 'PinkJellyfish';
+/**
+ * Signal Types
+ */
+export type SignalType = string;
+export const SignalTypeSomersloop: SignalType = 'Somersloop';
+export const SignalTypeMercerSphere: SignalType = 'Mercer Sphere';
+export const SignalTypeBluePowerSlug: SignalType = 'Blue Power Slug';
+export const SignalTypeYellowPowerSlug: SignalType = 'Yellow Power Slug';
+export const SignalTypePurplePowerSlug: SignalType = 'Purple Power Slug';
+export const SignalTypeHardDrive: SignalType = 'Hard Drive';
+export interface ScannedResourceNode extends Location {
+  id: string;
+  name: string;
+  className: string;
+  purity: ResourceNodePurity;
+  resourceForm: string;
+  nodeType: ResourceNodeType;
+  exploited: boolean;
+}
+export interface ScannedFauna {
+  name: FaunaType;
+  className: string;
+  amount: number /* int */;
+}
+export interface ScannedFlora {
+  name: FloraType;
+  className: string;
+  amount: number /* int */;
+}
+export interface ScannedSignal {
+  name: SignalType;
+  className: string;
+  amount: number /* int */;
+}
+export interface RadarTower extends Location {
+  name: string;
+  revealRadius: number /* float64 */;
+  nodes: ScannedResourceNode[];
+  fauna: ScannedFauna[];
+  flora: ScannedFlora[];
+  signal: ScannedSignal[];
+  boundingBox: BoundingBox;
 }
 
 //////////
@@ -247,13 +463,20 @@ export const SatisfactoryEventProdStats: SatisfactoryEventType = 'prodStats';
 export const SatisfactoryEventSinkStats: SatisfactoryEventType = 'sinkStats';
 export const SatisfactoryEventPlayers: SatisfactoryEventType = 'players';
 export const SatisfactoryEventGeneratorStats: SatisfactoryEventType = 'generatorStats';
-export const SatisfactoryEventTrains: SatisfactoryEventType = 'trains';
-export const SatisfactoryEventTrainStations: SatisfactoryEventType = 'trainsStations';
-export const SatisfactoryEventTrainSetup: SatisfactoryEventType = 'trainSetup';
-export const SatisfactoryEventDrones: SatisfactoryEventType = 'drones';
-export const SatisfactoryEventDroneStations: SatisfactoryEventType = 'droneStations';
-export const SatisfactoryEventDroneSetup: SatisfactoryEventType = 'droneSetup';
+export const SatisfactoryEventVehicles: SatisfactoryEventType = 'vehicles';
+export const SatisfactoryEventVehicleStations: SatisfactoryEventType = 'vehicleStations';
 export const SatisfactoryEventSessionUpdate: SatisfactoryEventType = 'sessionUpdate';
+export const SatisfactoryEventBelts: SatisfactoryEventType = 'belts';
+export const SatisfactoryEventPipes: SatisfactoryEventType = 'pipes';
+export const SatisfactoryEventTrainRails: SatisfactoryEventType = 'trainRails';
+export const SatisfactoryEventCables: SatisfactoryEventType = 'cables';
+export const SatisfactoryEventStorages: SatisfactoryEventType = 'storages';
+export const SatisfactoryEventMachines: SatisfactoryEventType = 'machines';
+export const SatisfactoryEventTractors: SatisfactoryEventType = 'tractors';
+export const SatisfactoryEventExplorers: SatisfactoryEventType = 'explorers';
+export const SatisfactoryEventVehiclePaths: SatisfactoryEventType = 'vehiclePaths';
+export const SatisfactoryEventSpaceElevator: SatisfactoryEventType = 'spaceElevator';
+export const SatisfactoryEventRadarTowers: SatisfactoryEventType = 'radarTowers';
 export const SatisfactoryEventKey: string = 'satisfactory_events';
 export interface SatisfactoryEvent {
   type: SatisfactoryEventType;
@@ -266,6 +489,12 @@ export interface SseSatisfactoryEvent extends SatisfactoryEvent {
 //////////
 // source: session.go
 
+/**
+ * SessionStage represents the initialization stage of a session
+ */
+export type SessionStage = string;
+export const SessionStageInit: SessionStage = 'init';
+export const SessionStageReady: SessionStage = 'ready';
 /**
  * Session represents a Satisfactory server connection target
  */
@@ -329,9 +558,19 @@ export interface UpdateSessionRequest {
   isPaused?: boolean;
 }
 /**
- * SessionDTO is the data transfer object for Session
+ * SessionDTO is the data transfer object for Session with computed fields
  */
-export type SessionDTO = Session;
+export interface SessionDTO {
+  id: string;
+  name: string;
+  address: string;
+  sessionName: string;
+  isMock: boolean;
+  isOnline: boolean;
+  isPaused: boolean;
+  createdAt: string;
+  stage: SessionStage;
+}
 
 //////////
 // source: sink_stats.go
@@ -341,6 +580,36 @@ export interface SinkStats {
   coupons: number /* int */;
   nextCouponProgress: number /* float64 */;
   pointsPerMinute: number /* float64 */;
+}
+
+//////////
+// source: space_elevator.go
+
+export interface SpaceElevatorPhaseObjective {
+  name: string;
+  amount: number /* float64 */;
+  totalCost: number /* float64 */;
+}
+export interface SpaceElevator extends Location {
+  name: string;
+  boundingBox: BoundingBox;
+  currentPhase: SpaceElevatorPhaseObjective[];
+  fullyUpgraded: boolean;
+  upgradeReady: boolean;
+}
+
+//////////
+// source: splitter_merger.go
+
+export type SplitterMergerType = string;
+export const SplitterMergerTypeConveyorMerger: SplitterMergerType = 'Conveyor Merger';
+export const SplitterMergerTypeConveyorSplitter: SplitterMergerType = 'Conveyor Splitter';
+export const SplitterMergerTypeProgrammableSplitter: SplitterMergerType = 'Programmable Splitter';
+export const SplitterMergerTypeSmartSplitter: SplitterMergerType = 'Smart Splitter';
+export interface SplitterMerger extends Location {
+  id: string;
+  type: SplitterMergerType;
+  boundingBox: BoundingBox;
 }
 
 //////////
@@ -358,6 +627,51 @@ export interface State {
   trains: Train[];
   trainStations: TrainStation[];
   droneStations: DroneStation[];
+  belts: Belt[];
+  pipes: Pipe[];
+  pipeJunctions: PipeJunction[];
+  trainRails: TrainRail[];
+  splitterMergers: SplitterMerger[];
+  cables: Cable[];
+  storages: Storage[];
+  machines: Machine[];
+  tractors: Tractor[];
+  explorers: Explorer[];
+  vehiclePaths: VehiclePath[];
+  spaceElevator?: SpaceElevator;
+  radarTowers: RadarTower[];
+}
+
+//////////
+// source: storage.go
+
+export type StorageType = string;
+export const StorageTypeBlueprintStorageBox: StorageType = 'Blueprint Storage Box';
+export const StorageTypeDimensionalDepotUploader: StorageType = 'Dimensional Depot Uploader';
+export const StorageTypeIndustrialStorageContainer: StorageType = 'Industrial Storage Container';
+export const StorageTypePersonalStorageBox: StorageType = 'Personal Storage Box';
+export const StorageTypeStorageContainer: StorageType = 'Storage Container';
+export interface Storage extends Location {
+  id: string;
+  type: StorageType;
+  inventory: ItemStats[];
+  boundingBox: BoundingBox;
+}
+
+//////////
+// source: tractor.go
+
+export type TractorStatus = string;
+export const TractorStatusSelfDriving: TractorStatus = 'selfDriving';
+export const TractorStatusManualDriving: TractorStatus = 'manualDriving';
+export const TractorStatusParked: TractorStatus = 'parked';
+export const TractorStatusUnknown: TractorStatus = 'unknown';
+export interface Tractor extends Location, CircuitIDs {
+  name: string;
+  speed: number /* float64 */;
+  status: TractorStatus;
+  fuel?: Fuel;
+  inventory: ItemStats[];
 }
 
 //////////
@@ -381,7 +695,7 @@ export interface TrainVehicle {
 export interface TrainTimetableEntry {
   station: string;
 }
-export interface Train extends Location {
+export interface Train extends Location, CircuitIDs {
   name: string;
   speed: number /* float64 */;
   status: TrainStatus;
@@ -392,8 +706,104 @@ export interface Train extends Location {
 }
 
 //////////
+// source: train_rail.go
+
+export type TrainRailType = string;
+export const TrainRailTypeRailway: TrainRailType = 'Railway';
+export interface TrainRail {
+  id: string;
+  type: TrainRailType;
+  location0: Location;
+  location1: Location;
+  connected0: boolean;
+  connected1: boolean;
+  splineData: Location[];
+  length: number /* float64 */;
+}
+
+//////////
 // source: train_station.go
 
-export interface TrainStation extends Location {
+export type TrainStationPlatformType = string;
+export const TrainStationPlatformTypeFreight: TrainStationPlatformType = 'freight';
+export const TrainStationPlatformTypeFluidFreight: TrainStationPlatformType = 'fluidFreight';
+export type TrainStationPlatformMode = string;
+export const TrainStationPlatformModeImport: TrainStationPlatformMode = 'import';
+export const TrainStationPlatformModeExport: TrainStationPlatformMode = 'export';
+export type TrainStationPlatformStatus = string;
+export const TrainStationPlatformStatusIdle: TrainStationPlatformStatus = 'idle';
+export const TrainStationPlatformStatusDocking: TrainStationPlatformStatus = 'docking';
+export interface TrainStationPlatform extends Location {
+  type: TrainStationPlatformType;
+  mode: TrainStationPlatformMode;
+  status: TrainStationPlatformStatus;
+  boundingBox: BoundingBox;
+  inventory: ItemStats[];
+  transferRate: number /* float64 */; // Solid items rate
+  inflowRate: number /* float64 */; // Fluid incoming rate
+  outflowRate: number /* float64 */; // Fluid outgoing rate
+}
+export interface TrainStation extends Location, CircuitIDs {
   name: string;
+  boundingBox: BoundingBox;
+  platforms: TrainStationPlatform[];
+}
+
+//////////
+// source: truck.go
+
+export type TruckStatus = string;
+export const TruckStatusSelfDriving: TruckStatus = 'selfDriving';
+export const TruckStatusManualDriving: TruckStatus = 'manualDriving';
+export const TruckStatusParked: TruckStatus = 'parked';
+export const TruckStatusUnknown: TruckStatus = 'unknown';
+export interface Truck extends Location, CircuitIDs {
+  name: string;
+  speed: number /* float64 */;
+  status: TruckStatus;
+  fuel?: Fuel;
+  inventory: ItemStats[];
+}
+
+//////////
+// source: truck_station.go
+
+export interface TruckStation extends Location, CircuitIDs {
+  name: string;
+  boundingBox: BoundingBox;
+  transferRate: number /* float64 */; // Current transfer rate
+  maxTransferRate: number /* float64 */; // Max stacks/sec for all vehicles
+  inventory: ItemStats[]; // Station inventory
+  circuitId: number /* int */;
+}
+
+//////////
+// source: vehicle_path.go
+
+export type VehiclePathType = string;
+export const VehiclePathTypeExplorer: VehiclePathType = 'Explorer';
+export const VehiclePathTypeFactoryCart: VehiclePathType = 'Factory Cart';
+export const VehiclePathTypeTruck: VehiclePathType = 'Truck';
+export const VehiclePathTypeTractor: VehiclePathType = 'Tractor';
+export interface VehiclePath {
+  name: string;
+  vehicleType: VehiclePathType;
+  pathLength: number /* float64 */; // in meters
+  vertices: Location[];
+}
+
+//////////
+// source: vehicles.go
+
+export interface Vehicles {
+  trains: Train[];
+  drones: Drone[];
+  trucks: Truck[];
+  tractors: Tractor[];
+  explorers: Explorer[];
+}
+export interface VehicleStations {
+  trainStations: TrainStation[];
+  droneStations: DroneStation[];
+  truckStations: TruckStation[];
 }

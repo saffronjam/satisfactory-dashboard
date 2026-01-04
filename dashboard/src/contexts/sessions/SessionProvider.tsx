@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Session, SessionInfo } from 'src/apiTypes';
+import type { SessionDTO, SessionInfo } from 'src/apiTypes';
 import { sessionApi } from 'src/services/sessionApi';
 import { SessionContext, SessionContextType } from './SessionContext';
 
 const SELECTED_SESSION_KEY = 'satisfactory-dashboard-selected-session';
-const SESSION_POLL_INTERVAL = 10000; // Poll session status every 10 seconds
+const SESSION_POLL_INTERVAL = 20000; // Poll session status every 20 seconds
 
 interface SessionProviderProps {
   children: React.ReactNode;
 }
 
 export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) => {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<SessionDTO[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(() =>
     localStorage.getItem(SELECTED_SESSION_KEY)
   );
@@ -55,11 +55,16 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     try {
       const fetchedSessions = await sessionApi.list();
       setSessions((prev) => {
-        // Update only the isOnline status for each session
+        // Update isOnline, sessionName, and stage for each session
         return prev.map((session) => {
           const updated = fetchedSessions.find((s) => s.id === session.id);
           if (updated) {
-            return { ...session, isOnline: updated.isOnline, sessionName: updated.sessionName };
+            return {
+              ...session,
+              isOnline: updated.isOnline,
+              sessionName: updated.sessionName,
+              stage: updated.stage,
+            };
           }
           return session;
         });
@@ -89,7 +94,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   }, []);
 
   const createSession = useCallback(
-    async (name: string, address: string): Promise<Session> => {
+    async (name: string, address: string): Promise<SessionDTO> => {
       const newSession = await sessionApi.create(name, address);
       setSessions((prev) => [...prev, newSession]);
 
@@ -105,7 +110,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   );
 
   const createMockSession = useCallback(
-    async (name: string): Promise<Session> => {
+    async (name: string): Promise<SessionDTO> => {
       const newSession = await sessionApi.createMock(name);
       setSessions((prev) => [...prev, newSession]);
 
@@ -121,7 +126,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   );
 
   const updateSession = useCallback(
-    async (id: string, updates: { name?: string; isPaused?: boolean }): Promise<Session> => {
+    async (id: string, updates: { name?: string; isPaused?: boolean }): Promise<SessionDTO> => {
       const updatedSession = await sessionApi.update(id, updates);
       setSessions((prev) => prev.map((s) => (s.id === id ? updatedSession : s)));
       return updatedSession;
@@ -129,7 +134,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     []
   );
 
-  const updateSessionFromEvent = useCallback((session: Session) => {
+  const updateSessionFromEvent = useCallback((session: SessionDTO) => {
     setSessions((prev) => prev.map((s) => (s.id === session.id ? session : s)));
   }, []);
 

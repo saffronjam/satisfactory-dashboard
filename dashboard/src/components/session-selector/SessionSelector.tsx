@@ -15,12 +15,10 @@ import {
   useTheme,
 } from '@mui/material';
 import React, { useState } from 'react';
-import { Session } from 'src/apiTypes';
+import { SessionDTO } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
-import { ApiContext } from 'src/contexts/api/useApi';
 import { useSession } from 'src/contexts/sessions';
 import { varAlpha } from 'src/theme/styles';
-import { useContextSelector } from 'use-context-selector';
 
 interface SessionSelectorProps {
   onAddSession: () => void;
@@ -29,13 +27,9 @@ interface SessionSelectorProps {
 export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }) => {
   const theme = useTheme();
   const { sessions, selectedSession, selectSession, updateSession, deleteSession } = useSession();
-  const api = useContextSelector(ApiContext, (v) => ({
-    isOnline: v.isOnline,
-    isLoading: v.isLoading,
-  }));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [editingSession, setEditingSession] = useState<Session | null>(null);
+  const [editingSession, setEditingSession] = useState<SessionDTO | null>(null);
   const [editName, setEditName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [pausingSessionId, setPausingSessionId] = useState<string | null>(null);
@@ -56,7 +50,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
     handleClose();
   };
 
-  const handleEditClick = (e: React.MouseEvent, session: Session) => {
+  const handleEditClick = (e: React.MouseEvent, session: SessionDTO) => {
     e.stopPropagation();
     setEditingSession(session);
     setEditName(session.name);
@@ -92,7 +86,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
     }
   };
 
-  const handlePauseClick = async (e: React.MouseEvent, session: Session) => {
+  const handlePauseClick = async (e: React.MouseEvent, session: SessionDTO) => {
     e.stopPropagation();
     setPausingSessionId(session.id);
     try {
@@ -131,7 +125,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
               borderRadius: '50%',
               bgcolor: selectedSession?.isPaused
                 ? 'warning.main'
-                : api.isOnline
+                : selectedSession?.isOnline
                   ? 'success.main'
                   : 'error.main',
               flexShrink: 0,

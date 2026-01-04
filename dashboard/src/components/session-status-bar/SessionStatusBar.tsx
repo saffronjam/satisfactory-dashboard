@@ -1,19 +1,13 @@
 import { Box, Typography, useTheme } from '@mui/material';
 import { Iconify } from 'src/components/iconify';
-import { ApiContext } from 'src/contexts/api/useApi';
 import { useSession } from 'src/contexts/sessions';
-import { useContextSelector } from 'use-context-selector';
 
 export const SessionStatusBar = () => {
   const theme = useTheme();
-  const { selectedSession } = useSession();
-  const api = useContextSelector(ApiContext, (v) => ({
-    isOnline: v.isOnline,
-    isLoading: v.isLoading,
-  }));
+  const { selectedSession, isLoading } = useSession();
 
   // Don't show if loading, online, or no session selected
-  if (api.isLoading || api.isOnline || !selectedSession) {
+  if (isLoading || !selectedSession || selectedSession.isOnline) {
     return null;
   }
 

@@ -1,18 +1,21 @@
-import { Session, SessionInfo } from 'src/apiTypes';
+import { SessionDTO, SessionInfo } from 'src/apiTypes';
 import { createContext } from 'use-context-selector';
 
 export interface SessionContextType {
-  sessions: Session[];
-  selectedSession: Session | null;
+  sessions: SessionDTO[];
+  selectedSession: SessionDTO | null;
   isLoading: boolean;
   error: string | null;
   mockExists: boolean;
 
   selectSession: (id: string) => void;
-  createSession: (name: string, address: string) => Promise<Session>;
-  createMockSession: (name: string) => Promise<Session>;
-  updateSession: (id: string, updates: { name?: string; isPaused?: boolean }) => Promise<Session>;
-  updateSessionFromEvent: (session: Session) => void;
+  createSession: (name: string, address: string) => Promise<SessionDTO>;
+  createMockSession: (name: string) => Promise<SessionDTO>;
+  updateSession: (
+    id: string,
+    updates: { name?: string; isPaused?: boolean }
+  ) => Promise<SessionDTO>;
+  updateSessionFromEvent: (session: SessionDTO) => void;
   deleteSession: (id: string) => Promise<void>;
   refreshSessions: () => Promise<void>;
   previewSession: (address: string) => Promise<SessionInfo>;
