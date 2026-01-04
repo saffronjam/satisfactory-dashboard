@@ -30,7 +30,6 @@ export function AnalyticsSpaceElevatorProgress({
   const phases = spaceElevator?.currentPhase || [];
   const isFullyUpgraded = spaceElevator?.fullyUpgraded ?? false;
   const isUpgradeReady = spaceElevator?.upgradeReady ?? false;
-  const currentPhaseNumber = spaceElevator?.currentPhaseNumber ?? 0;
 
   // Calculate overall progress for the current phase
   const overallProgress =
@@ -88,7 +87,7 @@ export function AnalyticsSpaceElevatorProgress({
                   fontSize: '0.75rem',
                 }}
               >
-                Phase {currentPhaseNumber}
+                In Progress
               </Typography>
             )}
           </Box>
