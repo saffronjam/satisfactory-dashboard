@@ -1,48 +1,18 @@
-import { Box, Chip, IconButton, Paper, Typography } from '@mui/material';
-import { memo, useEffect, useRef } from 'react';
+import { Box, Chip, Typography } from '@mui/material';
+import { memo } from 'react';
 import {
   RadarTower,
-  ResourceNodePurityImpure,
-  ResourceNodePurityNormal,
-  ResourceNodePurityPure,
+  ResourceNode,
   ScannedFauna,
   ScannedFlora,
-  ScannedResourceNode,
   ScannedSignal,
 } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
 import { fShortenNumber, LengthUnits } from '../../utils/format-number';
+import { MapSidebar } from './mapSidebar';
+import { getPurityLabel, PURITY_COLORS } from './utils/radarTowerUtils';
 
-// Purity colors
-const PURITY_COLORS = {
-  [ResourceNodePurityImpure]: '#EF4444', // Red
-  [ResourceNodePurityNormal]: '#EAB308', // Yellow
-  [ResourceNodePurityPure]: '#22C55E', // Green
-  default: '#6B7280', // Gray
-};
-
-// Get purity label
-const getPurityLabel = (purity: string): string => {
-  switch (purity) {
-    case ResourceNodePurityImpure:
-      return 'Impure';
-    case ResourceNodePurityNormal:
-      return 'Normal';
-    case ResourceNodePurityPure:
-      return 'Pure';
-    default:
-      return 'Unknown';
-  }
-};
-
-interface RadarTowerPopoverProps {
-  tower: RadarTower | null;
-  position: { x: number; y: number } | null;
-  isPinned?: boolean;
-  onClose?: () => void;
-}
-
-// Fauna/Flora/Signal section
+// Scanned section component for fauna, flora, and signals
 function ScannedSection({
   title,
   items,
@@ -70,7 +40,8 @@ function ScannedSection({
             key={idx}
             label={`${item.amount}x ${item.name}`}
             size="small"
-            icon={
+            onDelete={() => {}}
+            deleteIcon={
               <Box
                 component="img"
                 src={`assets/images/satisfactory/64x64/${item.name}.png`}
@@ -86,6 +57,10 @@ function ScannedSection({
               fontSize: '0.6rem',
               '& .MuiChip-label': { px: 1 },
               '& .MuiChip-icon': { ml: 0.5, mr: -0.5 },
+              '& .MuiChip-deleteIcon': {
+                cursor: 'default',
+                pointerEvents: 'none',
+              },
             }}
           />
         ))}
@@ -94,37 +69,13 @@ function ScannedSection({
   );
 }
 
-function RadarTowerPopoverInner({
-  tower,
-  position,
-  isPinned = false,
-  onClose,
-}: RadarTowerPopoverProps) {
-  const popoverRef = useRef<HTMLDivElement>(null);
+interface RadarTowerSidebarProps {
+  tower: RadarTower | null;
+  isMobile?: boolean;
+  onClose?: () => void;
+}
 
-  // Click-outside detection
-  useEffect(() => {
-    if (!isPinned || !onClose) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    // 100ms delay prevents the click that pins from immediately closing
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isPinned, onClose]);
-
-  if (!tower || !position) return null;
-
+function RadarTowerSidebarContent({ tower }: { tower: RadarTower }) {
   const hasNodes = tower.nodes && tower.nodes.length > 0;
   const hasFauna = tower.fauna && tower.fauna.length > 0;
   const hasFlora = tower.flora && tower.flora.length > 0;
@@ -138,45 +89,17 @@ function RadarTowerPopoverInner({
       acc[purity].push(node);
       return acc;
     },
-    {} as Record<string, ScannedResourceNode[]>
+    {} as Record<string, ResourceNode[]>
   );
 
   return (
-    <Paper
-      ref={popoverRef}
-      elevation={isPinned ? 12 : 8}
-      sx={{
-        position: 'fixed',
-        left: position.x + 15,
-        top: position.y + 10,
-        zIndex: isPinned ? 1650 : 1500,
-        p: 1.5,
-        pr: isPinned ? 4 : 1.5,
-        minWidth: 200,
-        maxWidth: 300,
-        backgroundColor: 'background.paper',
-        borderRadius: 1,
-        pointerEvents: isPinned ? 'auto' : 'none',
-        border: isPinned ? '2px solid' : undefined,
-        borderColor: isPinned ? 'primary.main' : undefined,
-      }}
-    >
-      {/* Close button */}
-      {isPinned && onClose && (
-        <IconButton
-          size="small"
-          onClick={onClose}
-          sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
-        >
-          <Iconify icon="mdi:close" width={16} />
-        </IconButton>
-      )}
+    <>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
         <Iconify icon="mdi:radar" width={18} sx={{ color: '#3B82F6' }} />
         <Box>
           <Typography variant="body2" fontWeight="medium">
-            {tower.name}
+            Radar Tower
           </Typography>
         </Box>
       </Box>
@@ -204,20 +127,28 @@ function RadarTowerPopoverInner({
               const purityLabel = getPurityLabel(purity);
 
               return (
-                <Chip
+                <Box
                   key={purity}
-                  label={`${exploitedCount} of ${totalCount} ${purityLabel}`}
-                  size="small"
                   sx={{
-                    height: 24,
-                    fontSize: '0.65rem',
+                    height: 'auto',
+                    px: 1,
+                    py: 0.5,
                     backgroundColor: 'rgba(0, 0, 0, 0.6)',
                     border: '2px solid',
                     borderColor: purityColor,
-                    color: 'text.primary',
-                    '& .MuiChip-label': { px: 1 },
+                    borderRadius: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                   }}
-                />
+                >
+                  <Typography sx={{ fontSize: '0.7rem', color: 'text.primary', lineHeight: 1.2 }}>
+                    {totalCount}x {purityLabel}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.6rem', color: 'text.secondary', lineHeight: 1.2 }}>
+                    {exploitedCount} exploited
+                  </Typography>
+                </Box>
               );
             })}
           </Box>
@@ -239,8 +170,16 @@ function RadarTowerPopoverInner({
           No items scanned
         </Typography>
       )}
-    </Paper>
+    </>
   );
 }
 
-export const RadarTowerPopover = memo(RadarTowerPopoverInner);
+function RadarTowerSidebarInner({ tower, isMobile = false, onClose }: RadarTowerSidebarProps) {
+  return (
+    <MapSidebar open={Boolean(tower)} isMobile={isMobile} onClose={onClose}>
+      {tower && <RadarTowerSidebarContent tower={tower} />}
+    </MapSidebar>
+  );
+}
+
+export const RadarTowerSidebar = memo(RadarTowerSidebarInner);
