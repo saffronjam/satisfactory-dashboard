@@ -30,7 +30,7 @@ func getSessionStore() *session.Store {
 // @Tags Sessions
 // @Accept json
 // @Produce json
-// @Success 200 {array} models.Session "List of sessions"
+// @Success 200 {array} models.SessionDTO "List of sessions"
 // @Failure 500 {object} models.ErrorResponse "Internal Server Error"
 // @Router /v1/sessions [get]
 func ListSessions(ginContext *gin.Context) {
@@ -42,12 +42,14 @@ func ListSessions(ginContext *gin.Context) {
 		return
 	}
 
-	// Return empty array instead of null
-	if sessions == nil {
-		sessions = make([]*models.Session, 0)
+	// Convert to DTOs with computed stage
+	sessionDTOs := make([]models.SessionDTO, 0, len(sessions))
+	for _, sess := range sessions {
+		stage := session.GetSessionStage(sess.ID)
+		sessionDTOs = append(sessionDTOs, sess.ToDTO(stage))
 	}
 
-	requestContext.Ok(sessions)
+	requestContext.Ok(sessionDTOs)
 }
 
 // CreateSession godoc
@@ -57,7 +59,7 @@ func ListSessions(ginContext *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body models.CreateSessionRequest true "Session creation request"
-// @Success 201 {object} models.Session "Created session"
+// @Success 201 {object} models.SessionDTO "Created session"
 // @Failure 400 {object} models.ErrorResponse "Bad Request"
 // @Failure 500 {object} models.ErrorResponse "Internal Server Error"
 // @Router /v1/sessions [post]
@@ -126,7 +128,8 @@ func CreateSession(ginContext *gin.Context) {
 		return
 	}
 
-	requestContext.OkCreated(newSession)
+	// New sessions always start in "init" stage (no cache data yet)
+	requestContext.OkCreated(newSession.ToDTO(models.SessionStageInit))
 }
 
 // DeleteSession godoc
@@ -176,7 +179,7 @@ func DeleteSession(ginContext *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "Session ID"
-// @Success 200 {object} models.Session "Session"
+// @Success 200 {object} models.SessionDTO "Session"
 // @Failure 404 {object} models.ErrorResponse "Session not found"
 // @Failure 500 {object} models.ErrorResponse "Internal Server Error"
 // @Router /v1/sessions/{id} [get]
@@ -199,7 +202,8 @@ func GetSession(ginContext *gin.Context) {
 		return
 	}
 
-	requestContext.Ok(existingSession)
+	stage := session.GetSessionStage(sessionID)
+	requestContext.Ok(existingSession.ToDTO(stage))
 }
 
 // UpdateSession godoc
@@ -210,7 +214,7 @@ func GetSession(ginContext *gin.Context) {
 // @Produce json
 // @Param id path string true "Session ID"
 // @Param request body models.UpdateSessionRequest true "Session update request"
-// @Success 200 {object} models.Session "Updated session"
+// @Success 200 {object} models.SessionDTO "Updated session"
 // @Failure 400 {object} models.ErrorResponse "Bad Request"
 // @Failure 404 {object} models.ErrorResponse "Session not found"
 // @Failure 500 {object} models.ErrorResponse "Internal Server Error"
@@ -265,7 +269,8 @@ func UpdateSession(ginContext *gin.Context) {
 		return
 	}
 
-	requestContext.Ok(existingSession)
+	stage := session.GetSessionStage(sessionID)
+	requestContext.Ok(existingSession.ToDTO(stage))
 }
 
 // ValidateSession godoc

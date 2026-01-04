@@ -21,6 +21,7 @@ type SessionsRoutingGroup struct{ RoutingGroupBase }
 func SessionRoutes() *SessionsRoutingGroup { return &SessionsRoutingGroup{} }
 
 func (group *SessionsRoutingGroup) PublicRoutes() []Route {
+	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
 		{Method: "GET", Pattern: SessionsPath, HandlerFunc: v1.ListSessions},
 		{Method: "POST", Pattern: SessionsPath, HandlerFunc: v1.CreateSession},
@@ -30,6 +31,6 @@ func (group *SessionsRoutingGroup) PublicRoutes() []Route {
 		{Method: "DELETE", Pattern: SessionPath, HandlerFunc: v1.DeleteSession},
 		{Method: "GET", Pattern: SessionValidatePath, HandlerFunc: v1.ValidateSession},
 		{Method: "GET", Pattern: SessionEventsPath, HandlerFunc: v1.StartSessionEventsSSE, Middleware: []gin.HandlerFunc{middleware.SseSetup()}},
-		{Method: "GET", Pattern: SessionStatePath, HandlerFunc: v1.GetSessionState},
+		{Method: "GET", Pattern: SessionStatePath, HandlerFunc: v1.GetSessionState, Middleware: stageCheck},
 	}
 }

@@ -147,12 +147,6 @@ func (sm *SessionManager) StopSession(sessionID string) {
 func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session) {
 	channelKey := fmt.Sprintf("%s:%s", models.SatisfactoryEventKey, sess.ID)
 
-	// Track train/drone state for aggregation
-	lastTrains := make([]models.Train, 0)
-	lastTrainStations := make([]models.TrainStation, 0)
-	lastDrones := make([]models.Drone, 0)
-	lastDroneStations := make([]models.DroneStation, 0)
-
 	// Create the appropriate client for this session
 	var apiClient client.Client
 	if sess.IsMock {
@@ -162,8 +156,7 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session)
 	}
 
 	handler := func(event *models.SatisfactoryEvent) {
-		toPublish := make([]models.SatisfactoryEvent, 1)
-		toPublish[0] = *event
+		toPublish := []models.SatisfactoryEvent{*event}
 
 		switch event.Type {
 		case models.SatisfactoryEventApiStatus:
@@ -172,42 +165,6 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session)
 			if err := sm.store.UpdateOnlineStatus(sess.ID, status.Running); err != nil {
 				log.Warnf("Failed to update session online status: %v", err)
 			}
-		case models.SatisfactoryEventTrains:
-			lastTrains = event.Data.([]models.Train)
-			toPublish = append(toPublish, models.SatisfactoryEvent{
-				Type: models.SatisfactoryEventTrainSetup,
-				Data: models.TrainSetupDTO{
-					Trains:        lastTrains,
-					TrainStations: lastTrainStations,
-				},
-			})
-		case models.SatisfactoryEventTrainStations:
-			lastTrainStations = event.Data.([]models.TrainStation)
-			toPublish = append(toPublish, models.SatisfactoryEvent{
-				Type: models.SatisfactoryEventTrainSetup,
-				Data: models.TrainSetupDTO{
-					Trains:        lastTrains,
-					TrainStations: lastTrainStations,
-				},
-			})
-		case models.SatisfactoryEventDrones:
-			lastDrones = event.Data.([]models.Drone)
-			toPublish = append(toPublish, models.SatisfactoryEvent{
-				Type: models.SatisfactoryEventDroneSetup,
-				Data: models.DroneSetupDTO{
-					Drones:        lastDrones,
-					DroneStations: lastDroneStations,
-				},
-			})
-		case models.SatisfactoryEventDroneStations:
-			lastDroneStations = event.Data.([]models.DroneStation)
-			toPublish = append(toPublish, models.SatisfactoryEvent{
-				Type: models.SatisfactoryEventDroneSetup,
-				Data: models.DroneSetupDTO{
-					Drones:        lastDrones,
-					DroneStations: lastDroneStations,
-				},
-			})
 		}
 
 		for _, e := range toPublish {
@@ -217,6 +174,16 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session)
 				return
 			}
 
+			// Cache the event data for /state endpoint (no expiration - updated by polling)
+			cacheKey := fmt.Sprintf("state:%s:%s", sess.ID, e.Type)
+			eventData, cacheErr := json.Marshal(e.Data)
+			if cacheErr == nil {
+				if setErr := sm.kvClient.Set(cacheKey, string(eventData), 0); setErr != nil {
+					log.Warnf("Failed to cache event %s for session %s: %v", e.Type, sess.ID, setErr)
+				}
+			}
+
+			// Publish to SSE subscribers
 			err = sm.kvClient.Publish(channelKey, asJson)
 			if err != nil {
 				log.PrettyError(fmt.Errorf("failed to publish event for session %s: %w", sess.ID, err))

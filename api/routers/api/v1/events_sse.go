@@ -7,10 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Client struct {
@@ -24,6 +25,70 @@ var (
 	clients   = make(map[int64]*Client)
 	clientsMu sync.Mutex
 )
+
+// CoalescingQueue stores only the latest message per event type.
+// When a new message of the same type arrives, it replaces the old one.
+type CoalescingQueue struct {
+	mu       sync.Mutex
+	messages map[models.SatisfactoryEventType]models.SseSatisfactoryEvent
+	signal   chan struct{}
+	closed   bool
+}
+
+func NewCoalescingQueue() *CoalescingQueue {
+	return &CoalescingQueue{
+		messages: make(map[models.SatisfactoryEventType]models.SseSatisfactoryEvent),
+		signal:   make(chan struct{}, 1),
+	}
+}
+
+// Push adds or replaces a message for the given event type
+func (q *CoalescingQueue) Push(msg models.SseSatisfactoryEvent) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if q.closed {
+		return
+	}
+
+	q.messages[msg.Type] = msg
+
+	// Non-blocking signal that there's data available
+	select {
+	case q.signal <- struct{}{}:
+	default:
+	}
+}
+
+// Drain returns all pending messages and clears the queue
+func (q *CoalescingQueue) Drain() []models.SseSatisfactoryEvent {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if len(q.messages) == 0 {
+		return nil
+	}
+
+	result := make([]models.SseSatisfactoryEvent, 0, len(q.messages))
+	for _, msg := range q.messages {
+		result = append(result, msg)
+	}
+	q.messages = make(map[models.SatisfactoryEventType]models.SseSatisfactoryEvent)
+	return result
+}
+
+// Signal returns the channel to wait on for new messages
+func (q *CoalescingQueue) Signal() <-chan struct{} {
+	return q.signal
+}
+
+// Close closes the queue
+func (q *CoalescingQueue) Close() {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.closed = true
+	close(q.signal)
+}
 
 func CreateNewClient() *Client {
 	clientsMu.Lock()
@@ -87,7 +152,11 @@ func StartSessionEventsSSE(ginContext *gin.Context) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ch := make(chan models.SseSatisfactoryEvent)
+	// Use coalescing queue to deduplicate messages by event type
+	// If a new message of the same type arrives before the old one is consumed,
+	// the old one is replaced (only the latest state matters)
+	queue := NewCoalescingQueue()
+	defer queue.Close()
 
 	// Create a new client
 	client := CreateNewClient()
@@ -105,10 +174,10 @@ func StartSessionEventsSSE(ginContext *gin.Context) {
 			return
 		}
 
-		ch <- models.SseSatisfactoryEvent{
+		queue.Push(models.SseSatisfactoryEvent{
 			SatisfactoryEvent: parsed,
 			ClientID:          client.ID,
-		}
+		})
 	})
 
 	if err != nil {
@@ -120,9 +189,13 @@ func StartSessionEventsSSE(ginContext *gin.Context) {
 		select {
 		case <-ctx.Done():
 			return false
-		case msg := <-ch:
-			requestContext.GinContext.SSEvent(models.SatisfactoryEventKey, msg)
-			AddClientMessageCount(client)
+		case <-queue.Signal():
+			// Drain all pending messages and send them
+			messages := queue.Drain()
+			for _, msg := range messages {
+				requestContext.GinContext.SSEvent(models.SatisfactoryEventKey, msg)
+				AddClientMessageCount(client)
+			}
 			return true
 		}
 	})

@@ -1,92 +1,99 @@
 package v1
 
 import (
-	"api/service"
-	"context"
-	"fmt"
+	"api/service/session"
+
 	"github.com/gin-gonic/gin"
 )
 
 // GetFactoryStats godoc
 // @Summary Get Factory Stats
-// @Description Get factory stats
+// @Description Get factory stats from cached session state
 // @Tags Stats
 // @Accept json
 // @Produce json
-// @Success 200 {array} models.FactoryStatsDTO "Get factory stats"
-// @Success 500 {object} models.ErrorResponse "Internal Server Error"
+// @Param session_id query string true "Session ID"
+// @Success 200 {object} models.FactoryStatsDTO "Get factory stats"
+// @Success 400 {object} models.ErrorResponse "Bad Request"
 // @Router /v1/factoryStats [get]
 func GetFactoryStats(ginContext *gin.Context) {
 	requestContext := NewRequestContext(ginContext)
 
-	factoryStats, err := service.NewClient().GetFactoryStats(context.Background())
-	if err != nil {
-		requestContext.ServerError(fmt.Errorf("failed to list factory stats"), err)
+	sessionID := ginContext.Query("session_id")
+	if sessionID == "" {
+		requestContext.UserError("session_id query parameter is required")
 		return
 	}
 
-	requestContext.Ok(factoryStats.ToDTO())
+	state := session.GetCachedState(sessionID)
+	requestContext.Ok(state.FactoryStats.ToDTO())
 }
 
 // GetGeneratorStats godoc
 // @Summary Get Generator Stats
-// @Description Get generator stats
+// @Description Get generator stats from cached session state
 // @Tags Stats
 // @Accept json
 // @Produce json
-// @Success 200 {array} models.GeneratorStatsDTO "Get generator stats"
-// @Success 500 {object} models.ErrorResponse "Internal Server Error"
+// @Param session_id query string true "Session ID"
+// @Success 200 {object} models.GeneratorStatsDTO "Get generator stats"
+// @Success 400 {object} models.ErrorResponse "Bad Request"
 // @Router /v1/generatorStats [get]
 func GetGeneratorStats(ginContext *gin.Context) {
 	requestContext := NewRequestContext(ginContext)
 
-	generatorStats, err := service.NewClient().GetGeneratorStats(context.Background())
-	if err != nil {
-		requestContext.ServerError(fmt.Errorf("failed to list generator stats"), err)
+	sessionID := ginContext.Query("session_id")
+	if sessionID == "" {
+		requestContext.UserError("session_id query parameter is required")
 		return
 	}
 
-	requestContext.Ok(generatorStats.ToDTO())
+	state := session.GetCachedState(sessionID)
+	requestContext.Ok(state.GeneratorStats.ToDTO())
 }
 
 // GetProdStats godoc
 // @Summary Get Prod Stats
-// @Description Get prod stats
+// @Description Get prod stats from cached session state
 // @Tags Stats
 // @Accept json
 // @Produce json
-// @Success 200 {array} models.ProdStatsDTO "Get prod stats"
-// @Success 500 {object} models.ErrorResponse "Internal Server Error"
+// @Param session_id query string true "Session ID"
+// @Success 200 {object} models.ProdStatsDTO "Get prod stats"
+// @Success 400 {object} models.ErrorResponse "Bad Request"
 // @Router /v1/prodStats [get]
 func GetProdStats(ginContext *gin.Context) {
 	requestContext := NewRequestContext(ginContext)
 
-	prodStats, err := service.NewClient().GetProdStats(context.Background())
-	if err != nil {
-		requestContext.ServerError(fmt.Errorf("failed to list prod stats"), err)
+	sessionID := ginContext.Query("session_id")
+	if sessionID == "" {
+		requestContext.UserError("session_id query parameter is required")
 		return
 	}
 
-	requestContext.Ok(prodStats.ToDTO())
+	state := session.GetCachedState(sessionID)
+	requestContext.Ok(state.ProdStats.ToDTO())
 }
 
 // GetSinkStats godoc
 // @Summary Get Sink Stats
-// @Description Get sink stats
+// @Description Get sink stats from cached session state
 // @Tags Stats
 // @Accept json
 // @Produce json
-// @Success 200 {array} models.SinkStatsDTO "Get sink stats"
-// @Success 500 {object} models.ErrorResponse "Internal Server Error"
+// @Param session_id query string true "Session ID"
+// @Success 200 {object} models.SinkStatsDTO "Get sink stats"
+// @Success 400 {object} models.ErrorResponse "Bad Request"
 // @Router /v1/sinkStats [get]
 func GetSinkStats(ginContext *gin.Context) {
 	requestContext := NewRequestContext(ginContext)
 
-	sinkStats, err := service.NewClient().GetSinkStats(context.Background())
-	if err != nil {
-		requestContext.ServerError(fmt.Errorf("failed to list sink stats"), err)
+	sessionID := ginContext.Query("session_id")
+	if sessionID == "" {
+		requestContext.UserError("session_id query parameter is required")
 		return
 	}
 
-	requestContext.Ok(sinkStats.ToDTO())
+	state := session.GetCachedState(sessionID)
+	requestContext.Ok(state.SinkStats.ToDTO())
 }

@@ -1,6 +1,11 @@
 package routes
 
-import v1 "api/routers/api/v1"
+import (
+	v1 "api/routers/api/v1"
+	"api/routers/api/v1/middleware"
+
+	"github.com/gin-gonic/gin"
+)
 
 const (
 	GeneratorStatsPath = "/v1/generatorStats"
@@ -14,10 +19,11 @@ type StatsRoutingGroup struct{ RoutingGroupBase }
 func StatsRoutes() *StatsRoutingGroup { return &StatsRoutingGroup{} }
 
 func (group *StatsRoutingGroup) PublicRoutes() []Route {
+	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
-		{Method: "GET", Pattern: GeneratorStatsPath, HandlerFunc: v1.GetGeneratorStats},
-		{Method: "GET", Pattern: ProdStatsPath, HandlerFunc: v1.GetProdStats},
-		{Method: "GET", Pattern: FactoryStatsPath, HandlerFunc: v1.GetFactoryStats},
-		{Method: "GET", Pattern: SinkStatsPath, HandlerFunc: v1.GetSinkStats},
+		{Method: "GET", Pattern: GeneratorStatsPath, HandlerFunc: v1.GetGeneratorStats, Middleware: stageCheck},
+		{Method: "GET", Pattern: ProdStatsPath, HandlerFunc: v1.GetProdStats, Middleware: stageCheck},
+		{Method: "GET", Pattern: FactoryStatsPath, HandlerFunc: v1.GetFactoryStats, Middleware: stageCheck},
+		{Method: "GET", Pattern: SinkStatsPath, HandlerFunc: v1.GetSinkStats, Middleware: stageCheck},
 	}
 }

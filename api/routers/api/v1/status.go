@@ -1,29 +1,30 @@
 package v1
 
 import (
-	"api/service"
-	"context"
-	"fmt"
+	"api/service/session"
+
 	"github.com/gin-gonic/gin"
 )
 
 // GetSatisfactoryApiStatus godoc
 // @Summary Get Satisfactory API Status
-// @Description Get the status of the Satisfactory API
+// @Description Get the status of the Satisfactory API from cached session state
 // @Tags Status
 // @Accept json
 // @Produce json
+// @Param session_id query string true "Session ID"
 // @Success 200 {object} models.SatisfactoryApiStatusDTO "Satisfactory API Status"
-// @Success 500 {object} models.ErrorResponse "Internal Server Error"
+// @Success 400 {object} models.ErrorResponse "Bad Request"
 // @Router /v1/satisfactoryApiStatus [get]
 func GetSatisfactoryApiStatus(ginContext *gin.Context) {
 	requestContext := NewRequestContext(ginContext)
 
-	status, err := service.NewClient().GetSatisfactoryApiStatus(context.Background())
-	if err != nil {
-		requestContext.ServerError(fmt.Errorf("failed to get satisfactory API status"), err)
+	sessionID := ginContext.Query("session_id")
+	if sessionID == "" {
+		requestContext.UserError("session_id query parameter is required")
 		return
 	}
 
-	requestContext.Ok(status.ToDTO())
+	state := session.GetCachedState(sessionID)
+	requestContext.Ok(state.SatisfactoryApiStatus.ToDTO())
 }

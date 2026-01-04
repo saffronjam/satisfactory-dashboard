@@ -1,6 +1,11 @@
 package routes
 
-import v1 "api/routers/api/v1"
+import (
+	v1 "api/routers/api/v1"
+	"api/routers/api/v1/middleware"
+
+	"github.com/gin-gonic/gin"
+)
 
 const (
 	SatisfactoryApiStatusPath = "/v1/satisfactoryApiStatus"
@@ -12,8 +17,9 @@ type StatusRoutingGroup struct{ RoutingGroupBase }
 func StatusRoutes() *StatusRoutingGroup { return &StatusRoutingGroup{} }
 
 func (group *StatusRoutingGroup) PublicRoutes() []Route {
+	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
-		{Method: "GET", Pattern: SatisfactoryApiStatusPath, HandlerFunc: v1.GetSatisfactoryApiStatus},
+		{Method: "GET", Pattern: SatisfactoryApiStatusPath, HandlerFunc: v1.GetSatisfactoryApiStatus, Middleware: stageCheck},
 		{Method: "GET", Pattern: ClientIPPath, HandlerFunc: v1.GetClientIP},
 	}
 }

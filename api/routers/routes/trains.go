@@ -1,6 +1,11 @@
 package routes
 
-import "api/routers/api/v1"
+import (
+	v1 "api/routers/api/v1"
+	"api/routers/api/v1/middleware"
+
+	"github.com/gin-gonic/gin"
+)
 
 const (
 	TrainsPath        = "/v1/trains"
@@ -13,9 +18,10 @@ type TrainsRoutingGroup struct{ RoutingGroupBase }
 func TrainRoutes() *TrainsRoutingGroup { return &TrainsRoutingGroup{} }
 
 func (group *TrainsRoutingGroup) PublicRoutes() []Route {
+	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
-		{Method: "GET", Pattern: TrainsPath, HandlerFunc: v1.ListTrains},
-		{Method: "GET", Pattern: TrainStationsPath, HandlerFunc: v1.ListTrainStations},
-		{Method: "GET", Pattern: TrainSetupPath, HandlerFunc: v1.GetTrainSetup},
+		{Method: "GET", Pattern: TrainsPath, HandlerFunc: v1.ListTrains, Middleware: stageCheck},
+		{Method: "GET", Pattern: TrainStationsPath, HandlerFunc: v1.ListTrainStations, Middleware: stageCheck},
+		{Method: "GET", Pattern: TrainSetupPath, HandlerFunc: v1.GetTrainSetup, Middleware: stageCheck},
 	}
 }
