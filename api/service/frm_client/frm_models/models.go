@@ -147,6 +147,7 @@ type TrainVehicle struct {
 }
 
 type Train struct {
+	ID             string                `json:"ID"`
 	Name           string                `json:"Name"`
 	ForwardSpeed   float64               `json:"ForwardSpeed"`
 	Location       Location              `json:"location"`
@@ -204,6 +205,7 @@ type TruckFuel struct {
 }
 
 type Truck struct {
+	ID           string       `json:"ID"`
 	Name         string       `json:"Name"`
 	ForwardSpeed float64      `json:"ForwardSpeed"`
 	AutoPilot    bool         `json:"AutoPilot"`
@@ -322,6 +324,7 @@ type Storage struct {
 
 // Tractor has same structure as Truck
 type Tractor struct {
+	ID           string       `json:"ID"`
 	Name         string       `json:"Name"`
 	ForwardSpeed float64      `json:"ForwardSpeed"`
 	AutoPilot    bool         `json:"AutoPilot"`
@@ -333,6 +336,7 @@ type Tractor struct {
 
 // Explorer has same structure as Truck
 type Explorer struct {
+	ID           string       `json:"ID"`
 	Name         string       `json:"Name"`
 	ForwardSpeed float64      `json:"ForwardSpeed"`
 	AutoPilot    bool         `json:"AutoPilot"`
@@ -373,17 +377,29 @@ type SpaceElevator struct {
 	UpgradeReady  bool                 `json:"UpgradeReady"`
 }
 
+// ScannedResourceNode is used by radar towers (from /getRadarTower)
 type ScannedResourceNode struct {
-	ID           string  `json:"ID"`
-	Name         string  `json:"Name"`
-	ClassName    string  `json:"ClassName"`
-	Purity       string  `json:"Purity"`
-	ResourceForm string  `json:"ResourceForm"`
-	NodeType     string  `json:"NodeType"`
-	Exploited    bool    `json:"Exploited"`
-	X            float64 `json:"x"`
-	Y            float64 `json:"y"`
-	Z            float64 `json:"z"`
+	ID           string   `json:"ID"`
+	Name         string   `json:"Name"`
+	ClassName    string   `json:"ClassName"`
+	Purity       string   `json:"Purity"`
+	ResourceForm string   `json:"ResourceForm"`
+	NodeType     string   `json:"NodeType"` // This is the resource type (IronOre, Coal, etc.) in radar context
+	Exploited    bool     `json:"Exploited"`
+	Location     Location `json:"location"`
+}
+
+// ResourceNode is used by the world resource nodes (from /getResourceNode)
+type ResourceNode struct {
+	ID           string   `json:"ID"`
+	Name         string   `json:"Name"`
+	ClassName    string   `json:"ClassName"`
+	Purity       string   `json:"Purity"`       // "Impure", "Normal", "Pure"
+	EnumPurity   string   `json:"EnumPurity"`   // "RP_Impure", etc.
+	ResourceForm string   `json:"ResourceForm"` // "Solid", "Liquid", "Gas", etc.
+	NodeType     string   `json:"NodeType"`     // "Node", "Geyser", "Fracking Core", "Fracking Satellite"
+	Exploited    bool     `json:"Exploited"`
+	Location     Location `json:"location"`
 }
 
 type ScannedFauna struct {
@@ -405,7 +421,7 @@ type ScannedSignal struct {
 }
 
 type RadarTower struct {
-	Name         string                `json:"Name"`
+	ID           string                `json:"ID"`
 	Location     Location              `json:"location"`
 	BoundingBox  BoundingBox           `json:"BoundingBox"`
 	RevealRadius float64               `json:"RevealRadius"`

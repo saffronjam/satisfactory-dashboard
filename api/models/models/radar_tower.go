@@ -9,21 +9,33 @@ const (
 	ResourceNodePurityPure   ResourceNodePurity = "Pure"
 )
 
-type ResourceNodeType string
+// ResourceType represents the type of resource (ore, liquid, gas)
+type ResourceType string
 
 const (
-	ResourceNodeTypeIronOre     ResourceNodeType = "IronOre"
-	ResourceNodeTypeCopperOre   ResourceNodeType = "CopperOre"
-	ResourceNodeTypeLimestone   ResourceNodeType = "Limestone"
-	ResourceNodeTypeCoal        ResourceNodeType = "Coal"
-	ResourceNodeTypeSAM         ResourceNodeType = "SAM"
-	ResourceNodeTypeSulfur      ResourceNodeType = "Sulfur"
-	ResourceNodeTypeCateriumOre ResourceNodeType = "CateriumOre"
-	ResourceNodeTypeBauxite     ResourceNodeType = "Bauxite"
-	ResourceNodeTypeRawQuartz   ResourceNodeType = "RawQuartz"
-	ResourceNodeTypeUranium     ResourceNodeType = "Uranium"
-	ResourceNodeTypeCrudeOil    ResourceNodeType = "CrudeOil"
-	ResourceNodeTypeGeyser      ResourceNodeType = "Geyser"
+	ResourceTypeIronOre     ResourceType = "IronOre"
+	ResourceTypeCopperOre   ResourceType = "CopperOre"
+	ResourceTypeLimestone   ResourceType = "Limestone"
+	ResourceTypeCoal        ResourceType = "Coal"
+	ResourceTypeSAM         ResourceType = "SAM"
+	ResourceTypeSulfur      ResourceType = "Sulfur"
+	ResourceTypeCateriumOre ResourceType = "CateriumOre"
+	ResourceTypeBauxite     ResourceType = "Bauxite"
+	ResourceTypeRawQuartz   ResourceType = "RawQuartz"
+	ResourceTypeUranium     ResourceType = "Uranium"
+	ResourceTypeCrudeOil    ResourceType = "CrudeOil"
+	ResourceTypeGeyser      ResourceType = "Geyser"
+	ResourceTypeNitrogenGas ResourceType = "NitrogenGas"
+)
+
+// NodeType represents the deposit classification
+type NodeType string
+
+const (
+	NodeTypeNode              NodeType = "Node"
+	NodeTypeGeyser            NodeType = "Geyser"
+	NodeTypeFrackingCore      NodeType = "Fracking Core"
+	NodeTypeFrackingSatellite NodeType = "Fracking Satellite"
 )
 
 type FaunaType string
@@ -72,13 +84,14 @@ const (
 	SignalTypeHardDrive       SignalType = "Hard Drive"
 )
 
-type ScannedResourceNode struct {
+type ResourceNode struct {
 	ID           string             `json:"id"`
 	Name         string             `json:"name"`
 	ClassName    string             `json:"className"`
 	Purity       ResourceNodePurity `json:"purity"`
 	ResourceForm string             `json:"resourceForm"`
-	NodeType     ResourceNodeType   `json:"nodeType"`
+	ResourceType ResourceType       `json:"resourceType"`
+	NodeType     NodeType           `json:"nodeType"`
 	Exploited    bool               `json:"exploited"`
 	Location     `json:",inline" tstype:",extends"`
 }
@@ -102,12 +115,12 @@ type ScannedSignal struct {
 }
 
 type RadarTower struct {
-	Name         string                `json:"name"`
-	RevealRadius float64               `json:"revealRadius"`
-	Nodes        []ScannedResourceNode `json:"nodes"`
-	Fauna        []ScannedFauna        `json:"fauna"`
-	Flora        []ScannedFlora        `json:"flora"`
-	Signal       []ScannedSignal       `json:"signal"`
-	BoundingBox  BoundingBox           `json:"boundingBox"`
+	ID           string          `json:"id"`
+	RevealRadius float64         `json:"revealRadius"`
+	Nodes        []ResourceNode  `json:"nodes"`
+	Fauna        []ScannedFauna  `json:"fauna"`
+	Flora        []ScannedFlora  `json:"flora"`
+	Signal       []ScannedSignal `json:"signal"`
+	BoundingBox  BoundingBox     `json:"boundingBox"`
 	Location     `json:",inline" tstype:",extends"`
 }

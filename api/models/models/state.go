@@ -28,6 +28,7 @@ type State struct {
 	VehiclePaths    []VehiclePath    `json:"vehiclePaths"`
 	SpaceElevator   *SpaceElevator   `json:"spaceElevator"`
 	RadarTowers     []RadarTower     `json:"radarTowers"`
+	ResourceNodes   []ResourceNode   `json:"resourceNodes"`
 }
 
 func (state *State) ToDTO() StateDTO {
