@@ -19,7 +19,7 @@ export type NavContentProps = {
     path: string;
     title: string;
     icon: React.ReactNode;
-    group: 'main' | 'sub';
+    group: 'main' | 'sub' | 'debug';
     info?: React.ReactNode;
   }[];
   slots?: {
@@ -107,9 +107,10 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
   const pathname = usePathname();
   const theme = useTheme();
 
-  // Separate the data into main and subgroups
+  // Separate the data into main, sub, and debug groups
   const mainItems = data.filter((item) => item.group === 'main');
   const subItems = data.filter((item) => item.group === 'sub');
+  const debugItems = data.filter((item) => item.group === 'debug');
 
   return (
     <>
@@ -177,6 +178,58 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
 
             {/* Render sub items */}
             {subItems.map((item) => {
+              const isActive = item.path === pathname;
+
+              return (
+                <ListItem disableGutters disablePadding key={item.title}>
+                  <ListItemButton
+                    disableRipple
+                    component={RouterLink}
+                    href={item.path}
+                    sx={{
+                      pl: 2,
+                      py: 1,
+                      gap: 2,
+                      pr: 1.5,
+                      borderRadius: 2,
+                      typography: 'body2',
+                      fontWeight: 'fontWeightMedium',
+                      minHeight: 'var(--layout-nav-item-height)',
+                      ...(!isActive && {
+                        color: 'text.primary',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
+                        },
+                      }),
+                      ...(isActive && {
+                        fontWeight: 'fontWeightSemiBold',
+                        bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.66),
+                        color: theme.palette.primary.contrastText,
+                        '&:hover': {
+                          bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.86),
+                        },
+                      }),
+                    }}
+                  >
+                    <Box component="span" sx={{ width: 24, height: 24 }}>
+                      {item.icon}
+                    </Box>
+
+                    <Box component="span" flexGrow={1}>
+                      {item.title}
+                    </Box>
+
+                    {item.info ? item.info : null}
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+
+            {/* Divider between sub and debug items */}
+            {debugItems.length > 0 && <Divider sx={{ my: 2 }} />}
+
+            {/* Render debug items */}
+            {debugItems.map((item) => {
               const isActive = item.path === pathname;
 
               return (

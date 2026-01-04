@@ -3,6 +3,7 @@ import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgr
 import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, useRoutes } from 'react-router-dom';
 import { DashboardLayout } from 'src/layouts/dashboard';
+import DebugPage from 'src/pages/debug';
 import DronesPage from 'src/pages/drones';
 
 import MapPage from 'src/pages/map';
@@ -52,6 +53,7 @@ export function Router() {
         { path: 'drones', element: <DronesPage /> },
         { path: 'players', element: <PlayersPage /> },
         { path: 'settings', element: <SettingsPage /> },
+        { path: 'debug', element: <DebugPage /> },
       ],
     },
     {

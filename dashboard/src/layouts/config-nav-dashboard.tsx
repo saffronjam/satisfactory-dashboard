@@ -2,7 +2,14 @@ import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 
-export const navData = [
+type NavItem = {
+  title: string;
+  path: string;
+  icon: React.ReactNode;
+  group: 'main' | 'sub' | 'debug';
+};
+
+const baseNavData: NavItem[] = [
   {
     title: 'Dashboard',
     path: '/',
@@ -51,4 +58,18 @@ export const navData = [
     icon: <Iconify icon="mdi:cog" width={24} height={24} />,
     group: 'sub',
   },
-] as any;
+];
+
+const debugNavItem: NavItem = {
+  title: 'Debug',
+  path: '/debug',
+  icon: <Iconify icon="mdi:bug" width={24} height={24} />,
+  group: 'debug',
+};
+
+export function getNavData(isDebugMode: boolean): NavItem[] {
+  if (isDebugMode) {
+    return [...baseNavData, debugNavItem];
+  }
+  return baseNavData;
+}

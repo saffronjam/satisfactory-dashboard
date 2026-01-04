@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import App from './app';
 import { SessionAwareApiProvider } from './contexts/api/SessionAwareApiProvider';
+import { DebugProvider } from './contexts/debug/DebugContext';
 import { SessionProvider } from './contexts/sessions';
 import '@fontsource/roboto-mono';
 import '@fontsource/dm-mono';
@@ -19,13 +20,15 @@ root.render(
     <HelmetProvider>
       <BrowserRouter>
         <Suspense>
-          <SessionProvider>
-            <SessionAwareApiProvider>
-              <NotificationsProvider>
-                <App />
-              </NotificationsProvider>
-            </SessionAwareApiProvider>
-          </SessionProvider>
+          <DebugProvider>
+            <SessionProvider>
+              <SessionAwareApiProvider>
+                <NotificationsProvider>
+                  <App />
+                </NotificationsProvider>
+              </SessionAwareApiProvider>
+            </SessionProvider>
+          </DebugProvider>
         </Suspense>
       </BrowserRouter>
     </HelmetProvider>
