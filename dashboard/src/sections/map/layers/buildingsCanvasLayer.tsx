@@ -9,22 +9,23 @@ import {
   MachineStatusOperating,
   MachineStatusPaused,
 } from 'src/apiTypes';
+import { BuildingColorMode, getGridColor } from 'src/utils/gridColors';
 import { ConvertToMapCoords2 } from '../bounds';
 import { rotatePoint, toRotationRad } from '../utils';
 
-// Building colors by category
+// Building colors by category (no alpha - opacity controlled by globalAlpha)
 const BUILDING_COLORS: Record<MachineCategory, { stroke: string; fill: string }> = {
-  factory: { stroke: '#4056A1', fill: 'rgba(64, 86, 161, 0.7)' },
-  extractor: { stroke: '#C97B2A', fill: 'rgba(201, 123, 42, 0.7)' },
-  generator: { stroke: '#2E8B8B', fill: 'rgba(46, 139, 139, 0.7)' },
+  factory: { stroke: '#4056A1', fill: '#4056A1' },
+  extractor: { stroke: '#C97B2A', fill: '#C97B2A' },
+  generator: { stroke: '#2E8B8B', fill: '#2E8B8B' },
 };
 
-// Building colors by status
+// Building colors by status (no alpha - opacity controlled by globalAlpha)
 const STATUS_COLORS: Record<string, { stroke: string; fill: string }> = {
-  [MachineStatusOperating]: { stroke: '#16a34a', fill: 'rgba(34, 197, 94, 0.7)' }, // Green
-  [MachineStatusIdle]: { stroke: '#ca8a04', fill: 'rgba(234, 179, 8, 0.7)' }, // Yellow
-  [MachineStatusPaused]: { stroke: '#ea580c', fill: 'rgba(249, 115, 22, 0.7)' }, // Orange
-  default: { stroke: '#4b5563', fill: 'rgba(107, 114, 128, 0.7)' }, // Gray
+  [MachineStatusOperating]: { stroke: '#16a34a', fill: '#22c55e' }, // Green
+  [MachineStatusIdle]: { stroke: '#ca8a04', fill: '#eab308' }, // Yellow
+  [MachineStatusPaused]: { stroke: '#ea580c', fill: '#f97316' }, // Orange
+  default: { stroke: '#4b5563', fill: '#6b7280' }, // Gray
 };
 
 const BUILDING_STROKE_WIDTH = 1;
@@ -67,7 +68,8 @@ type BuildingsCanvasLayerProps = {
   visibleCategories?: Set<MachineCategory>;
   onMachineHover?: (event: MachineHoverEvent) => void;
   onMachineClick?: (event: MachineHoverEvent) => void;
-  colorByStatus?: boolean;
+  buildingColorMode?: BuildingColorMode;
+  opacity?: number;
 };
 
 // Custom Leaflet layer that renders buildings to canvas
@@ -91,15 +93,18 @@ class BuildingsLayer extends L.Layer {
   private _boundMouseMove: ((e: MouseEvent) => void) | null = null;
   private _boundMouseOut: ((e: MouseEvent) => void) | null = null;
   private _boundClick: ((e: MouseEvent) => void) | null = null;
-  // Color by status
-  private _colorByStatus = false;
+  // Building color mode
+  private _buildingColorMode: BuildingColorMode = 'type';
+  // Opacity
+  private _opacity = 0.5;
 
   constructor(
     machines: Machine[],
     visibleCategories?: Set<MachineCategory>,
     onHover?: (event: MachineHoverEvent) => void,
-    colorByStatus?: boolean,
-    onClick?: (event: MachineHoverEvent) => void
+    buildingColorMode?: BuildingColorMode,
+    onClick?: (event: MachineHoverEvent) => void,
+    opacity?: number
   ) {
     super();
     this._machines = machines;
@@ -109,11 +114,14 @@ class BuildingsLayer extends L.Layer {
     if (onHover) {
       this._onHoverCallback = onHover;
     }
-    if (colorByStatus !== undefined) {
-      this._colorByStatus = colorByStatus;
+    if (buildingColorMode !== undefined) {
+      this._buildingColorMode = buildingColorMode;
     }
     if (onClick) {
       this._onClickCallback = onClick;
+    }
+    if (opacity !== undefined) {
+      this._opacity = opacity;
     }
   }
 
@@ -205,10 +213,18 @@ class BuildingsLayer extends L.Layer {
     this._onHoverCallback = callback;
   }
 
-  setColorByStatus(colorByStatus: boolean): void {
-    this._colorByStatus = colorByStatus;
+  setBuildingColorMode(mode: BuildingColorMode): void {
+    this._buildingColorMode = mode;
     this._needsRedraw = true;
     this._redraw();
+  }
+
+  setOpacity(opacity: number): void {
+    if (this._opacity !== opacity) {
+      this._opacity = opacity;
+      this._needsRedraw = true;
+      this._redraw();
+    }
   }
 
   private _onMouseMove(e: MouseEvent): void {
@@ -362,7 +378,7 @@ class BuildingsLayer extends L.Layer {
 
     // Draw buildings to offscreen canvas (only those in viewport)
     this._offscreenCtx.lineWidth = BUILDING_STROKE_WIDTH;
-    this._offscreenCtx.globalAlpha = 0.5;
+    this._offscreenCtx.globalAlpha = this._opacity;
 
     // Expand bounds slightly for smoother panning
     const expandedBounds = bounds.pad(0.2);
@@ -382,13 +398,21 @@ class BuildingsLayer extends L.Layer {
         continue;
       }
 
-      // Get colors - use status colors for factory machines if enabled
+      // Get colors based on building color mode
       let colors: { stroke: string; fill: string };
-      if (this._colorByStatus && category === 'factory') {
-        const statusKey = machine.status as MachineStatus;
-        colors = STATUS_COLORS[statusKey] || STATUS_COLORS.default;
-      } else {
-        colors = BUILDING_COLORS[category] || BUILDING_COLORS.factory;
+      switch (this._buildingColorMode) {
+        case 'status': {
+          const statusKey = machine.status as MachineStatus;
+          colors = STATUS_COLORS[statusKey] || STATUS_COLORS.default;
+          break;
+        }
+        case 'grid': {
+          colors = getGridColor(machine.circuitGroupId);
+          break;
+        }
+        case 'type':
+        default:
+          colors = BUILDING_COLORS[category] || BUILDING_COLORS.factory;
       }
 
       const minX = machine.boundingBox.min.x;
@@ -469,7 +493,8 @@ export function BuildingsCanvasLayer({
   visibleCategories,
   onMachineHover,
   onMachineClick,
-  colorByStatus = false,
+  buildingColorMode = 'type',
+  opacity = 0.5,
 }: BuildingsCanvasLayerProps) {
   const map = useMap();
   const layerRef = useRef<BuildingsLayer | null>(null);
@@ -494,8 +519,9 @@ export function BuildingsCanvasLayer({
         machines,
         categories,
         onMachineHover,
-        colorByStatus,
-        onMachineClick
+        buildingColorMode,
+        onMachineClick,
+        opacity
       );
       map.addLayer(layerRef.current);
     } else {
@@ -532,12 +558,19 @@ export function BuildingsCanvasLayer({
     }
   }, [onMachineHover]);
 
-  // Update color by status when it changes
+  // Update building color mode when it changes
   useEffect(() => {
     if (layerRef.current && enabled) {
-      layerRef.current.setColorByStatus(colorByStatus);
+      layerRef.current.setBuildingColorMode(buildingColorMode);
     }
-  }, [colorByStatus, enabled]);
+  }, [buildingColorMode, enabled]);
+
+  // Update opacity when it changes
+  useEffect(() => {
+    if (layerRef.current && enabled) {
+      layerRef.current.setOpacity(opacity);
+    }
+  }, [opacity, enabled]);
 
   return null;
 }
