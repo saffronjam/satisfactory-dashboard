@@ -51,12 +51,15 @@ type MachineProdStats struct {
 }
 
 type Machine struct {
-	Type     MachineType        `json:"type"`
-	Status   MachineStatus      `json:"status"`
-	Category MachineCategory    `json:"category"`
-	Input    []MachineProdStats `json:"input"`
-	Output   []MachineProdStats `json:"output"`
-	Location `json:",inline" tstype:",extends"`
+	Type         MachineType        `json:"type"`
+	Status       MachineStatus      `json:"status"`
+	Category     MachineCategory    `json:"category"`
+	Productivity float64            `json:"productivity"` // 0-1
+	Input        []MachineProdStats `json:"input"`
+	Output       []MachineProdStats `json:"output"`
+	BoundingBox  BoundingBox        `json:"boundingBox"`
+	Location     `json:",inline" tstype:",extends"`
+	CircuitIDs   `json:",inline" tstype:",extends"`
 }
 
 func (machine *Machine) ToDTO() MachineDTO {

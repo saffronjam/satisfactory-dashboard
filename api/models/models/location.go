@@ -6,3 +6,8 @@ type Location struct {
 	Z        float64 `json:"z"`
 	Rotation float64 `json:"rotation"`
 }
+
+type BoundingBox struct {
+	Min Location `json:"min"`
+	Max Location `json:"max"`
+}

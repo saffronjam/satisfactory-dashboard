@@ -11,7 +11,6 @@ type MachineEfficiency struct {
 type FactoryStats struct {
 	TotalMachines int               `json:"totalMachines"`
 	Efficiency    MachineEfficiency `json:"efficiency"`
-	Machines      []Machine         `json:"machines"`
 }
 
 func (factoryStats *FactoryStats) ToDTO() FactoryStatsDTO {

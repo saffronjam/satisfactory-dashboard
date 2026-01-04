@@ -11,6 +11,8 @@ type ItemProdStats struct {
 	MaxConsumePerMinute float64 `json:"maxConsumePerMinute"`
 	ConsumeEfficiency   float64 `json:"consumeEfficiency"`
 
+	CloudCount float64 `json:"cloudCount"`
+
 	Minable bool `json:"minable"`
 }
 

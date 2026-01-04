@@ -37,6 +37,7 @@ type Train struct {
 	Timetable        []TrainTimetableEntry `json:"timetable"`
 	TimetableIndex   int                   `json:"timetableIndex"`
 	Location         `json:",inline" tstype:",extends"`
+	CircuitIDs       `json:",inline" tstype:",extends"`
 }
 
 func (train *Train) ToDTO() TrainDTO {

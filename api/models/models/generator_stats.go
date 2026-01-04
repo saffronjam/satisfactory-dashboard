@@ -17,8 +17,7 @@ type PowerSource struct {
 }
 
 type GeneratorStats struct {
-	Sources  map[PowerType]PowerSource `json:"sources"`
-	Machines []Machine                 `json:"machines"`
+	Sources map[PowerType]PowerSource `json:"sources"`
 }
 
 func (generatorStats *GeneratorStats) ToDTO() GeneratorStatsDTO {
