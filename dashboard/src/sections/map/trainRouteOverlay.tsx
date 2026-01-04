@@ -1,7 +1,7 @@
 import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { Iconify } from 'src/components/iconify';
 import { LatLngExpression } from 'leaflet';
-import { memo, useEffect, useRef, useState, useCallback } from 'react';
+import { memo, useEffect, useState, useCallback } from 'react';
 import { Polyline, useMap, useMapEvents } from 'react-leaflet';
 import {
   Train,
@@ -22,8 +22,10 @@ interface AnimatedPosition {
 interface TrainRouteOverlayProps {
   train: Train | null;
   trainStations: TrainStation[];
+  onHide: () => void;
   onClose: () => void;
   animatedPosition?: AnimatedPosition | null;
+  showPopover?: boolean;
 }
 
 // Find station by name
@@ -57,11 +59,12 @@ const getVehicleColor = (vehicle: TrainVehicle): string => {
 function TrainRouteOverlayInner({
   train,
   trainStations,
+  onHide,
   onClose,
   animatedPosition,
+  showPopover = true,
 }: TrainRouteOverlayProps) {
   const map = useMap();
-  const popoverRef = useRef<HTMLDivElement>(null);
   const [screenPos, setScreenPos] = useState<{ x: number; y: number } | null>(null);
 
   // Calculate screen position from map position
@@ -82,25 +85,6 @@ function TrainRouteOverlayInner({
     move: updateScreenPosition,
     zoom: updateScreenPosition,
   });
-
-  useEffect(() => {
-    if (!train) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [train, onClose]);
 
   if (!train || train.timetable.length === 0) return null;
 
@@ -170,10 +154,15 @@ function TrainRouteOverlayInner({
       )}
 
       {/* Popover follows train position */}
-      {screenPos && (
+      {screenPos && showPopover && (
         <Paper
-          ref={popoverRef}
           elevation={8}
+          onMouseMove={(e) => e.stopPropagation()}
+          onMouseOver={(e) => e.stopPropagation()}
+          onMouseEnter={(e) => e.stopPropagation()}
+          onMouseLeave={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
           sx={{
             position: 'absolute',
             left: screenPos.x + 20,
@@ -188,17 +177,14 @@ function TrainRouteOverlayInner({
             pointerEvents: 'auto',
           }}
         >
-          <IconButton
-            size="small"
-            onClick={onClose}
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-            }}
-          >
-            <Iconify icon="mdi:close" width={18} />
-          </IconButton>
+          <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
+            <IconButton size="small" onClick={onHide} title="Hide popover">
+              <Iconify icon="mdi:eye-off" width={18} />
+            </IconButton>
+            <IconButton size="small" onClick={onClose} title="Deselect">
+              <Iconify icon="mdi:close" width={18} />
+            </IconButton>
+          </Box>
           <Box sx={{ mb: 0.5 }}>
             <Typography variant="caption" color="text.secondary">
               Train

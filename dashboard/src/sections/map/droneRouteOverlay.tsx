@@ -1,6 +1,6 @@
 import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { LatLngExpression } from 'leaflet';
-import { memo, useEffect, useRef, useState, useCallback } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { Polyline, useMap, useMapEvents } from 'react-leaflet';
 import { Drone, DroneStation, DroneStatusDocking, DroneStatusFlying } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
@@ -16,8 +16,10 @@ interface AnimatedPosition {
 interface DroneRouteOverlayProps {
   drone: Drone | null;
   droneStations: DroneStation[];
+  onHide: () => void;
   onClose: () => void;
   animatedPosition?: AnimatedPosition | null;
+  showPopover?: boolean;
 }
 
 // Get status color
@@ -47,11 +49,12 @@ const getStatusLabel = (status: string): string => {
 function DroneRouteOverlayInner({
   drone,
   droneStations: _droneStations,
+  onHide,
   onClose,
   animatedPosition,
+  showPopover = true,
 }: DroneRouteOverlayProps) {
   const map = useMap();
-  const popoverRef = useRef<HTMLDivElement>(null);
   const [screenPos, setScreenPos] = useState<{ x: number; y: number } | null>(null);
 
   // Calculate screen position from map position
@@ -72,25 +75,6 @@ function DroneRouteOverlayInner({
     move: updateScreenPosition,
     zoom: updateScreenPosition,
   });
-
-  useEffect(() => {
-    if (!drone) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [drone, onClose]);
 
   if (!drone) return null;
 
@@ -153,17 +137,22 @@ function DroneRouteOverlayInner({
       )}
 
       {/* Popover follows drone position */}
-      {screenPos && (
+      {screenPos && showPopover && (
         <Paper
-          ref={popoverRef}
           elevation={8}
+          onMouseMove={(e) => e.stopPropagation()}
+          onMouseOver={(e) => e.stopPropagation()}
+          onMouseEnter={(e) => e.stopPropagation()}
+          onMouseLeave={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
           sx={{
             position: 'absolute',
             left: screenPos.x + 20,
             top: screenPos.y + 10,
             zIndex: 1500,
             p: 2,
-            pr: 4.5,
+            pr: 6,
             minWidth: 200,
             maxWidth: 350,
             backgroundColor: 'background.paper',
@@ -171,17 +160,14 @@ function DroneRouteOverlayInner({
             pointerEvents: 'auto',
           }}
         >
-          <IconButton
-            size="small"
-            onClick={onClose}
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-            }}
-          >
-            <Iconify icon="mdi:close" width={18} />
-          </IconButton>
+          <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
+            <IconButton size="small" onClick={onHide} title="Hide popover">
+              <Iconify icon="mdi:eye-off" width={18} />
+            </IconButton>
+            <IconButton size="small" onClick={onClose} title="Deselect">
+              <Iconify icon="mdi:close" width={18} />
+            </IconButton>
+          </Box>
           <Typography variant="body2" fontWeight="medium" sx={{ mb: 0.5 }}>
             Drone
           </Typography>
