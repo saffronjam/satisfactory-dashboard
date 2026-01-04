@@ -23,13 +23,14 @@ type RoutingGroup interface {
 func RoutingGroups() []RoutingGroup {
 	return []RoutingGroup{
 		SessionRoutes(),
-		StateRoutes(),
 		CircuitRoutes(),
 		PlayerRoutes(),
 		StatusRoutes(),
 		StatsRoutes(),
+		MachinesRoutes(),
 		TrainRoutes(),
 		DroneRoutes(),
+		InfrastructureRoutes(),
 	}
 }
 
