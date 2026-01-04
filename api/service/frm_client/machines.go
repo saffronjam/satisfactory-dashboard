@@ -133,6 +133,16 @@ func (client *Client) GetMachines(ctx context.Context) ([]models.Machine, error)
 		}
 	}()
 
+	generatorStatus := func(currentPowerOutput, maxPowerOutput float64) models.MachineStatus {
+		if maxPowerOutput == 0 {
+			return models.MachineStatusUnconfigured
+		}
+		if currentPowerOutput == 0 {
+			return models.MachineStatusIdle
+		}
+		return models.MachineStatusOperating
+	}
+
 	// Fetch Generators
 	wg.Add(1)
 	go func() {
@@ -176,10 +186,12 @@ func (client *Client) GetMachines(ctx context.Context) ([]models.Machine, error)
 				productivity = 0.0
 			}
 
+			maxPower := maxPowerByType(&raw, genType)
+
 			machine := models.Machine{
 				Type:         models.MachineType(raw.Name),
 				Category:     models.MachineCategoryGenerator,
-				Status:       models.MachineStatusOperating,
+				Status:       generatorStatus(power, maxPower),
 				Productivity: productivity,
 				Location:     parseLocation(raw.Location),
 				BoundingBox:  parseBoundingBox(raw.BoundingBox),
@@ -189,7 +201,7 @@ func (client *Client) GetMachines(ctx context.Context) ([]models.Machine, error)
 					{
 						Name:    "Power",
 						Current: power,
-						Max:     maxPowerByType(&raw, genType),
+						Max:     maxPower,
 					},
 				},
 			}

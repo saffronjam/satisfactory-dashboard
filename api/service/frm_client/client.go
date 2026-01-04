@@ -223,6 +223,11 @@ func (client *Client) SetupEventStream(ctx context.Context, callback func(*model
 			Endpoint: func(c context.Context) (interface{}, error) { return client.ListRadarTowers(c) },
 			Interval: 4 * time.Second,
 		},
+		{
+			Type:     models.SatisfactoryEventResourceNodes,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListResourceNodes(c) },
+			Interval: 20 * time.Second,
+		},
 	}
 
 	log.Infoln("Starting event listeners for Satisfactory API")

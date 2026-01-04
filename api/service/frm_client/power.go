@@ -73,3 +73,26 @@ func (client *Client) ListCircuits(ctx context.Context) ([]models.Circuit, error
 
 	return circuits, nil
 }
+
+// ListCables fetches power cable data for map visualization
+func (client *Client) ListCables(ctx context.Context) ([]models.Cable, error) {
+	var rawCables []frm_models.Cable
+	err := client.makeSatisfactoryCallWithTimeout(ctx, "/getCables", &rawCables, infraApiTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cables. details: %w", err)
+	}
+
+	cables := make([]models.Cable, len(rawCables))
+	for i, raw := range rawCables {
+		cables[i] = models.Cable{
+			ID:         raw.ID,
+			Name:       raw.Name,
+			Location0:  models.Location{X: raw.Location0.X, Y: raw.Location0.Y, Z: raw.Location0.Z, Rotation: raw.Location0.Rotation},
+			Location1:  models.Location{X: raw.Location1.X, Y: raw.Location1.Y, Z: raw.Location1.Z, Rotation: raw.Location1.Rotation},
+			Connected0: raw.Connected0,
+			Connected1: raw.Connected1,
+			Length:     raw.Length / 100, // Convert cm to m
+		}
+	}
+	return cables, nil
+}
