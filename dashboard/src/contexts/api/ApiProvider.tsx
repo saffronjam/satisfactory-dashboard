@@ -14,21 +14,37 @@ const DEFAULT_DATA: ApiData = {
   sinkStats: {} as API.SinkStats,
   players: [],
   generatorStats: {} as API.GeneratorStats,
+  machines: [],
   trains: [],
   trainStations: [],
   drones: [],
   droneStations: [],
+  trucks: [],
+  truckStations: [],
+  belts: [],
+  pipes: [],
+  pipeJunctions: [],
+  trainRails: [],
+  splitterMergers: [],
+  cables: [],
+  storages: [],
+  tractors: [],
+  explorers: [],
+  vehiclePaths: [],
+  spaceElevator: undefined,
 };
 
 interface ApiProviderProps {
   children: React.ReactNode;
   sessionId: string | null;
-  onSessionUpdate?: (session: API.Session) => void;
+  sessionStage: API.SessionStage | null;
+  onSessionUpdate?: (session: API.SessionDTO) => void;
 }
 
 export const ApiProvider: React.FC<ApiProviderProps> = ({
   children,
   sessionId,
+  sessionStage,
   onSessionUpdate,
 }) => {
   const [data, setData] = useState<ApiData>(DEFAULT_DATA);
@@ -55,8 +71,11 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
     }
   }, []);
 
+  // Ref to store fetchState function so it can be called from SSE handler
+  const fetchStateRef = useRef<(() => Promise<void>) | null>(null);
+
   const startSse = useCallback(
-    (currentSessionId: string) => {
+    (currentSessionId: string, isReady: boolean) => {
       // Reset data for new session
       const newData = { ...DEFAULT_DATA };
       dataRef.current = newData;
@@ -82,10 +101,22 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             dataRef.current.sinkStats = fullState.sinkStats;
             dataRef.current.players = fullState.players;
             dataRef.current.generatorStats = fullState.generatorStats;
+            dataRef.current.machines = fullState.machines ?? [];
             dataRef.current.trains = fullState.trains;
             dataRef.current.trainStations = fullState.trainStations;
             dataRef.current.drones = fullState.drones;
             dataRef.current.droneStations = fullState.droneStations;
+            dataRef.current.belts = fullState.belts ?? [];
+            dataRef.current.pipes = fullState.pipes ?? [];
+            dataRef.current.pipeJunctions = fullState.pipeJunctions ?? [];
+            dataRef.current.trainRails = fullState.trainRails ?? [];
+            dataRef.current.splitterMergers = fullState.splitterMergers ?? [];
+            dataRef.current.cables = fullState.cables ?? [];
+            dataRef.current.storages = fullState.storages ?? [];
+            dataRef.current.tractors = fullState.tractors ?? [];
+            dataRef.current.explorers = fullState.explorers ?? [];
+            dataRef.current.vehiclePaths = fullState.vehiclePaths ?? [];
+            dataRef.current.spaceElevator = fullState.spaceElevator;
             dataRef.current.isLoading = false;
             setData({ ...dataRef.current });
           })
@@ -97,16 +128,23 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
           });
       };
 
+      // Store fetchState in ref so it can be called when session becomes ready
+      fetchStateRef.current = fetchState;
+
       dataRef.current.isLoading = true;
-      void fetchState();
+      // Only fetch state if session is ready (not in init stage)
+      if (isReady) {
+        void fetchState();
+      }
 
       eventSource.addEventListener(API.SatisfactoryEventKey, (event) => {
         const parsed = JSON.parse(event.data) as API.SseSatisfactoryEvent;
         switch (parsed.type as API.SatisfactoryEventType) {
           case API.SatisfactoryEventApiStatus:
             // If was offline, and now is online, set loading to false and request full state
-            if (!dataRef.current.isOnline && parsed.data.running) {
-              void fetchState();
+            // Only fetch if we have fetchStateRef (session should be ready by now via SSE)
+            if (!dataRef.current.isOnline && parsed.data.running && fetchStateRef.current) {
+              void fetchStateRef.current();
               dataRef.current.isLoading = false;
             }
             dataRef.current.isOnline = parsed.data.running;
@@ -133,17 +171,56 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
           case API.SatisfactoryEventGeneratorStats:
             dataRef.current.generatorStats = parsed.data;
             break;
-          case API.SatisfactoryEventTrainSetup:
-            dataRef.current.trains = parsed.data.trains;
-            dataRef.current.trainStations = parsed.data.trainStations;
+          case API.SatisfactoryEventMachines:
+            dataRef.current.machines = parsed.data;
             break;
-          case API.SatisfactoryEventDroneSetup:
+          case API.SatisfactoryEventVehicles:
+            dataRef.current.trains = parsed.data.trains;
             dataRef.current.drones = parsed.data.drones;
+            dataRef.current.trucks = parsed.data.trucks;
+            dataRef.current.tractors = parsed.data.tractors ?? [];
+            dataRef.current.explorers = parsed.data.explorers ?? [];
+            break;
+          case API.SatisfactoryEventVehicleStations:
+            dataRef.current.trainStations = parsed.data.trainStations;
             dataRef.current.droneStations = parsed.data.droneStations;
+            dataRef.current.truckStations = parsed.data.truckStations;
+            break;
+          case API.SatisfactoryEventBelts:
+            dataRef.current.belts = parsed.data.belts;
+            dataRef.current.splitterMergers = parsed.data.splitterMergers;
+            break;
+          case API.SatisfactoryEventPipes:
+            dataRef.current.pipes = parsed.data.pipes;
+            dataRef.current.pipeJunctions = parsed.data.pipeJunctions;
+            break;
+          case API.SatisfactoryEventTrainRails:
+            dataRef.current.trainRails = parsed.data;
+            break;
+          case API.SatisfactoryEventCables:
+            dataRef.current.cables = parsed.data;
+            break;
+          case API.SatisfactoryEventStorages:
+            dataRef.current.storages = parsed.data;
+            break;
+          case API.SatisfactoryEventTractors:
+            dataRef.current.tractors = parsed.data;
+            break;
+          case API.SatisfactoryEventExplorers:
+            dataRef.current.explorers = parsed.data;
+            break;
+          case API.SatisfactoryEventVehiclePaths:
+            dataRef.current.vehiclePaths = parsed.data;
+            break;
+          case API.SatisfactoryEventSpaceElevator:
+            dataRef.current.spaceElevator = parsed.data;
+            break;
+          case API.SatisfactoryEventRadarTowers:
+            dataRef.current.radarTowers = parsed.data;
             break;
           case API.SatisfactoryEventSessionUpdate:
             if (onSessionUpdateRef.current) {
-              onSessionUpdateRef.current(parsed.data as API.Session);
+              onSessionUpdateRef.current(parsed.data as API.SessionDTO);
             }
             break;
         }
@@ -173,10 +250,13 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
           const oneMinuteAgo = new Date(latestData.timestamp.getTime() - 60000);
           return newHistory.filter((entry) => entry.timestamp > oneMinuteAgo);
         });
-      }, 1000);
+      }, 2000);
     },
     [cleanup]
   );
+
+  // Track previous stage to detect transitions
+  const prevStageRef = useRef<API.SessionStage | null>(null);
 
   useEffect(() => {
     if (!API_URL) {
@@ -193,10 +273,25 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
       return;
     }
 
-    startSse(sessionId);
+    const isReady = sessionStage === API.SessionStageReady;
+    startSse(sessionId, isReady);
+    prevStageRef.current = sessionStage;
 
     return cleanup;
   }, [sessionId, cleanup, startSse]);
+
+  // Handle session stage transitions (init -> ready)
+  useEffect(() => {
+    // If stage changed from init to ready, fetch state
+    if (
+      prevStageRef.current === API.SessionStageInit &&
+      sessionStage === API.SessionStageReady &&
+      fetchStateRef.current
+    ) {
+      void fetchStateRef.current();
+    }
+    prevStageRef.current = sessionStage;
+  }, [sessionStage]);
 
   const contextValue = useMemo(() => ({ ...data, history: dataHistory }), [data, dataHistory]);
 

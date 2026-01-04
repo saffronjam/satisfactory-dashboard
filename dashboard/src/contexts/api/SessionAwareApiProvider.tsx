@@ -1,6 +1,6 @@
 import { useNotifications } from '@toolpad/core';
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Session } from 'src/apiTypes';
+import type { SessionDTO } from 'src/apiTypes';
 import { useSession } from 'src/contexts/sessions';
 import { ApiProvider } from './ApiProvider';
 
@@ -11,7 +11,7 @@ interface SessionAwareApiProviderProps {
 export const SessionAwareApiProvider: React.FC<SessionAwareApiProviderProps> = ({ children }) => {
   const { selectedSession, updateSessionFromEvent } = useSession();
   const { show } = useNotifications();
-  const prevSessionRef = useRef<Session | null>(null);
+  const prevSessionRef = useRef<SessionDTO | null>(null);
 
   // Initialize/update prevSessionRef when selected session changes
   useEffect(() => {
@@ -24,7 +24,7 @@ export const SessionAwareApiProvider: React.FC<SessionAwareApiProviderProps> = (
   }, [selectedSession]);
 
   const handleSessionUpdate = useCallback(
-    (session: Session) => {
+    (session: SessionDTO) => {
       // Check if save game name changed
       if (
         prevSessionRef.current &&
@@ -43,7 +43,11 @@ export const SessionAwareApiProvider: React.FC<SessionAwareApiProviderProps> = (
   );
 
   return (
-    <ApiProvider sessionId={selectedSession?.id || null} onSessionUpdate={handleSessionUpdate}>
+    <ApiProvider
+      sessionId={selectedSession?.id || null}
+      sessionStage={selectedSession?.stage || null}
+      onSessionUpdate={handleSessionUpdate}
+    >
       {children}
     </ApiProvider>
   );
