@@ -1,4 +1,5 @@
 import { Box, Chip, Divider, IconButton, Typography, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Iconify } from 'src/components/iconify';
 import { useRef, useState } from 'react';
 import {
@@ -253,7 +254,9 @@ export const SelectionSidebar = ({
             }}
           >
             <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Building</Box>
-            <Box sx={{ fontWeight: 'bold' }}>{formatMachineType(machineGroup.machines[0].type)}</Box>
+            <Box sx={{ fontWeight: 'bold' }}>
+              {formatMachineType(machineGroup.machines[0].type)}
+            </Box>
           </Box>
         ) : (
           <Box
@@ -569,13 +572,13 @@ export const SelectionSidebar = ({
                       <Typography variant="body2" fontWeight="bold">
                         {station.name}
                       </Typography>
-                      {station.fuelName && (
+                      {station.fuel?.Name && (
                         <Typography
                           variant="caption"
                           color="textSecondary"
                           sx={{ display: 'block' }}
                         >
-                          Fuel: {station.fuelName}
+                          Fuel: {station.fuel.Name}
                         </Typography>
                       )}
                       {stationDockedDrones.length > 0 ? (
@@ -1094,7 +1097,7 @@ export const SelectionSidebar = ({
           <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Name</Box>
           <Box sx={{ fontWeight: 'bold' }}>{station.name}</Box>
         </Box>
-        {station.fuelName && (
+        {station.fuel?.Name && (
           <Box
             sx={{
               display: 'flex',
@@ -1104,7 +1107,7 @@ export const SelectionSidebar = ({
             }}
           >
             <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Fuel</Box>
-            <Box sx={{ fontWeight: 'bold' }}>{station.fuelName}</Box>
+            <Box sx={{ fontWeight: 'bold' }}>{station.fuel.Name}</Box>
           </Box>
         )}
 
@@ -1518,13 +1521,13 @@ export const SelectionSidebar = ({
                         <Typography variant="body2" fontWeight="bold">
                           {station.name}
                         </Typography>
-                        {station.fuelName && (
+                        {station.fuel?.Name && (
                           <Typography
                             variant="caption"
                             color="textSecondary"
                             sx={{ display: 'block' }}
                           >
-                            Fuel: {station.fuelName}
+                            Fuel: {station.fuel.Name}
                           </Typography>
                         )}
                         {stationDockedDrones.length > 0 ? (
@@ -1697,6 +1700,26 @@ export const SelectionSidebar = ({
             <Iconify icon="mdi:close" width={18} />
           </IconButton>
         </Box>
+      )}
+      {/* Desktop close button */}
+      {!isMobile && selectedItem && (
+        <IconButton
+          onClick={handleClose}
+          size="small"
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            padding: 0.5,
+            color: theme.palette.grey[500],
+            '&:hover': {
+              color: theme.palette.grey[300],
+              backgroundColor: alpha(theme.palette.grey[500], 0.1),
+            },
+          }}
+        >
+          <Iconify icon="mdi:close" width={20} />
+        </IconButton>
       )}
       <Box sx={{ padding: 2, pt: isMobile ? 1 : 2 }}>
         {!selectedItem && renderEmpty()}

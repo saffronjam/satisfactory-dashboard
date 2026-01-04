@@ -2,13 +2,57 @@ import L from 'leaflet';
 import { useEffect, useState } from 'react';
 import { Marker, Rectangle, useMapEvents } from 'react-leaflet';
 import {
+  Belt,
+  Cable,
+  Drone,
+  DroneStation,
+  Explorer,
+  Machine,
   MachineCategory,
   MachineCategoryExtractor,
   MachineCategoryFactory,
   MachineCategoryGenerator,
+  Pipe,
+  PipeJunction,
+  Player,
+  RadarTower,
+  SpaceElevator,
+  SplitterMerger,
+  Storage,
+  Tractor,
+  Train,
+  TrainRail,
+  TrainStation,
+  Truck,
+  TruckStation,
+  VehiclePath,
 } from 'src/apiTypes';
 import { MachineGroup, SelectedMapItem } from 'src/types';
 import { ConvertToMapCoords2 } from './bounds';
+import { DroneRouteOverlay } from './droneRouteOverlay';
+import { ExplorerRouteOverlay } from './explorerRouteOverlay';
+import { AnimatedPosition } from './hooks/useVehicleAnimation';
+import { HoveredItem, HoverTooltip } from './hoverTooltip';
+import { HoverEvent, InfrastructureOverlay } from './infrastructureOverlay';
+import { ClickedItem, ItemPopover } from './itemPopover';
+import { DroneVehicleLayer } from './layers/droneVehicleLayer';
+import { ExplorerVehicleLayer } from './layers/explorerVehicleLayer';
+import { PlayerVehicleLayer } from './layers/playerVehicleLayer';
+import { RadarTowerLayer } from './layers/radarTowerLayer';
+import { TractorVehicleLayer } from './layers/tractorVehicleLayer';
+import { TrainVehicleLayer } from './layers/trainVehicleLayer';
+import { TruckVehicleLayer } from './layers/truckVehicleLayer';
+import { RadarTowerPopover } from './radarTowerPopover';
+import { TractorRouteOverlay } from './tractorRouteOverlay';
+import { TrainRouteOverlay } from './trainRouteOverlay';
+import { TruckRouteOverlay } from './truckRouteOverlay';
+import { VehiclePathsOverlay } from './vehiclePathsOverlay';
+import {
+  BuildingSubLayer,
+  InfrastructureSubLayer,
+  MapLayer,
+  VehicleSubLayer,
+} from './view/map-view';
 
 export type FilterCategory = 'production' | 'power' | 'resource' | 'train' | 'drone';
 
@@ -56,28 +100,275 @@ type OverlayProps = {
   machineGroups: MachineGroup[];
   onSelectItem: (item: SelectedMapItem | null) => void;
   onZoomEnd: (zoom: number) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
   multiSelectMode?: boolean; // For mobile: programmatic multi-select mode
+  enabledLayers: Set<MapLayer>;
+  belts: Belt[];
+  pipes: Pipe[];
+  pipeJunctions: PipeJunction[];
+  trainRails: TrainRail[];
+  splitterMergers: SplitterMerger[];
+  cables: Cable[];
+  machines: Machine[];
+  storages: Storage[];
+  visibleBuildingCategories: Set<MachineCategory>;
+  trains: Train[];
+  drones: Drone[];
+  trucks: Truck[];
+  tractors: Tractor[];
+  explorers: Explorer[];
+  vehiclePaths: VehiclePath[];
+  players: Player[];
+  infrastructureSubLayers: Set<InfrastructureSubLayer>;
+  vehicleSubLayers: Set<VehicleSubLayer>;
+  trainStations: TrainStation[];
+  droneStations: DroneStation[];
+  truckStations: TruckStation[];
+  buildingSubLayers: Set<BuildingSubLayer>;
+  showVehicleNames?: boolean;
+  colorBuildingsByStatus?: boolean;
+  spaceElevator?: SpaceElevator | null;
+  radarTowers?: RadarTower[];
 };
 
 export function Overlay({
   machineGroups,
   onSelectItem,
   onZoomEnd,
+  onDragStart,
+  onDragEnd,
   multiSelectMode = false,
+  enabledLayers,
+  belts,
+  pipes,
+  pipeJunctions,
+  trainRails,
+  splitterMergers,
+  cables,
+  machines,
+  storages,
+  visibleBuildingCategories,
+  trains,
+  drones,
+  trucks,
+  tractors,
+  explorers,
+  vehiclePaths,
+  players,
+  infrastructureSubLayers,
+  vehicleSubLayers,
+  trainStations,
+  droneStations,
+  truckStations,
+  buildingSubLayers,
+  showVehicleNames = false,
+  colorBuildingsByStatus = false,
+  spaceElevator,
+  radarTowers,
 }: OverlayProps) {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
     start: L.LatLng;
     end: L.LatLng;
   } | null>(null);
+  const [clickedInfraItem, setClickedInfraItem] = useState<ClickedItem | null>(null);
 
-  // Helper to complete selection
+  // Hover tooltip state for infrastructure
+  const [hoveredItem, setHoveredItem] = useState<HoveredItem | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
+
+  // Hover state for radar towers
+  const [hoveredRadarTower, setHoveredRadarTower] = useState<RadarTower | null>(null);
+  const [radarTowerHoverPosition, setRadarTowerHoverPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Pinned popover state (for sticky popovers)
+  type PinnedPopover =
+    | { type: 'infrastructure'; item: HoveredItem; position: { x: number; y: number } }
+    | { type: 'radarTower'; tower: RadarTower; position: { x: number; y: number } }
+    | null;
+
+  const [pinnedPopover, setPinnedPopover] = useState<PinnedPopover>(null);
+
+  // Store vehicle NAMEs instead of objects to always get current position from arrays
+  const [selectedTrainName, setSelectedTrainName] = useState<string | null>(null);
+  const [selectedDroneName, setSelectedDroneName] = useState<string | null>(null);
+  const [selectedTruckName, setSelectedTruckName] = useState<string | null>(null);
+  const [selectedTractorName, setSelectedTractorName] = useState<string | null>(null);
+  const [selectedExplorerName, setSelectedExplorerName] = useState<string | null>(null);
+
+  // Store animated positions from vehicle layers
+  const [trainAnimatedPositions, setTrainAnimatedPositions] = useState<
+    Map<string, AnimatedPosition>
+  >(new Map());
+  const [droneAnimatedPositions, setDroneAnimatedPositions] = useState<
+    Map<string, AnimatedPosition>
+  >(new Map());
+  const [truckAnimatedPositions, setTruckAnimatedPositions] = useState<
+    Map<string, AnimatedPosition>
+  >(new Map());
+  const [tractorAnimatedPositions, setTractorAnimatedPositions] = useState<
+    Map<string, AnimatedPosition>
+  >(new Map());
+  const [explorerAnimatedPositions, setExplorerAnimatedPositions] = useState<
+    Map<string, AnimatedPosition>
+  >(new Map());
+
+  // Look up current vehicles from arrays to get latest data
+  const selectedTrain = selectedTrainName
+    ? (trains.find((t) => t.name === selectedTrainName) ?? null)
+    : null;
+  const selectedDrone = selectedDroneName
+    ? (drones.find((d) => d.name === selectedDroneName) ?? null)
+    : null;
+  const selectedTruck = selectedTruckName
+    ? (trucks.find((t) => t.name === selectedTruckName) ?? null)
+    : null;
+  const selectedTractor = selectedTractorName
+    ? (tractors.find((t) => t.name === selectedTractorName) ?? null)
+    : null;
+  const selectedExplorer = selectedExplorerName
+    ? (explorers.find((e) => e.name === selectedExplorerName) ?? null)
+    : null;
+
+  // Get animated positions for selected vehicles
+  const selectedTrainAnimatedPos = selectedTrainName
+    ? (trainAnimatedPositions.get(selectedTrainName) ?? null)
+    : null;
+  const selectedDroneAnimatedPos = selectedDroneName
+    ? (droneAnimatedPositions.get(selectedDroneName) ?? null)
+    : null;
+  const selectedTruckAnimatedPos = selectedTruckName
+    ? (truckAnimatedPositions.get(selectedTruckName) ?? null)
+    : null;
+  const selectedTractorAnimatedPos = selectedTractorName
+    ? (tractorAnimatedPositions.get(selectedTractorName) ?? null)
+    : null;
+  const selectedExplorerAnimatedPos = selectedExplorerName
+    ? (explorerAnimatedPositions.get(selectedExplorerName) ?? null)
+    : null;
+
+  const clearAllVehicleSelections = () => {
+    setSelectedTrainName(null);
+    setSelectedDroneName(null);
+    setSelectedTruckName(null);
+    setSelectedTractorName(null);
+    setSelectedExplorerName(null);
+  };
+
+  const handleClosePopover = () => {
+    setClickedInfraItem(null);
+  };
+
+  const handleItemHover = (event: HoverEvent) => {
+    if (event.item === null) {
+      setHoveredItem(null);
+      setHoverPosition(null);
+    } else {
+      setHoveredItem(event.item);
+      setHoverPosition(event.position);
+    }
+  };
+
+  const handleRadarTowerHover = (
+    tower: RadarTower | null,
+    position: { x: number; y: number } | null
+  ) => {
+    setHoveredRadarTower(tower);
+    setRadarTowerHoverPosition(position);
+  };
+
+  // Click handlers for pinning popovers
+  const handleItemClick = (event: HoverEvent) => {
+    if (event.item && event.position) {
+      setPinnedPopover({ type: 'infrastructure', item: event.item, position: event.position });
+      setHoveredItem(null);
+      setHoverPosition(null);
+    }
+  };
+
+  const handleRadarTowerClick = (tower: RadarTower, position: { x: number; y: number }) => {
+    setPinnedPopover({ type: 'radarTower', tower, position });
+    setHoveredRadarTower(null);
+    setRadarTowerHoverPosition(null);
+  };
+
+  const _handleMachineClick = (event: {
+    machine: Machine | null;
+    position: { x: number; y: number } | null;
+  }) => {
+    if (event.machine && event.position) {
+      setPinnedPopover({
+        type: 'infrastructure',
+        item: { type: 'machine', data: event.machine },
+        position: event.position,
+      });
+      setHoveredItem(null);
+      setHoverPosition(null);
+    }
+  };
+
+  const handleClosePinnedPopover = () => {
+    setPinnedPopover(null);
+  };
+
+  const handleTrainClick = (train: Train) => {
+    clearAllVehicleSelections();
+    setSelectedTrainName(train.name);
+    setClickedInfraItem(null);
+  };
+
+  const handleDroneClick = (drone: Drone) => {
+    clearAllVehicleSelections();
+    setSelectedDroneName(drone.name);
+    setClickedInfraItem(null);
+  };
+
+  const handleTruckClick = (truck: Truck) => {
+    clearAllVehicleSelections();
+    setSelectedTruckName(truck.name);
+    setClickedInfraItem(null);
+  };
+
+  const handleTractorClick = (tractor: Tractor) => {
+    clearAllVehicleSelections();
+    setSelectedTractorName(tractor.name);
+    setClickedInfraItem(null);
+  };
+
+  const handleExplorerClick = (explorer: Explorer) => {
+    clearAllVehicleSelections();
+    setSelectedExplorerName(explorer.name);
+    setClickedInfraItem(null);
+  };
+
+  const handleCloseTrainRoute = () => {
+    setSelectedTrainName(null);
+  };
+
+  const handleCloseDroneRoute = () => {
+    setSelectedDroneName(null);
+  };
+
+  const handleCloseTruckRoute = () => {
+    setSelectedTruckName(null);
+  };
+
+  const handleCloseTractorRoute = () => {
+    setSelectedTractorName(null);
+  };
+
+  const handleCloseExplorerRoute = () => {
+    setSelectedExplorerName(null);
+  };
+
   const completeSelection = (endLatLng: L.LatLng) => {
     if (!selectionRect) return;
 
     const bounds = L.latLngBounds(selectionRect.start, endLatLng);
-
-    // Find all groups within the selection rectangle
     const selectedGroups = machineGroups.filter((group) => {
       const position = ConvertToMapCoords2(group.center.x, group.center.y);
       return bounds.contains(position);
@@ -99,9 +390,17 @@ export function Overlay({
     zoomend: () => {
       onZoomEnd(map.getZoom());
     },
+    dragstart: () => {
+      onDragStart?.();
+    },
+    dragend: () => {
+      onDragEnd?.();
+    },
     mousedown: (e) => {
       // Start selection if Ctrl/Meta key is pressed OR if multiSelectMode is enabled
-      if (e.originalEvent.ctrlKey || e.originalEvent.metaKey || multiSelectMode) {
+      // Only allow selection when machine groups layer is active
+      const canSelect = enabledLayers.has('machineGroups');
+      if (canSelect && (e.originalEvent.ctrlKey || e.originalEvent.metaKey || multiSelectMode)) {
         e.originalEvent.preventDefault();
         setIsSelecting(true);
         setSelectionRect({ start: e.latlng, end: e.latlng });
@@ -118,6 +417,10 @@ export function Overlay({
         completeSelection(e.latlng);
         map.dragging.enable();
       }
+    },
+    click: () => {
+      // Close pinned popover when clicking on the map
+      setPinnedPopover(null);
     },
   });
 
@@ -188,7 +491,8 @@ export function Overlay({
 
   // Track CTRL key for cursor change (desktop only, not needed when multiSelectMode is active)
   useEffect(() => {
-    if (multiSelectMode) return; // Skip keyboard handling when in programmatic mode
+    // Skip keyboard handling when in programmatic mode or when machine groups layer is off
+    if (multiSelectMode || !enabledLayers.has('machineGroups')) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control' || e.key === 'Meta') {
@@ -206,7 +510,7 @@ export function Overlay({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [map, multiSelectMode]);
+  }, [map, multiSelectMode, enabledLayers]);
 
   // Get all entity types present in a group
   const getGroupEntityTypes = (group: MachineGroup) => {
@@ -281,7 +585,7 @@ export function Overlay({
       // 1-2 icons: single row
       const width = svgs.length === 1 ? size : size * 1.2;
       iconHtml = `
-        <div style="position: relative; background-color: ${backgroundColor}; border-radius: 50%; padding: 7px; width: ${width}px; height: ${size}px; display: flex; justify-content: center; align-items: center; gap: 2px;">
+        <div style="position: relative; background-color: ${backgroundColor}; border-radius: 50%; padding: 7px; width: ${width}px; height: ${size}px; display: flex; justify-content: center; align-items: center; gap: 2px; pointer-events: auto; cursor: pointer;">
           ${svgs.join('')}
           ${
             showBadge
@@ -303,7 +607,7 @@ export function Overlay({
         `<div style="width: ${iconSize}px; height: ${iconSize}px; color: white;">${svg}</div>`;
 
       iconHtml = `
-        <div style="position: relative; background-color: ${backgroundColor}; border-radius: 12px; padding: 6px; width: ${width}px; height: ${height}px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px;">
+        <div style="position: relative; background-color: ${backgroundColor}; border-radius: 12px; padding: 6px; width: ${width}px; height: ${height}px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; pointer-events: auto; cursor: pointer;">
           <div style="display: flex; justify-content: center; gap: 4px;">
             ${topRow.map(wrapSvg).join('')}
           </div>
@@ -327,24 +631,207 @@ export function Overlay({
 
   return (
     <>
-      {/* Unified Groups (machines + train stations + drone stations) */}
-      {machineGroups.map((group, index) => {
-        const position = ConvertToMapCoords2(group.center.x, group.center.y);
-        const icon = createUnifiedGroupIcon(group);
+      {/* Infrastructure layers (rendered below markers) */}
+      <InfrastructureOverlay
+        enabledLayers={enabledLayers}
+        belts={belts}
+        pipes={pipes}
+        pipeJunctions={pipeJunctions}
+        trainRails={trainRails}
+        splitterMergers={splitterMergers}
+        cables={cables}
+        machines={machines}
+        storages={storages}
+        visibleBuildingCategories={visibleBuildingCategories}
+        onItemHover={handleItemHover}
+        onItemClick={handleItemClick}
+        showBelts={infrastructureSubLayers.has('belts')}
+        showPipes={infrastructureSubLayers.has('pipes')}
+        showRailway={infrastructureSubLayers.has('railway')}
+        showStorages={buildingSubLayers.has('storage')}
+        trainStations={trainStations}
+        droneStations={droneStations}
+        truckStations={truckStations}
+        showTrainStations={buildingSubLayers.has('trainStation')}
+        showDroneStations={buildingSubLayers.has('droneStation')}
+        showTruckStations={buildingSubLayers.has('truckStation')}
+        colorBuildingsByStatus={colorBuildingsByStatus}
+        spaceElevator={spaceElevator}
+        showSpaceElevator={buildingSubLayers.has('spaceElevator')}
+      />
 
-        return (
-          <Marker
-            key={`group-${index}`}
-            position={position}
-            eventHandlers={{
-              click: () => {
-                onSelectItem({ type: 'machineGroup', data: group });
-              },
-            }}
-            icon={icon}
-          />
-        );
-      })}
+      {buildingSubLayers.has('radarTowers') && radarTowers && (
+        <RadarTowerLayer
+          radarTowers={radarTowers}
+          enabled={true}
+          hoveredTower={hoveredRadarTower}
+          onHover={handleRadarTowerHover}
+          onRadarTowerClick={handleRadarTowerClick}
+        />
+      )}
+
+      {vehicleSubLayers.has('trains') && (
+        <TrainVehicleLayer
+          trains={trains}
+          enabled={true}
+          onTrainClick={handleTrainClick}
+          onPositionsUpdate={setTrainAnimatedPositions}
+          selectedName={selectedTrainName}
+          showNames={showVehicleNames}
+        />
+      )}
+
+      {vehicleSubLayers.has('drones') && (
+        <DroneVehicleLayer
+          drones={drones}
+          enabled={true}
+          onDroneClick={handleDroneClick}
+          onPositionsUpdate={setDroneAnimatedPositions}
+          selectedName={selectedDroneName}
+          showNames={showVehicleNames}
+        />
+      )}
+
+      {vehicleSubLayers.has('trucks') && (
+        <TruckVehicleLayer
+          trucks={trucks}
+          enabled={true}
+          onTruckClick={handleTruckClick}
+          onPositionsUpdate={setTruckAnimatedPositions}
+          selectedName={selectedTruckName}
+          showNames={showVehicleNames}
+        />
+      )}
+
+      {vehicleSubLayers.has('tractors') && (
+        <TractorVehicleLayer
+          tractors={tractors}
+          enabled={true}
+          onTractorClick={handleTractorClick}
+          onPositionsUpdate={setTractorAnimatedPositions}
+          selectedName={selectedTractorName}
+          showNames={showVehicleNames}
+        />
+      )}
+
+      {vehicleSubLayers.has('explorers') && (
+        <ExplorerVehicleLayer
+          explorers={explorers}
+          enabled={true}
+          onExplorerClick={handleExplorerClick}
+          onPositionsUpdate={setExplorerAnimatedPositions}
+          selectedName={selectedExplorerName}
+          showNames={showVehicleNames}
+        />
+      )}
+
+      {vehicleSubLayers.has('players') && (
+        <PlayerVehicleLayer players={players} enabled={true} showNames={showVehicleNames} />
+      )}
+
+      {vehicleSubLayers.has('paths') && (
+        <VehiclePathsOverlay
+          vehiclePaths={vehiclePaths}
+          visiblePaths={new Set(vehiclePaths.map((p) => p.name))}
+          showNames={showVehicleNames}
+        />
+      )}
+
+      {selectedTrain && (
+        <TrainRouteOverlay
+          train={selectedTrain}
+          trainStations={trainStations}
+          onClose={handleCloseTrainRoute}
+          animatedPosition={selectedTrainAnimatedPos}
+        />
+      )}
+
+      {selectedDrone && (
+        <DroneRouteOverlay
+          drone={selectedDrone}
+          droneStations={droneStations}
+          onClose={handleCloseDroneRoute}
+          animatedPosition={selectedDroneAnimatedPos}
+        />
+      )}
+
+      {selectedTruck && (
+        <TruckRouteOverlay
+          truck={selectedTruck}
+          onClose={handleCloseTruckRoute}
+          animatedPosition={selectedTruckAnimatedPos}
+        />
+      )}
+
+      {selectedTractor && (
+        <TractorRouteOverlay
+          tractor={selectedTractor}
+          onClose={handleCloseTractorRoute}
+          animatedPosition={selectedTractorAnimatedPos}
+        />
+      )}
+
+      {selectedExplorer && (
+        <ExplorerRouteOverlay
+          explorer={selectedExplorer}
+          onClose={handleCloseExplorerRoute}
+          animatedPosition={selectedExplorerAnimatedPos}
+        />
+      )}
+
+      <ItemPopover item={clickedInfraItem} onClose={handleClosePopover} />
+
+      {/* Hover tooltip for infrastructure - only show if not pinned */}
+      {hoveredItem && hoverPosition && !pinnedPopover && (
+        <HoverTooltip item={hoveredItem} position={hoverPosition} />
+      )}
+
+      {/* Pinned infrastructure popover */}
+      {pinnedPopover && pinnedPopover.type === 'infrastructure' && (
+        <HoverTooltip
+          item={pinnedPopover.item}
+          position={pinnedPopover.position}
+          isPinned={true}
+          onClose={handleClosePinnedPopover}
+        />
+      )}
+
+      {/* Radar tower hover - only show if not pinned */}
+      {hoveredRadarTower && radarTowerHoverPosition && !pinnedPopover && (
+        <RadarTowerPopover tower={hoveredRadarTower} position={radarTowerHoverPosition} />
+      )}
+
+      {/* Pinned radar tower popover */}
+      {pinnedPopover && pinnedPopover.type === 'radarTower' && (
+        <RadarTowerPopover
+          tower={pinnedPopover.tower}
+          position={pinnedPopover.position}
+          isPinned={true}
+          onClose={handleClosePinnedPopover}
+        />
+      )}
+
+      {/* Unified Groups (machines + train stations + drone stations) */}
+      {enabledLayers.has('machineGroups') &&
+        machineGroups.map((group, index) => {
+          const position = ConvertToMapCoords2(group.center.x, group.center.y);
+          const icon = createUnifiedGroupIcon(group);
+
+          return (
+            <Marker
+              key={`group-${index}`}
+              position={position}
+              eventHandlers={{
+                click: (e) => {
+                  console.log('Machine group clicked:', group.hash);
+                  e.originalEvent.stopPropagation();
+                  onSelectItem({ type: 'machineGroup', data: group });
+                },
+              }}
+              icon={icon}
+            />
+          );
+        })}
 
       {/* Selection Rectangle */}
       {selectionRect && (

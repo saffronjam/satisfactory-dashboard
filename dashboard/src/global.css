@@ -53,3 +53,20 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 /** CUSTOM ************************************** */
+
+/** Leaflet buildings canvas layer - allow clicks to pass through to markers */
+.leaflet-buildings-layer {
+  pointer-events: none !important;
+}
+
+/** Leaflet marker click fix */
+.leaflet-marker-icon {
+  pointer-events: auto !important;
+}
+.custom-icon,
+.train-marker,
+.drone-marker,
+.truck-marker {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
