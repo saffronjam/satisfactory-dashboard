@@ -40,6 +40,7 @@ type Client interface {
 	GetVehicleStations(ctx context.Context) (models.VehicleStations, error)
 	GetSpaceElevator(ctx context.Context) (*models.SpaceElevator, error)
 	ListRadarTowers(ctx context.Context) ([]models.RadarTower, error)
+	ListResourceNodes(ctx context.Context) ([]models.ResourceNode, error)
 
 	// GetAddress returns the API URL this client is connected to
 	GetAddress() string

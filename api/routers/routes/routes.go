@@ -31,6 +31,7 @@ func RoutingGroups() []RoutingGroup {
 		TrainRoutes(),
 		DroneRoutes(),
 		InfrastructureRoutes(),
+		ResourceNodesRoutes(),
 	}
 }
 
