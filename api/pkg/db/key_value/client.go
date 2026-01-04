@@ -96,7 +96,8 @@ func (client *Client) Publish(key string, value interface{}) error {
 func (client *Client) AddListener(ctx context.Context, key string, handler func(value string)) error {
 	pubSub := client.RedisClient.Subscribe(context.TODO(), key)
 
-	channel := pubSub.Channel()
+	// Use a larger channel buffer to prevent dropped messages when the consumer is slow
+	channel := pubSub.Channel(redis.WithChannelSize(1000))
 	go func() {
 		defer func(pubSub *redis.PubSub) {
 			err := pubSub.Close()

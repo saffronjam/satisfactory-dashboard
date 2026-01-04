@@ -107,3 +107,14 @@ func (context *RequestContext) NotImplemented() {
 func (context *RequestContext) OkCreated(data interface{}) {
 	context.GinContext.JSON(http.StatusCreated, data)
 }
+
+// TooEarly is a helper function to return a 425 Too Early response.
+// Used when a session is still initializing and not ready to serve data.
+func (context *RequestContext) TooEarly(msg string) {
+	context.GinContext.JSON(http.StatusTooEarly, models.ErrorResponse{
+		Errors: []models.ApiError{{
+			Code: status_codes.GetMsg(status_codes.Error),
+			Msg:  msg,
+		}},
+	})
+}

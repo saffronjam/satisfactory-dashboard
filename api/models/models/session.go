@@ -2,6 +2,29 @@ package models
 
 import "time"
 
+// SessionStage represents the initialization stage of a session
+type SessionStage string
+
+const (
+	SessionStageInit  SessionStage = "init"
+	SessionStageReady SessionStage = "ready"
+)
+
+// RequiredEventTypes lists all event types that must be cached for a session to be "ready"
+var RequiredEventTypes = []SatisfactoryEventType{
+	SatisfactoryEventApiStatus,
+	SatisfactoryEventCircuits,
+	SatisfactoryEventFactoryStats,
+	SatisfactoryEventProdStats,
+	SatisfactoryEventGeneratorStats,
+	SatisfactoryEventSinkStats,
+	SatisfactoryEventPlayers,
+	SatisfactoryEventBelts,
+	SatisfactoryEventPipes,
+	SatisfactoryEventTrainRails,
+	SatisfactoryEventCables,
+}
+
 // Session represents a Satisfactory server connection target
 type Session struct {
 	ID          string    `json:"id"`          // UUID
@@ -77,5 +100,30 @@ type UpdateSessionRequest struct {
 	IsPaused *bool   `json:"isPaused,omitempty"`
 }
 
-// SessionDTO is the data transfer object for Session
-type SessionDTO = Session
+// SessionDTO is the data transfer object for Session with computed fields
+type SessionDTO struct {
+	ID          string       `json:"id"`
+	Name        string       `json:"name"`
+	Address     string       `json:"address"`
+	SessionName string       `json:"sessionName"`
+	IsMock      bool         `json:"isMock"`
+	IsOnline    bool         `json:"isOnline"`
+	IsPaused    bool         `json:"isPaused"`
+	CreatedAt   time.Time    `json:"createdAt"`
+	Stage       SessionStage `json:"stage"`
+}
+
+// ToDTO converts Session to SessionDTO with computed stage field
+func (s *Session) ToDTO(stage SessionStage) SessionDTO {
+	return SessionDTO{
+		ID:          s.ID,
+		Name:        s.Name,
+		Address:     s.Address,
+		SessionName: s.SessionName,
+		IsMock:      s.IsMock,
+		IsOnline:    s.IsOnline,
+		IsPaused:    s.IsPaused,
+		CreatedAt:   s.CreatedAt,
+		Stage:       stage,
+	}
+}
