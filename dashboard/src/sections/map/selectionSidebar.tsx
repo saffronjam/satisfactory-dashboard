@@ -1,20 +1,26 @@
-import { Box, Chip, Divider, Typography, useTheme } from '@mui/material';
-import { useState } from 'react';
+import { Box, Chip, Divider, IconButton, Typography, useTheme } from '@mui/material';
+import { useMemo, useState } from 'react';
 import {
   Drone,
   DroneStation,
   DroneStatusDocking,
   DroneStatusIdle,
   MachineCategoryGenerator,
+  ResourceNode,
+  ScannedFauna,
+  ScannedFlora,
+  ScannedSignal,
   Train,
   TrainStation,
   TrainStatusDocking,
 } from 'src/apiTypes';
+import { Iconify } from 'src/components/iconify';
 import { ApiContext } from 'src/contexts/api/useApi';
 import { MachineGroup, SelectedMapItem } from 'src/types';
-import { fShortenNumber, MetricUnits, WattUnits } from 'src/utils/format-number';
+import { fShortenNumber, LengthUnits, MetricUnits, WattUnits } from 'src/utils/format-number';
 import { useContextSelector } from 'use-context-selector';
 import { MapSidebar } from './mapSidebar';
+import { getPurityLabel, PURITY_COLORS } from './utils/radarTowerUtils';
 
 type SidebarView = 'items' | 'buildings' | 'power' | 'vehicles';
 
@@ -42,19 +48,109 @@ const getDockedDrones = (station: DroneStation, drones: Drone[]): Drone[] => {
   );
 };
 
+// Scanned section component for fauna, flora, and signals (for radar tower)
+function ScannedSection({
+  title,
+  items,
+  icon,
+}: {
+  title: string;
+  items: (ScannedFauna | ScannedFlora | ScannedSignal)[];
+  icon: string;
+}) {
+  if (!items || items.length === 0) return null;
+
+  const totalCount = items.reduce((sum, item) => sum + item.amount, 0);
+
+  return (
+    <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+        <Iconify icon={icon} width={14} sx={{ color: 'text.secondary' }} />
+        <Typography variant="caption" color="text.secondary">
+          {title}: {totalCount}
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+        {items.map((item, idx) => (
+          <Chip
+            key={idx}
+            label={`${item.amount}x ${item.name}`}
+            size="small"
+            onDelete={() => {}}
+            deleteIcon={
+              <Box
+                component="img"
+                src={`assets/images/satisfactory/64x64/${item.name}.png`}
+                alt={item.name}
+                sx={{ width: 16, height: 16, objectFit: 'contain' }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            }
+            sx={{
+              height: 20,
+              fontSize: '0.6rem',
+              '& .MuiChip-label': { px: 1 },
+              '& .MuiChip-icon': { ml: 0.5, mr: -0.5 },
+              '& .MuiChip-deleteIcon': {
+                cursor: 'default',
+                pointerEvents: 'none',
+              },
+            }}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+// Get tab icon and label for a selection type
+const getTabInfo = (item: SelectedMapItem): { icon: string; label: string } => {
+  switch (item.type) {
+    case 'machineGroup':
+      return { icon: 'mdi:factory', label: 'Group' };
+    case 'machineGroups':
+      return { icon: 'mdi:factory', label: `${item.data.length} Groups` };
+    case 'multiSelection':
+      return { icon: 'mdi:select-multiple', label: 'Selection' };
+    case 'trainStation':
+      return { icon: 'mdi:train', label: 'Station' };
+    case 'droneStation':
+      return { icon: 'mdi:drone', label: 'Station' };
+    case 'radarTower':
+      return { icon: 'material-symbols:radar', label: 'Radar' };
+    default:
+      return { icon: 'mdi:help', label: 'Unknown' };
+  }
+};
+
 type SelectionSidebarProps = {
-  selectedItem: SelectedMapItem | null;
+  selectedItems: SelectedMapItem[];
+  activeTabIndex: number;
+  onTabChange: (index: number) => void;
+  onTabClose: (index: number) => void;
   isMobile?: boolean;
   onClose?: () => void;
 };
 
 export const SelectionSidebar = ({
-  selectedItem,
+  selectedItems,
+  activeTabIndex,
+  onTabChange,
+  onTabClose,
   isMobile = false,
   onClose,
 }: SelectionSidebarProps) => {
   const theme = useTheme();
   const [activeView, setActiveView] = useState<SidebarView>('items');
+
+  // Get the currently active selected item
+  const selectedItem = useMemo(() => {
+    if (selectedItems.length === 0) return null;
+    const safeIndex = Math.min(activeTabIndex, selectedItems.length - 1);
+    return selectedItems[safeIndex] ?? null;
+  }, [selectedItems, activeTabIndex]);
 
   // Get trains and drones from API context - MUST be before any conditional returns
   const trains = useContextSelector(ApiContext, (v) => v.trains) || [];
@@ -1510,6 +1606,110 @@ export const SelectionSidebar = ({
     );
   };
 
+  const renderRadarTower = () => {
+    if (selectedItem?.type !== 'radarTower') return null;
+    const tower = selectedItem.data;
+
+    const hasNodes = tower.nodes && tower.nodes.length > 0;
+    const hasFauna = tower.fauna && tower.fauna.length > 0;
+    const hasFlora = tower.flora && tower.flora.length > 0;
+    const hasSignals = tower.signal && tower.signal.length > 0;
+
+    // Group nodes by purity
+    const nodesByPurity = tower.nodes?.reduce(
+      (acc, node) => {
+        const purity = node.purity || 'unknown';
+        if (!acc[purity]) acc[purity] = [];
+        acc[purity].push(node);
+        return acc;
+      },
+      {} as Record<string, ResourceNode[]>
+    );
+
+    return (
+      <>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+          <Iconify icon="mdi:radar" width={18} sx={{ color: '#3B82F6' }} />
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              Radar Tower
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Reveal radius */}
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          Reveal Radius: {fShortenNumber(tower.revealRadius, LengthUnits)}
+        </Typography>
+
+        {/* Resource Nodes */}
+        {hasNodes && (
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+              <Iconify icon={'tabler:pick'} width={14} sx={{ color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                Resource Nodes: {tower.nodes.length}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {Object.entries(nodesByPurity || {}).map(([purity, nodes]) => {
+                const exploitedCount = nodes.filter((n) => n.exploited).length;
+                const totalCount = nodes.length;
+                const purityColor =
+                  PURITY_COLORS[purity as keyof typeof PURITY_COLORS] || PURITY_COLORS.default;
+                const purityLabel = getPurityLabel(purity);
+
+                return (
+                  <Box
+                    key={purity}
+                    sx={{
+                      height: 'auto',
+                      px: 1,
+                      py: 0.5,
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      border: '2px solid',
+                      borderColor: purityColor,
+                      borderRadius: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '0.7rem', color: 'text.primary', lineHeight: 1.2 }}>
+                      {totalCount}x {purityLabel}
+                    </Typography>
+                    <Typography
+                      sx={{ fontSize: '0.6rem', color: 'text.secondary', lineHeight: 1.2 }}
+                    >
+                      {exploitedCount} exploited
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          </Box>
+        )}
+
+        {/* Fauna */}
+        <ScannedSection title="Fauna" items={tower.fauna || []} icon="mdi:paw" />
+
+        {/* Flora */}
+        <ScannedSection title="Flora" items={tower.flora || []} icon="mdi:flower" />
+
+        {/* Signals */}
+        <ScannedSection title="Signals" items={tower.signal || []} icon="mdi:signal-variant" />
+
+        {/* Empty state */}
+        {!hasNodes && !hasFauna && !hasFlora && !hasSignals && (
+          <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+            No items scanned
+          </Typography>
+        )}
+      </>
+    );
+  };
+
   const renderEmpty = () => (
     <Box>
       <Typography variant="h3" color="textSecondary">
@@ -1521,14 +1721,92 @@ export const SelectionSidebar = ({
     </Box>
   );
 
+  // Tab bar when multiple items are selected
+  const renderTabBar = () => {
+    if (selectedItems.length <= 1) return null;
+
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 0.5,
+          mb: 2,
+          pb: 1.5,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          overflowX: 'auto',
+          flexWrap: 'nowrap',
+          '&::-webkit-scrollbar': { height: 4 },
+          '&::-webkit-scrollbar-thumb': { backgroundColor: 'action.hover', borderRadius: 2 },
+        }}
+      >
+        {selectedItems.map((item, index) => {
+          const { icon, label } = getTabInfo(item);
+          const isActive = index === activeTabIndex;
+
+          return (
+            <Box
+              key={index}
+              onClick={() => onTabChange(index)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                cursor: 'pointer',
+                backgroundColor: isActive
+                  ? theme.palette.action.selected
+                  : theme.palette.action.hover,
+                border: isActive
+                  ? `1px solid ${theme.palette.primary.main}`
+                  : '1px solid transparent',
+                flexShrink: 0,
+                '&:hover': {
+                  backgroundColor: theme.palette.action.selected,
+                },
+              }}
+            >
+              <Iconify icon={icon} width={14} />
+              <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
+                {label}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTabClose(index);
+                }}
+                sx={{
+                  p: 0,
+                  ml: 0.5,
+                  width: 14,
+                  height: 14,
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              >
+                <Iconify icon="mdi:close" width={12} />
+              </IconButton>
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  };
+
   return (
-    <MapSidebar open={Boolean(selectedItem)} isMobile={isMobile} onClose={onClose}>
+    <MapSidebar open={selectedItems.length > 0} isMobile={isMobile} onClose={onClose}>
+      {renderTabBar()}
       {!selectedItem && renderEmpty()}
       {selectedItem?.type === 'machineGroup' && renderMachineGroup()}
       {selectedItem?.type === 'machineGroups' && renderMachineGroups()}
       {selectedItem?.type === 'multiSelection' && renderMultiSelection()}
       {selectedItem?.type === 'trainStation' && renderTrainStation()}
       {selectedItem?.type === 'droneStation' && renderDroneStation()}
+      {selectedItem?.type === 'radarTower' && renderRadarTower()}
     </MapSidebar>
   );
 };

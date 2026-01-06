@@ -1,7 +1,7 @@
 import { Box, IconButton, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Iconify } from 'src/components/iconify';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { varAlpha } from 'src/theme/styles';
 
 interface MapSidebarProps {
@@ -16,7 +16,18 @@ export const MapSidebar = ({ open, isMobile = false, onClose, children }: MapSid
   const [dragOffset, setDragOffset] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
   const dragStartY = useRef<number | null>(null);
+
+  // Trigger opening animation when open changes to true
+  useEffect(() => {
+    if (open && !isMobile) {
+      setIsOpening(true);
+      // Remove opening state after animation completes
+      const timer = setTimeout(() => setIsOpening(false), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [open, isMobile]);
 
   // Animated close function
   const handleClose = () => {
@@ -68,15 +79,15 @@ export const MapSidebar = ({ open, isMobile = false, onClose, children }: MapSid
     dragStartY.current = null;
   };
 
-  // On mobile, don't render if not open (but allow closing animation)
-  if (isMobile && !open && !isClosing) {
+  // Don't render if not open (but allow closing animation on mobile)
+  if (!open && !isClosing) {
     return null;
   }
 
-  // Desktop styles
+  // Desktop styles - positioned below the icon buttons
   const desktopStyles = {
     position: 'absolute',
-    top: 16,
+    top: 60, // Below icon buttons
     right: 16,
     bottom: 16,
     width: 300,
@@ -112,11 +123,24 @@ export const MapSidebar = ({ open, isMobile = false, onClose, children }: MapSid
     <Box
       sx={{
         ...(isMobile ? mobileStyles : desktopStyles),
-        backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.95),
+        backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
         backdropFilter: 'blur(8px)',
         zIndex: 1000,
         boxShadow: '0 0 15px rgba(0, 0, 0, 0.8)',
         overflow: 'auto',
+        // Desktop opening animation - slide in from right
+        ...(!isMobile && {
+          transform: isOpening ? 'translateX(20px)' : 'translateX(0)',
+          opacity: isOpening ? 0 : 1,
+          transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
+        }),
+        // Desktop closing animation
+        ...(!isMobile &&
+          isClosing && {
+            transform: 'translateX(20px)',
+            opacity: 0,
+            transition: 'transform 0.2s ease-in, opacity 0.2s ease-in',
+          }),
         // Apply drag offset transform when dragging down from default state (closing)
         ...(isMobile &&
           !isExpanded &&
@@ -159,7 +183,7 @@ export const MapSidebar = ({ open, isMobile = false, onClose, children }: MapSid
             height: 36,
             cursor: 'grab',
             touchAction: 'none',
-            backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.95),
+            backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
             backdropFilter: 'blur(8px)',
             zIndex: 1,
             borderRadius: '16px 16px 0 0',
