@@ -7,6 +7,8 @@ import {
   Explorer,
   FactoryStats,
   GeneratorStats,
+  Hypertube,
+  HypertubeEntrance,
   Machine,
   Pipe,
   PipeJunction,
@@ -50,6 +52,8 @@ export type ApiData = {
   pipeJunctions: PipeJunction[];
   trainRails: TrainRail[];
   splitterMergers: SplitterMerger[];
+  hypertubes: Hypertube[];
+  hypertubeEntrances: HypertubeEntrance[];
   cables: Cable[];
   storages: Storage[];
   tractors: Tractor[];
@@ -86,6 +90,8 @@ export const DefaultApiContext: ApiContextType = {
   pipeJunctions: [],
   trainRails: [],
   splitterMergers: [],
+  hypertubes: [],
+  hypertubeEntrances: [],
   cables: [],
   storages: [],
   tractors: [],
@@ -116,6 +122,8 @@ export const DefaultApiContext: ApiContextType = {
       pipeJunctions: [],
       trainRails: [],
       splitterMergers: [],
+      hypertubes: [],
+      hypertubeEntrances: [],
       cables: [],
       storages: [],
       tractors: [],

@@ -26,6 +26,8 @@ const DEFAULT_DATA: ApiData = {
   pipeJunctions: [],
   trainRails: [],
   splitterMergers: [],
+  hypertubes: [],
+  hypertubeEntrances: [],
   cables: [],
   storages: [],
   tractors: [],
@@ -113,6 +115,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             dataRef.current.pipeJunctions = fullState.pipeJunctions ?? [];
             dataRef.current.trainRails = fullState.trainRails ?? [];
             dataRef.current.splitterMergers = fullState.splitterMergers ?? [];
+            dataRef.current.hypertubes = fullState.hypertubes ?? [];
+            dataRef.current.hypertubeEntrances = fullState.hypertubeEntrances ?? [];
             dataRef.current.cables = fullState.cables ?? [];
             dataRef.current.storages = fullState.storages ?? [];
             dataRef.current.tractors = fullState.tractors ?? [];
@@ -197,6 +201,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
           case API.SatisfactoryEventPipes:
             dataRef.current.pipes = parsed.data.pipes;
             dataRef.current.pipeJunctions = parsed.data.pipeJunctions;
+            break;
+          case API.SatisfactoryEventHypertubes:
+            dataRef.current.hypertubes = parsed.data.hypertubes;
+            dataRef.current.hypertubeEntrances = parsed.data.hypertubeEntrances;
             break;
           case API.SatisfactoryEventTrainRails:
             dataRef.current.trainRails = parsed.data;

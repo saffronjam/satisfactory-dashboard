@@ -81,9 +81,9 @@ export interface CircuitIDs {
 // source: drone.go
 
 export type DroneStatus = string;
-export const DroneStatusIdle: DroneStatus = "idle";
-export const DroneStatusFlying: DroneStatus = "flying";
-export const DroneStatusDocking: DroneStatus = "docking";
+export const DroneStatusIdle: DroneStatus = 'idle';
+export const DroneStatusFlying: DroneStatus = 'flying';
+export const DroneStatusDocking: DroneStatus = 'docking';
 export interface Drone extends Location, CircuitIDs {
   name: string;
   speed: number /* float64 */;
@@ -158,7 +158,7 @@ export interface PipesDTO {
 // source: error.go
 
 export interface BindingError {
-  validationErrors: { [key: string]: string[]};
+  validationErrors: { [key: string]: string[] };
 }
 export interface ErrorResponse {
   errors: ApiError[];
@@ -178,10 +178,10 @@ export interface SatisfactoryApiError {
 // source: explorer.go
 
 export type ExplorerStatus = string;
-export const ExplorerStatusSelfDriving: ExplorerStatus = "selfDriving";
-export const ExplorerStatusManualDriving: ExplorerStatus = "manualDriving";
-export const ExplorerStatusParked: ExplorerStatus = "parked";
-export const ExplorerStatusUnknown: ExplorerStatus = "unknown";
+export const ExplorerStatusSelfDriving: ExplorerStatus = 'selfDriving';
+export const ExplorerStatusManualDriving: ExplorerStatus = 'manualDriving';
+export const ExplorerStatusParked: ExplorerStatus = 'parked';
+export const ExplorerStatusUnknown: ExplorerStatus = 'unknown';
 export interface Explorer extends Location, CircuitIDs {
   id: string;
   name: string;
@@ -218,18 +218,38 @@ export interface Fuel {
 // source: generator_stats.go
 
 export type PowerType = string;
-export const PowerTypeBiomass: PowerType = "biomass";
-export const PowerTypeCoal: PowerType = "coal";
-export const PowerTypeFuel: PowerType = "fuel";
-export const PowerTypeGeothermal: PowerType = "geothermal";
-export const PowerTypeNuclear: PowerType = "nuclear";
-export const PowerTypeUnknown: PowerType = "unknown";
+export const PowerTypeBiomass: PowerType = 'biomass';
+export const PowerTypeCoal: PowerType = 'coal';
+export const PowerTypeFuel: PowerType = 'fuel';
+export const PowerTypeGeothermal: PowerType = 'geothermal';
+export const PowerTypeNuclear: PowerType = 'nuclear';
+export const PowerTypeUnknown: PowerType = 'unknown';
 export interface PowerSource {
   count: number /* int */;
   totalProduction: number /* float64 */;
 }
 export interface GeneratorStats {
-  sources: { [key: PowerType]: PowerSource};
+  sources: { [key: PowerType]: PowerSource };
+}
+
+//////////
+// source: hypertube.go
+
+export interface Hypertube {
+  id: string;
+  location0: Location;
+  location1: Location;
+  splineData: Location[];
+  boundingBox: BoundingBox;
+}
+export interface HypertubeEntrance extends Location {
+  id: string;
+  boundingBox: BoundingBox;
+  powerInfo: PowerInfo;
+}
+export interface Hypertubes {
+  hypertubes: Hypertube[];
+  hypertubeEntrances: HypertubeEntrance[];
 }
 
 //////////
@@ -258,33 +278,33 @@ export interface BoundingBox {
 // source: machine.go
 
 export type MachineType = string;
-export const MachineTypeAssembler: MachineType = "assembler";
-export const MachineTypeConstructor: MachineType = "constructor";
-export const MachineTypeFoundry: MachineType = "foundry";
-export const MachineTypeManufacturer: MachineType = "manufacturer";
-export const MachineTypeRefinery: MachineType = "refinery";
-export const MachineTypeSmelter: MachineType = "smelter";
-export const MachineTypeBlender: MachineType = "blender";
-export const MachineTypePackager: MachineType = "packager";
-export const MachineTypeParticleAccelerator: MachineType = "particleAccelerator";
-export const MachineTypeMiner: MachineType = "miner";
-export const MachineTypeOilExtractor: MachineType = "oilExtractor";
-export const MachineTypeWaterExtractor: MachineType = "waterExtractor";
-export const MachineTypeBiomassBurner: MachineType = "biomassBurner";
-export const MachineTypeCoalGenerator: MachineType = "coalGenerator";
-export const MachineTypeFuelGenerator: MachineType = "fuelGenerator";
-export const MachineTypeGeothermalGenerator: MachineType = "geothermalGenerator";
-export const MachineTypeNuclearPowerPlant: MachineType = "nuclearPowerPlant";
+export const MachineTypeAssembler: MachineType = 'assembler';
+export const MachineTypeConstructor: MachineType = 'constructor';
+export const MachineTypeFoundry: MachineType = 'foundry';
+export const MachineTypeManufacturer: MachineType = 'manufacturer';
+export const MachineTypeRefinery: MachineType = 'refinery';
+export const MachineTypeSmelter: MachineType = 'smelter';
+export const MachineTypeBlender: MachineType = 'blender';
+export const MachineTypePackager: MachineType = 'packager';
+export const MachineTypeParticleAccelerator: MachineType = 'particleAccelerator';
+export const MachineTypeMiner: MachineType = 'miner';
+export const MachineTypeOilExtractor: MachineType = 'oilExtractor';
+export const MachineTypeWaterExtractor: MachineType = 'waterExtractor';
+export const MachineTypeBiomassBurner: MachineType = 'biomassBurner';
+export const MachineTypeCoalGenerator: MachineType = 'coalGenerator';
+export const MachineTypeFuelGenerator: MachineType = 'fuelGenerator';
+export const MachineTypeGeothermalGenerator: MachineType = 'geothermalGenerator';
+export const MachineTypeNuclearPowerPlant: MachineType = 'nuclearPowerPlant';
 export type MachineCategory = string;
-export const MachineCategoryFactory: MachineCategory = "factory";
-export const MachineCategoryExtractor: MachineCategory = "extractor";
-export const MachineCategoryGenerator: MachineCategory = "generator";
+export const MachineCategoryFactory: MachineCategory = 'factory';
+export const MachineCategoryExtractor: MachineCategory = 'extractor';
+export const MachineCategoryGenerator: MachineCategory = 'generator';
 export type MachineStatus = string;
-export const MachineStatusOperating: MachineStatus = "operating";
-export const MachineStatusIdle: MachineStatus = "idle";
-export const MachineStatusPaused: MachineStatus = "paused";
-export const MachineStatusUnconfigured: MachineStatus = "unconfigured";
-export const MachineStatusUnknown: MachineStatus = "unknown";
+export const MachineStatusOperating: MachineStatus = 'operating';
+export const MachineStatusIdle: MachineStatus = 'idle';
+export const MachineStatusPaused: MachineStatus = 'paused';
+export const MachineStatusUnconfigured: MachineStatus = 'unconfigured';
+export const MachineStatusUnknown: MachineStatus = 'unknown';
 export interface MachineProdStats {
   name: string;
   stored: number /* float64 */;
@@ -340,6 +360,16 @@ export interface Player extends Location {
 }
 
 //////////
+// source: power_info.go
+
+export interface PowerInfo {
+  circuitId: number /* int */;
+  circuitGroupId: number /* int */;
+  powerConsumed: number /* float64 */;
+  maxPowerConsumed: number /* float64 */;
+}
+
+//////////
 // source: prod_stats.go
 
 export interface ItemProdStats extends ItemStats {
@@ -367,70 +397,70 @@ export interface ProdStats {
  * Resource Node Purity
  */
 export type ResourceNodePurity = string;
-export const ResourceNodePurityImpure: ResourceNodePurity = "Impure";
-export const ResourceNodePurityNormal: ResourceNodePurity = "Normal";
-export const ResourceNodePurityPure: ResourceNodePurity = "Pure";
+export const ResourceNodePurityImpure: ResourceNodePurity = 'Impure';
+export const ResourceNodePurityNormal: ResourceNodePurity = 'Normal';
+export const ResourceNodePurityPure: ResourceNodePurity = 'Pure';
 /**
  * ResourceType represents the type of resource (ore, liquid, gas)
  */
 export type ResourceType = string;
-export const ResourceTypeIronOre: ResourceType = "IronOre";
-export const ResourceTypeCopperOre: ResourceType = "CopperOre";
-export const ResourceTypeLimestone: ResourceType = "Limestone";
-export const ResourceTypeCoal: ResourceType = "Coal";
-export const ResourceTypeSAM: ResourceType = "SAM";
-export const ResourceTypeSulfur: ResourceType = "Sulfur";
-export const ResourceTypeCateriumOre: ResourceType = "CateriumOre";
-export const ResourceTypeBauxite: ResourceType = "Bauxite";
-export const ResourceTypeRawQuartz: ResourceType = "RawQuartz";
-export const ResourceTypeUranium: ResourceType = "Uranium";
-export const ResourceTypeCrudeOil: ResourceType = "CrudeOil";
-export const ResourceTypeGeyser: ResourceType = "Geyser";
-export const ResourceTypeNitrogenGas: ResourceType = "NitrogenGas";
+export const ResourceTypeIronOre: ResourceType = 'IronOre';
+export const ResourceTypeCopperOre: ResourceType = 'CopperOre';
+export const ResourceTypeLimestone: ResourceType = 'Limestone';
+export const ResourceTypeCoal: ResourceType = 'Coal';
+export const ResourceTypeSAM: ResourceType = 'SAM';
+export const ResourceTypeSulfur: ResourceType = 'Sulfur';
+export const ResourceTypeCateriumOre: ResourceType = 'CateriumOre';
+export const ResourceTypeBauxite: ResourceType = 'Bauxite';
+export const ResourceTypeRawQuartz: ResourceType = 'RawQuartz';
+export const ResourceTypeUranium: ResourceType = 'Uranium';
+export const ResourceTypeCrudeOil: ResourceType = 'CrudeOil';
+export const ResourceTypeGeyser: ResourceType = 'Geyser';
+export const ResourceTypeNitrogenGas: ResourceType = 'NitrogenGas';
 /**
  * NodeType represents the deposit classification
  */
 export type NodeType = string;
-export const NodeTypeNode: NodeType = "Node";
-export const NodeTypeGeyser: NodeType = "Geyser";
-export const NodeTypeFrackingCore: NodeType = "Fracking Core";
-export const NodeTypeFrackingSatellite: NodeType = "Fracking Satellite";
+export const NodeTypeNode: NodeType = 'Node';
+export const NodeTypeGeyser: NodeType = 'Geyser';
+export const NodeTypeFrackingCore: NodeType = 'Fracking Core';
+export const NodeTypeFrackingSatellite: NodeType = 'Fracking Satellite';
 export type FaunaType = string;
-export const FaunaTypeLizardDoggo: FaunaType = "LizardDoggo";
-export const FaunaTypeFluffyTailedHog: FaunaType = "FluffyTailedHog";
-export const FaunaTypeSpitter: FaunaType = "Spitter";
-export const FaunaTypeStinger: FaunaType = "Stinger";
-export const FaunaTypeFlyingCrab: FaunaType = "FlyingCrab";
-export const FaunaTypeNonFlyingBird: FaunaType = "NonFlyingBird";
-export const FaunaTypeSpaceGiraffe: FaunaType = "SpaceGiraffe";
-export const FaunaTypeSporeFlower: FaunaType = "SporeFlower";
-export const FaunaTypeLeafBug: FaunaType = "LeafBug";
-export const FaunaTypeGrassSprite: FaunaType = "GrassSprite";
-export const FaunaTypeCaveBat: FaunaType = "CaveBat";
-export const FaunaTypeGiantFlyingManta: FaunaType = "GiantFlyingManta";
-export const FaunaTypeLakeShark: FaunaType = "LakeShark";
-export const FaunaTypeWalker: FaunaType = "Walker";
+export const FaunaTypeLizardDoggo: FaunaType = 'LizardDoggo';
+export const FaunaTypeFluffyTailedHog: FaunaType = 'FluffyTailedHog';
+export const FaunaTypeSpitter: FaunaType = 'Spitter';
+export const FaunaTypeStinger: FaunaType = 'Stinger';
+export const FaunaTypeFlyingCrab: FaunaType = 'FlyingCrab';
+export const FaunaTypeNonFlyingBird: FaunaType = 'NonFlyingBird';
+export const FaunaTypeSpaceGiraffe: FaunaType = 'SpaceGiraffe';
+export const FaunaTypeSporeFlower: FaunaType = 'SporeFlower';
+export const FaunaTypeLeafBug: FaunaType = 'LeafBug';
+export const FaunaTypeGrassSprite: FaunaType = 'GrassSprite';
+export const FaunaTypeCaveBat: FaunaType = 'CaveBat';
+export const FaunaTypeGiantFlyingManta: FaunaType = 'GiantFlyingManta';
+export const FaunaTypeLakeShark: FaunaType = 'LakeShark';
+export const FaunaTypeWalker: FaunaType = 'Walker';
 export type FloraType = string;
-export const FloraTypeTree: FloraType = "Tree";
-export const FloraTypeLeaves: FloraType = "Leaves";
-export const FloraTypeFlowerPetals: FloraType = "FlowerPetals";
-export const FloraTypeBaconAgaric: FloraType = "BaconAgaric";
-export const FloraTypePaleberry: FloraType = "Paleberry";
-export const FloraTypeBerylNut: FloraType = "BerylNut";
-export const FloraTypeMycelia: FloraType = "Mycelia";
-export const FloraTypeVineLadder: FloraType = "VineLadder";
-export const FloraTypeBlueCapMushroom: FloraType = "BlueCapMushroom";
-export const FloraTypePinkJellyfish: FloraType = "PinkJellyfish";
+export const FloraTypeTree: FloraType = 'Tree';
+export const FloraTypeLeaves: FloraType = 'Leaves';
+export const FloraTypeFlowerPetals: FloraType = 'FlowerPetals';
+export const FloraTypeBaconAgaric: FloraType = 'BaconAgaric';
+export const FloraTypePaleberry: FloraType = 'Paleberry';
+export const FloraTypeBerylNut: FloraType = 'BerylNut';
+export const FloraTypeMycelia: FloraType = 'Mycelia';
+export const FloraTypeVineLadder: FloraType = 'VineLadder';
+export const FloraTypeBlueCapMushroom: FloraType = 'BlueCapMushroom';
+export const FloraTypePinkJellyfish: FloraType = 'PinkJellyfish';
 /**
  * Signal Types
  */
 export type SignalType = string;
-export const SignalTypeSomersloop: SignalType = "Somersloop";
-export const SignalTypeMercerSphere: SignalType = "Mercer Sphere";
-export const SignalTypeBluePowerSlug: SignalType = "Blue Power Slug";
-export const SignalTypeYellowPowerSlug: SignalType = "Yellow Power Slug";
-export const SignalTypePurplePowerSlug: SignalType = "Purple Power Slug";
-export const SignalTypeHardDrive: SignalType = "Hard Drive";
+export const SignalTypeSomersloop: SignalType = 'Somersloop';
+export const SignalTypeMercerSphere: SignalType = 'Mercer Sphere';
+export const SignalTypeBluePowerSlug: SignalType = 'Blue Power Slug';
+export const SignalTypeYellowPowerSlug: SignalType = 'Yellow Power Slug';
+export const SignalTypePurplePowerSlug: SignalType = 'Purple Power Slug';
+export const SignalTypeHardDrive: SignalType = 'Hard Drive';
 export interface ResourceNode extends Location {
   id: string;
   name: string;
@@ -470,29 +500,30 @@ export interface RadarTower extends Location {
 // source: satisfactory_event.go
 
 export type SatisfactoryEventType = string;
-export const SatisfactoryEventApiStatus: SatisfactoryEventType = "satisfactoryApiCheck";
-export const SatisfactoryEventCircuits: SatisfactoryEventType = "circuits";
-export const SatisfactoryEventFactoryStats: SatisfactoryEventType = "factoryStats";
-export const SatisfactoryEventProdStats: SatisfactoryEventType = "prodStats";
-export const SatisfactoryEventSinkStats: SatisfactoryEventType = "sinkStats";
-export const SatisfactoryEventPlayers: SatisfactoryEventType = "players";
-export const SatisfactoryEventGeneratorStats: SatisfactoryEventType = "generatorStats";
-export const SatisfactoryEventVehicles: SatisfactoryEventType = "vehicles";
-export const SatisfactoryEventVehicleStations: SatisfactoryEventType = "vehicleStations";
-export const SatisfactoryEventSessionUpdate: SatisfactoryEventType = "sessionUpdate";
-export const SatisfactoryEventBelts: SatisfactoryEventType = "belts";
-export const SatisfactoryEventPipes: SatisfactoryEventType = "pipes";
-export const SatisfactoryEventTrainRails: SatisfactoryEventType = "trainRails";
-export const SatisfactoryEventCables: SatisfactoryEventType = "cables";
-export const SatisfactoryEventStorages: SatisfactoryEventType = "storages";
-export const SatisfactoryEventMachines: SatisfactoryEventType = "machines";
-export const SatisfactoryEventTractors: SatisfactoryEventType = "tractors";
-export const SatisfactoryEventExplorers: SatisfactoryEventType = "explorers";
-export const SatisfactoryEventVehiclePaths: SatisfactoryEventType = "vehiclePaths";
-export const SatisfactoryEventSpaceElevator: SatisfactoryEventType = "spaceElevator";
-export const SatisfactoryEventRadarTowers: SatisfactoryEventType = "radarTowers";
-export const SatisfactoryEventResourceNodes: SatisfactoryEventType = "resourceNodes";
-export const SatisfactoryEventKey: string = "satisfactory_events";
+export const SatisfactoryEventApiStatus: SatisfactoryEventType = 'satisfactoryApiCheck';
+export const SatisfactoryEventCircuits: SatisfactoryEventType = 'circuits';
+export const SatisfactoryEventFactoryStats: SatisfactoryEventType = 'factoryStats';
+export const SatisfactoryEventProdStats: SatisfactoryEventType = 'prodStats';
+export const SatisfactoryEventSinkStats: SatisfactoryEventType = 'sinkStats';
+export const SatisfactoryEventPlayers: SatisfactoryEventType = 'players';
+export const SatisfactoryEventGeneratorStats: SatisfactoryEventType = 'generatorStats';
+export const SatisfactoryEventVehicles: SatisfactoryEventType = 'vehicles';
+export const SatisfactoryEventVehicleStations: SatisfactoryEventType = 'vehicleStations';
+export const SatisfactoryEventSessionUpdate: SatisfactoryEventType = 'sessionUpdate';
+export const SatisfactoryEventBelts: SatisfactoryEventType = 'belts';
+export const SatisfactoryEventPipes: SatisfactoryEventType = 'pipes';
+export const SatisfactoryEventTrainRails: SatisfactoryEventType = 'trainRails';
+export const SatisfactoryEventCables: SatisfactoryEventType = 'cables';
+export const SatisfactoryEventStorages: SatisfactoryEventType = 'storages';
+export const SatisfactoryEventMachines: SatisfactoryEventType = 'machines';
+export const SatisfactoryEventTractors: SatisfactoryEventType = 'tractors';
+export const SatisfactoryEventExplorers: SatisfactoryEventType = 'explorers';
+export const SatisfactoryEventVehiclePaths: SatisfactoryEventType = 'vehiclePaths';
+export const SatisfactoryEventSpaceElevator: SatisfactoryEventType = 'spaceElevator';
+export const SatisfactoryEventRadarTowers: SatisfactoryEventType = 'radarTowers';
+export const SatisfactoryEventResourceNodes: SatisfactoryEventType = 'resourceNodes';
+export const SatisfactoryEventHypertubes: SatisfactoryEventType = 'hypertubes';
+export const SatisfactoryEventKey: string = 'satisfactory_events';
 export interface SatisfactoryEvent {
   type: SatisfactoryEventType;
   data: any;
@@ -508,8 +539,8 @@ export interface SseSatisfactoryEvent extends SatisfactoryEvent {
  * SessionStage represents the initialization stage of a session
  */
 export type SessionStage = string;
-export const SessionStageInit: SessionStage = "init";
-export const SessionStageReady: SessionStage = "ready";
+export const SessionStageInit: SessionStage = 'init';
+export const SessionStageReady: SessionStage = 'ready';
 /**
  * Session represents a Satisfactory server connection target
  */
@@ -521,6 +552,7 @@ export interface Session {
   isMock: boolean; // True for mock session
   isOnline: boolean; // Current connection status
   isPaused: boolean; // True if polling is paused by user
+  isDisconnected: boolean; // True if session has failed to connect multiple times
   createdAt: string;
 }
 /**
@@ -583,6 +615,7 @@ export interface SessionDTO {
   isMock: boolean;
   isOnline: boolean;
   isPaused: boolean;
+  isDisconnected: boolean; // True if session is in disconnected state
   createdAt: string;
   stage: SessionStage;
 }
@@ -617,10 +650,10 @@ export interface SpaceElevator extends Location {
 // source: splitter_merger.go
 
 export type SplitterMergerType = string;
-export const SplitterMergerTypeConveyorMerger: SplitterMergerType = "Conveyor Merger";
-export const SplitterMergerTypeConveyorSplitter: SplitterMergerType = "Conveyor Splitter";
-export const SplitterMergerTypeProgrammableSplitter: SplitterMergerType = "Programmable Splitter";
-export const SplitterMergerTypeSmartSplitter: SplitterMergerType = "Smart Splitter";
+export const SplitterMergerTypeConveyorMerger: SplitterMergerType = 'Conveyor Merger';
+export const SplitterMergerTypeConveyorSplitter: SplitterMergerType = 'Conveyor Splitter';
+export const SplitterMergerTypeProgrammableSplitter: SplitterMergerType = 'Programmable Splitter';
+export const SplitterMergerTypeSmartSplitter: SplitterMergerType = 'Smart Splitter';
 export interface SplitterMerger extends Location {
   id: string;
   type: SplitterMergerType;
@@ -647,6 +680,8 @@ export interface State {
   pipeJunctions: PipeJunction[];
   trainRails: TrainRail[];
   splitterMergers: SplitterMerger[];
+  hypertubes: Hypertube[];
+  hypertubeEntrances: HypertubeEntrance[];
   cables: Cable[];
   storages: Storage[];
   machines: Machine[];
@@ -662,11 +697,11 @@ export interface State {
 // source: storage.go
 
 export type StorageType = string;
-export const StorageTypeBlueprintStorageBox: StorageType = "Blueprint Storage Box";
-export const StorageTypeDimensionalDepotUploader: StorageType = "Dimensional Depot Uploader";
-export const StorageTypeIndustrialStorageContainer: StorageType = "Industrial Storage Container";
-export const StorageTypePersonalStorageBox: StorageType = "Personal Storage Box";
-export const StorageTypeStorageContainer: StorageType = "Storage Container";
+export const StorageTypeBlueprintStorageBox: StorageType = 'Blueprint Storage Box';
+export const StorageTypeDimensionalDepotUploader: StorageType = 'Dimensional Depot Uploader';
+export const StorageTypeIndustrialStorageContainer: StorageType = 'Industrial Storage Container';
+export const StorageTypePersonalStorageBox: StorageType = 'Personal Storage Box';
+export const StorageTypeStorageContainer: StorageType = 'Storage Container';
 export interface Storage extends Location {
   id: string;
   type: StorageType;
@@ -678,10 +713,10 @@ export interface Storage extends Location {
 // source: tractor.go
 
 export type TractorStatus = string;
-export const TractorStatusSelfDriving: TractorStatus = "selfDriving";
-export const TractorStatusManualDriving: TractorStatus = "manualDriving";
-export const TractorStatusParked: TractorStatus = "parked";
-export const TractorStatusUnknown: TractorStatus = "unknown";
+export const TractorStatusSelfDriving: TractorStatus = 'selfDriving';
+export const TractorStatusManualDriving: TractorStatus = 'manualDriving';
+export const TractorStatusParked: TractorStatus = 'parked';
+export const TractorStatusUnknown: TractorStatus = 'unknown';
 export interface Tractor extends Location, CircuitIDs {
   id: string;
   name: string;
@@ -695,15 +730,15 @@ export interface Tractor extends Location, CircuitIDs {
 // source: train.go
 
 export type TrainType = string;
-export const TrainTypeFreight: TrainType = "freight";
-export const TrainTypeLocomotive: TrainType = "locomotive";
+export const TrainTypeFreight: TrainType = 'freight';
+export const TrainTypeLocomotive: TrainType = 'locomotive';
 export type TrainStatus = string;
-export const TrainStatusSelfDriving: TrainStatus = "selfDriving";
-export const TrainStatusManualDriving: TrainStatus = "manualDriving";
-export const TrainStatusParked: TrainStatus = "parked";
-export const TrainStatusDocking: TrainStatus = "docking";
-export const TrainStatusDerailed: TrainStatus = "derailed";
-export const TrainStatusUnknown: TrainStatus = "unknown";
+export const TrainStatusSelfDriving: TrainStatus = 'selfDriving';
+export const TrainStatusManualDriving: TrainStatus = 'manualDriving';
+export const TrainStatusParked: TrainStatus = 'parked';
+export const TrainStatusDocking: TrainStatus = 'docking';
+export const TrainStatusDerailed: TrainStatus = 'derailed';
+export const TrainStatusUnknown: TrainStatus = 'unknown';
 export interface TrainVehicle {
   type: TrainType;
   capacity: number /* float64 */;
@@ -727,7 +762,7 @@ export interface Train extends Location, CircuitIDs {
 // source: train_rail.go
 
 export type TrainRailType = string;
-export const TrainRailTypeRailway: TrainRailType = "Railway";
+export const TrainRailTypeRailway: TrainRailType = 'Railway';
 export interface TrainRail {
   id: string;
   type: TrainRailType;
@@ -743,14 +778,14 @@ export interface TrainRail {
 // source: train_station.go
 
 export type TrainStationPlatformType = string;
-export const TrainStationPlatformTypeFreight: TrainStationPlatformType = "freight";
-export const TrainStationPlatformTypeFluidFreight: TrainStationPlatformType = "fluidFreight";
+export const TrainStationPlatformTypeFreight: TrainStationPlatformType = 'freight';
+export const TrainStationPlatformTypeFluidFreight: TrainStationPlatformType = 'fluidFreight';
 export type TrainStationPlatformMode = string;
-export const TrainStationPlatformModeImport: TrainStationPlatformMode = "import";
-export const TrainStationPlatformModeExport: TrainStationPlatformMode = "export";
+export const TrainStationPlatformModeImport: TrainStationPlatformMode = 'import';
+export const TrainStationPlatformModeExport: TrainStationPlatformMode = 'export';
 export type TrainStationPlatformStatus = string;
-export const TrainStationPlatformStatusIdle: TrainStationPlatformStatus = "idle";
-export const TrainStationPlatformStatusDocking: TrainStationPlatformStatus = "docking";
+export const TrainStationPlatformStatusIdle: TrainStationPlatformStatus = 'idle';
+export const TrainStationPlatformStatusDocking: TrainStationPlatformStatus = 'docking';
 export interface TrainStationPlatform extends Location {
   type: TrainStationPlatformType;
   mode: TrainStationPlatformMode;
@@ -771,10 +806,10 @@ export interface TrainStation extends Location, CircuitIDs {
 // source: truck.go
 
 export type TruckStatus = string;
-export const TruckStatusSelfDriving: TruckStatus = "selfDriving";
-export const TruckStatusManualDriving: TruckStatus = "manualDriving";
-export const TruckStatusParked: TruckStatus = "parked";
-export const TruckStatusUnknown: TruckStatus = "unknown";
+export const TruckStatusSelfDriving: TruckStatus = 'selfDriving';
+export const TruckStatusManualDriving: TruckStatus = 'manualDriving';
+export const TruckStatusParked: TruckStatus = 'parked';
+export const TruckStatusUnknown: TruckStatus = 'unknown';
 export interface Truck extends Location, CircuitIDs {
   id: string;
   name: string;
@@ -800,10 +835,10 @@ export interface TruckStation extends Location, CircuitIDs {
 // source: vehicle_path.go
 
 export type VehiclePathType = string;
-export const VehiclePathTypeExplorer: VehiclePathType = "Explorer";
-export const VehiclePathTypeFactoryCart: VehiclePathType = "Factory Cart";
-export const VehiclePathTypeTruck: VehiclePathType = "Truck";
-export const VehiclePathTypeTractor: VehiclePathType = "Tractor";
+export const VehiclePathTypeExplorer: VehiclePathType = 'Explorer';
+export const VehiclePathTypeFactoryCart: VehiclePathType = 'Factory Cart';
+export const VehiclePathTypeTruck: VehiclePathType = 'Truck';
+export const VehiclePathTypeTractor: VehiclePathType = 'Tractor';
 export interface VehiclePath {
   name: string;
   vehicleType: VehiclePathType;
