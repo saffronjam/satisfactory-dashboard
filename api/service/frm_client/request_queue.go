@@ -69,7 +69,8 @@ func (q *RequestQueue) Enqueue(endpointType string, execute func() error) (bool,
 	// Check if this endpoint type already has a pending request
 	if q.pendingTypes[endpointType] {
 		q.mu.Unlock()
-		log.Warnf("Request already queued for endpoint '%s' on %s - FRM API may be overloaded or unresponsive",
+		// CHANGED: WARN → DEBUG (expected during disconnected state)
+		log.Debugf("Request already queued for endpoint '%s' on %s - FRM API may be overloaded or unresponsive",
 			endpointType, q.clientAddress)
 		return false, nil
 	}

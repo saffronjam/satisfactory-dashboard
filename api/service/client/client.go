@@ -7,6 +7,7 @@ import (
 
 type Client interface {
 	SetupEventStream(ctx context.Context, onEvent func(*models.SatisfactoryEvent)) error
+	SetupLightPolling(ctx context.Context, onEvent func(*models.SatisfactoryEvent)) error
 
 	GetSatisfactoryApiStatus(ctx context.Context) (*models.SatisfactoryApiStatus, error)
 	GetSessionInfo(ctx context.Context) (*models.SessionInfo, error)
@@ -44,4 +45,9 @@ type Client interface {
 
 	// GetAddress returns the API URL this client is connected to
 	GetAddress() string
+
+	// Connection health tracking methods
+	GetFailureCount() int
+	IsDisconnected() bool
+	SetDisconnectedCallback(callback func())
 }

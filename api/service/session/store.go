@@ -204,3 +204,20 @@ func (s *Store) UpdateOnlineStatus(id string, isOnline bool) error {
 	session.IsOnline = isOnline
 	return s.Update(session)
 }
+
+// UpdateDisconnectedStatus updates the disconnected status of a session
+func (s *Store) UpdateDisconnectedStatus(id string, isDisconnected bool) error {
+	session, err := s.Get(id)
+	if err != nil {
+		return err
+	}
+	if session == nil {
+		return fmt.Errorf("session not found: %s", id)
+	}
+
+	session.IsDisconnected = isDisconnected
+	if isDisconnected {
+		session.IsOnline = false // Disconnected implies offline
+	}
+	return s.Update(session)
+}

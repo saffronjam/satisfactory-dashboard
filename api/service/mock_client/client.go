@@ -305,3 +305,28 @@ func (c *Client) GetSatisfactoryApiStatus(_ context.Context) (*models.Satisfacto
 func (c *Client) GetAddress() string {
 	return "mock://localhost"
 }
+
+// ============================================================================
+// Connection Health Tracking (no-ops for mock client)
+// ============================================================================
+
+// SetupLightPolling is a no-op for mock client - mock sessions never disconnect
+func (c *Client) SetupLightPolling(ctx context.Context, onEvent func(*models.SatisfactoryEvent)) error {
+	// Mock sessions are always "connected", so light polling is the same as full polling
+	return c.SetupEventStream(ctx, onEvent)
+}
+
+// GetFailureCount always returns 0 for mock client
+func (c *Client) GetFailureCount() int {
+	return 0
+}
+
+// IsDisconnected always returns false for mock client
+func (c *Client) IsDisconnected() bool {
+	return false
+}
+
+// SetDisconnectedCallback is a no-op for mock client
+func (c *Client) SetDisconnectedCallback(callback func()) {
+	// Mock sessions never disconnect, so callback is never needed
+}
