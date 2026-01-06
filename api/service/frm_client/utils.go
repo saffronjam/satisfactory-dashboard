@@ -33,3 +33,12 @@ func parseCircuitIDs(circuitID int) models.CircuitIDs {
 		CircuitID: circuitID,
 	}
 }
+
+func parsePowerInfo(powerInfo frm_models.PowerInfo) models.PowerInfo {
+	return models.PowerInfo{
+		CircuitID:        powerInfo.CircuitID,
+		CircuitGroupID:   powerInfo.CircuitGroupID,
+		PowerConsumed:    powerInfo.PowerConsumed,
+		MaxPowerConsumed: powerInfo.MaxPowerConsumed,
+	}
+}

@@ -430,3 +430,25 @@ type RadarTower struct {
 	Flora        []ScannedFlora        `json:"Flora"`
 	Signal       []ScannedSignal       `json:"Signal"`
 }
+
+type Hypertube struct {
+	ID          string      `json:"ID"`
+	Name        string      `json:"Name"`
+	ClassName   string      `json:"ClassName"`
+	Location0   Location    `json:"location0"`
+	Location1   Location    `json:"location1"`
+	Connected0  bool        `json:"Connected0"`
+	Connected1  bool        `json:"Connected1"`
+	Length      float64     `json:"Length"`
+	SplineData  []Location  `json:"SplineData"`
+	BoundingBox BoundingBox `json:"BoundingBox"`
+}
+
+type HypertubeEntrance struct {
+	ID          string      `json:"ID"`
+	Name        string      `json:"Name"`
+	ClassName   string      `json:"ClassName"`
+	Location    Location    `json:"location"`
+	BoundingBox BoundingBox `json:"BoundingBox"`
+	PowerInfo   PowerInfo   `json:"PowerInfo"`
+}
