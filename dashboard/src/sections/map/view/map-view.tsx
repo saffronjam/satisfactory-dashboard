@@ -22,7 +22,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { CRS } from 'leaflet';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   MachineCategory,
   MachineCategoryExtractor,
@@ -58,6 +58,7 @@ import { MapBounds } from '../bounds';
 import { FilterCategory, Overlay } from '../overlay';
 import { SelectionSidebar } from '../selectionSidebar';
 import { computeUnifiedGroups, zoomToGroupDistance } from '../utils';
+import { computeTowerVisibilityData } from '../utils/resourceNodeUtils';
 
 // Grouping distance values (doubling/halving from 1000)
 const groupingValues = [
@@ -87,10 +88,13 @@ const filterCategories: { key: FilterCategory; label: string }[] = [
 ];
 
 // Map layer types
-export type MapLayer = 'machineGroups' | 'buildings' | 'infrastructure' | 'vehicles' | 'power' | 'resources';
-
-// Resource sub-layers
-export type ResourceSubLayer = 'nodes';
+export type MapLayer =
+  | 'machineGroups'
+  | 'buildings'
+  | 'infrastructure'
+  | 'vehicles'
+  | 'power'
+  | 'resources';
 
 // Resource node filter state
 export type ResourceNodeFilter = {
@@ -101,18 +105,18 @@ export type ResourceNodeFilter = {
 
 // All resource types for the filter UI
 const allResourceTypes: { key: ResourceType; label: string; color: string }[] = [
-  { key: ResourceTypeIronOre, label: 'Iron', color: '#8B4513' },
-  { key: ResourceTypeCopperOre, label: 'Copper', color: '#B87333' },
+  { key: ResourceTypeIronOre, label: 'Iron Ore', color: '#8B4513' },
+  { key: ResourceTypeCopperOre, label: 'Copper Ore', color: '#B87333' },
   { key: ResourceTypeLimestone, label: 'Limestone', color: '#D4C4A8' },
   { key: ResourceTypeCoal, label: 'Coal', color: '#2C2C2C' },
   { key: ResourceTypeSulfur, label: 'Sulfur', color: '#FFFF00' },
-  { key: ResourceTypeCateriumOre, label: 'Caterium', color: '#FFD700' },
-  { key: ResourceTypeRawQuartz, label: 'Quartz', color: '#FFB6C1' },
+  { key: ResourceTypeCateriumOre, label: 'Caterium Ore', color: '#FFD700' },
+  { key: ResourceTypeRawQuartz, label: 'Raw Quartz', color: '#FFB6C1' },
   { key: ResourceTypeBauxite, label: 'Bauxite', color: '#CD853F' },
-  { key: ResourceTypeUranium, label: 'Uranium', color: '#00FF00' },
+  { key: ResourceTypeUranium, label: 'Uranium Ore', color: '#00FF00' },
   { key: ResourceTypeSAM, label: 'SAM', color: '#9400D3' },
-  { key: ResourceTypeCrudeOil, label: 'Oil', color: '#1C1C1C' },
-  { key: ResourceTypeNitrogenGas, label: 'Nitrogen', color: '#87CEEB' },
+  { key: ResourceTypeCrudeOil, label: 'Crude Oil', color: '#1C1C1C' },
+  { key: ResourceTypeNitrogenGas, label: 'Nitrogen Gas', color: '#87CEEB' },
   { key: ResourceTypeGeyser, label: 'Geyser', color: '#FF6347' },
 ];
 
@@ -136,7 +140,7 @@ export type BuildingSubLayer =
   | 'radarTowers';
 
 // Infrastructure sub-layers
-export type InfrastructureSubLayer = 'belts' | 'pipes' | 'railway';
+export type InfrastructureSubLayer = 'belts' | 'pipes' | 'railway' | 'hypertubes';
 
 // Vehicle sub-layers
 export type VehicleSubLayer =
@@ -155,10 +159,6 @@ const layerOptions: { key: MapLayer; label: string; expandable?: boolean }[] = [
   { key: 'vehicles', label: 'Vehicles', expandable: true },
   { key: 'power', label: 'Power' },
   { key: 'resources', label: 'Resources', expandable: true },
-];
-
-const resourceSubLayerOptions: { key: ResourceSubLayer; label: string; color: string }[] = [
-  { key: 'nodes', label: 'Resource Nodes', color: '#10B981' },
 ];
 
 const buildingSubLayerOptions: { key: BuildingSubLayer; label: string; color: string }[] = [
@@ -181,6 +181,7 @@ const infrastructureSubLayerOptions: {
   { key: 'belts', label: 'Belts', color: '#FFA500' },
   { key: 'pipes', label: 'Pipes', color: '#4169E1' },
   { key: 'railway', label: 'Railway', color: '#404040' },
+  { key: 'hypertubes', label: 'Hypertubes', color: '#00CED1' },
 ];
 
 const vehicleSubLayerOptions: { key: VehicleSubLayer; label: string; color: string }[] = [
@@ -223,10 +224,13 @@ export function MapView() {
       spaceElevator: v.spaceElevator,
       radarTowers: v.radarTowers,
       resourceNodes: v.resourceNodes,
+      hypertubes: v.hypertubes,
+      hypertubeEntrances: v.hypertubeEntrances,
     };
   });
   const [machineGroups, setMachineGroups] = useState<MachineGroup[]>([]);
-  const [selectedItem, setSelectedItem] = useState<SelectedMapItem | null>(null);
+  const [selectedItems, setSelectedItems] = useState<SelectedMapItem[]>([]);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [zoom, setZoom] = useState(3);
   const [autoGroup, setAutoGroup] = useState(false);
   const [manualGroupIndex, setManualGroupIndex] = useState(15); // Index 15 = 16000
@@ -242,7 +246,6 @@ export function MapView() {
     Set<InfrastructureSubLayer>
   >(new Set());
   const [vehicleSubLayers, setVehicleSubLayers] = useState<Set<VehicleSubLayer>>(new Set());
-  const [resourceSubLayers, setResourceSubLayers] = useState<Set<ResourceSubLayer>>(new Set());
   const [resourceNodeFilter, setResourceNodeFilter] = useState<ResourceNodeFilter>({
     enabledCells: new Set(
       allResourceTypes.flatMap((rt) => allPurities.map((p) => `${rt.key}:${p.key}`))
@@ -255,6 +258,7 @@ export function MapView() {
   const [buildingOpacity, setBuildingOpacity] = useState(0.5);
   const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
   const [expandedLayers, setExpandedLayers] = useState<Set<MapLayer>>(new Set());
+  const [useGameMapStyle, setUseGameMapStyle] = useState(false);
 
   const [isDragging, setIsDragging] = useState(false);
   const frozenDataRef = useRef<typeof api>(api);
@@ -274,6 +278,67 @@ export function MapView() {
   }, []);
 
   const groupDistance = autoGroup ? zoomToGroupDistance(zoom) : groupingValues[manualGroupIndex];
+
+  // Helper to check if two selections are the same
+  const isSameSelection = (a: SelectedMapItem, b: SelectedMapItem): boolean => {
+    if (a.type !== b.type) return false;
+    switch (a.type) {
+      case 'machineGroup':
+        return a.data.hash === (b as typeof a).data.hash;
+      case 'machineGroups':
+        return (
+          a.data.length === (b as typeof a).data.length &&
+          a.data.every((g, i) => g.hash === (b as typeof a).data[i].hash)
+        );
+      case 'trainStation':
+        return a.data.station.name === (b as typeof a).data.station.name;
+      case 'droneStation':
+        return a.data.station.name === (b as typeof a).data.station.name;
+      case 'radarTower':
+        return a.data.id === (b as typeof a).data.id;
+      case 'multiSelection':
+        return false; // Multi-selections are always unique
+      default:
+        return false;
+    }
+  };
+
+  // Add a selection to the list
+  const addSelection = useCallback((item: SelectedMapItem) => {
+    setSelectedItems((prev) => {
+      // Check if already selected
+      const existingIndex = prev.findIndex((s) => isSameSelection(s, item));
+      if (existingIndex >= 0) {
+        // Already selected - just switch to that tab
+        setActiveTabIndex(existingIndex);
+        return prev;
+      }
+      // Add new selection
+      setActiveTabIndex(prev.length);
+      return [...prev, item];
+    });
+  }, []);
+
+  // Remove a selection by index
+  const removeSelection = useCallback((index: number) => {
+    setSelectedItems((prev) => {
+      const newItems = prev.filter((_, i) => i !== index);
+      // Adjust active tab if needed
+      setActiveTabIndex((prevIndex) => {
+        if (newItems.length === 0) return 0;
+        if (prevIndex >= newItems.length) return newItems.length - 1;
+        if (prevIndex > index) return prevIndex - 1;
+        return prevIndex;
+      });
+      return newItems;
+    });
+  }, []);
+
+  // Clear all selections
+  const clearSelections = useCallback(() => {
+    setSelectedItems([]);
+    setActiveTabIndex(0);
+  }, []);
 
   const toggleCategory = (category: FilterCategory) => {
     setVisibleCategories((prev) => {
@@ -296,30 +361,33 @@ export function MapView() {
         // Disable multi-select mode when machine groups layer is turned off
         if (layer === 'machineGroups') {
           setMultiSelectMode(false);
-          // Clear selection if it's a machine group selection
-          setSelectedItem((prevSelected) => {
-            if (
-              prevSelected?.type === 'machineGroup' ||
-              prevSelected?.type === 'machineGroups' ||
-              prevSelected?.type === 'multiSelection'
-            ) {
-              return null;
+          // Clear machine group selections
+          setSelectedItems((prev) => {
+            const filtered = prev.filter(
+              (s) =>
+                s.type !== 'machineGroup' &&
+                s.type !== 'machineGroups' &&
+                s.type !== 'multiSelection'
+            );
+            if (filtered.length !== prev.length) {
+              setActiveTabIndex((i) => Math.min(i, Math.max(0, filtered.length - 1)));
             }
-            return prevSelected;
+            return filtered;
           });
         }
         // When buildings layer is turned off, turn off all sub-layers
         if (layer === 'buildings') {
           setBuildingSubLayers(new Set());
-          // Clear selection if it's a building-related selection
-          setSelectedItem((prevSelected) => {
-            if (
-              prevSelected?.type === 'trainStation' ||
-              prevSelected?.type === 'droneStation'
-            ) {
-              return null;
+          // Clear building-related selections
+          setSelectedItems((prev) => {
+            const filtered = prev.filter(
+              (s) =>
+                s.type !== 'trainStation' && s.type !== 'droneStation' && s.type !== 'radarTower'
+            );
+            if (filtered.length !== prev.length) {
+              setActiveTabIndex((i) => Math.min(i, Math.max(0, filtered.length - 1)));
             }
-            return prevSelected;
+            return filtered;
           });
         }
         // When infrastructure layer is turned off, turn off all sub-layers
@@ -329,10 +397,6 @@ export function MapView() {
         // When vehicles layer is turned off, turn off all sub-layers
         if (layer === 'vehicles') {
           setVehicleSubLayers(new Set());
-        }
-        // When resources layer is turned off, turn off all sub-layers
-        if (layer === 'resources') {
-          setResourceSubLayers(new Set());
         }
       } else {
         next.add(layer);
@@ -354,7 +418,7 @@ export function MapView() {
         }
         // When infrastructure layer is turned on, turn on all sub-layers
         if (layer === 'infrastructure') {
-          setInfrastructureSubLayers(new Set(['belts', 'pipes', 'railway']));
+          setInfrastructureSubLayers(new Set(['belts', 'pipes', 'railway', 'hypertubes']));
         }
         // When vehicles layer is turned on, turn on all sub-layers
         if (layer === 'vehicles') {
@@ -362,41 +426,28 @@ export function MapView() {
             new Set(['trains', 'drones', 'trucks', 'tractors', 'explorers', 'players', 'paths'])
           );
         }
-        // When resources layer is turned on, turn on all sub-layers
-        if (layer === 'resources') {
-          setResourceSubLayers(new Set(['nodes']));
-        }
       }
       return next;
     });
   };
 
-  // Toggle resource sub-layer
-  const toggleResourceSubLayer = (subLayer: ResourceSubLayer) => {
-    setResourceSubLayers((prev) => {
-      const next = new Set(prev);
-      if (next.has(subLayer)) {
-        next.delete(subLayer);
-      } else {
-        next.add(subLayer);
+  // Calculate which purities exist for each resource type
+  const availablePuritiesByResource = useMemo(() => {
+    const map = new Map<ResourceType, Set<ResourceNodePurity>>();
+    for (const node of displayData.resourceNodes) {
+      if (!map.has(node.resourceType)) {
+        map.set(node.resourceType, new Set());
       }
-      // Update parent resources layer based on sub-layers
-      if (next.size === 0) {
-        setEnabledLayers((prevLayers) => {
-          const nextLayers = new Set(prevLayers);
-          nextLayers.delete('resources');
-          return nextLayers;
-        });
-      } else if (!enabledLayers.has('resources')) {
-        setEnabledLayers((prevLayers) => {
-          const nextLayers = new Set(prevLayers);
-          nextLayers.add('resources');
-          return nextLayers;
-        });
-      }
-      return next;
-    });
-  };
+      map.get(node.resourceType)!.add(node.purity);
+    }
+    return map;
+  }, [displayData.resourceNodes]);
+
+  // Pre-compute tower visibility data for optimized radar visibility checks
+  const towerVisibilityData = useMemo(
+    () => computeTowerVisibilityData(displayData.radarTowers),
+    [displayData.radarTowers]
+  );
 
   // Cell-based filter helpers for resource nodes
   const getCellKey = (resourceType: ResourceType, purity: ResourceNodePurity) =>
@@ -446,19 +497,30 @@ export function MapView() {
         next.delete(subLayer);
         // Clear selection if it's related to the disabled sub-layer
         if (subLayer === 'trainStation') {
-          setSelectedItem((prevSelected) => {
-            if (prevSelected?.type === 'trainStation') {
-              return null;
+          setSelectedItems((prev) => {
+            const filtered = prev.filter((s) => s.type !== 'trainStation');
+            if (filtered.length !== prev.length) {
+              setActiveTabIndex((i) => Math.min(i, Math.max(0, filtered.length - 1)));
             }
-            return prevSelected;
+            return filtered;
           });
         }
         if (subLayer === 'droneStation') {
-          setSelectedItem((prevSelected) => {
-            if (prevSelected?.type === 'droneStation') {
-              return null;
+          setSelectedItems((prev) => {
+            const filtered = prev.filter((s) => s.type !== 'droneStation');
+            if (filtered.length !== prev.length) {
+              setActiveTabIndex((i) => Math.min(i, Math.max(0, filtered.length - 1)));
             }
-            return prevSelected;
+            return filtered;
+          });
+        }
+        if (subLayer === 'radarTowers') {
+          setSelectedItems((prev) => {
+            const filtered = prev.filter((s) => s.type !== 'radarTower');
+            if (filtered.length !== prev.length) {
+              setActiveTabIndex((i) => Math.min(i, Math.max(0, filtered.length - 1)));
+            }
+            return filtered;
           });
         }
       } else {
@@ -602,19 +664,19 @@ export function MapView() {
       );
       setMachineGroups(groups);
 
-      // Update selection if it's a machine group (use functional update to avoid stale closure)
-      setSelectedItem((prevSelected) => {
-        if (prevSelected?.type === 'machineGroup') {
-          const newActiveGroup = groups.find((g) => g.hash === prevSelected.data.hash);
-          if (newActiveGroup) {
-            return { type: 'machineGroup', data: newActiveGroup };
+      // Update selections if they include machine groups (use functional update to avoid stale closure)
+      setSelectedItems((prevItems) =>
+        prevItems.map((item) => {
+          if (item.type === 'machineGroup') {
+            const newActiveGroup = groups.find((g) => g.hash === item.data.hash);
+            if (newActiveGroup) {
+              return { type: 'machineGroup', data: newActiveGroup };
+            }
+            // Group no longer exists, keep with stale data (better UX)
           }
-          // Group no longer exists, keep the selection but with stale data
-          // (better UX than clearing it unexpectedly)
-          return prevSelected;
-        }
-        return prevSelected;
-      });
+          return item;
+        })
+      );
     }
   }, [
     displayData.factoryStats,
@@ -631,7 +693,18 @@ export function MapView() {
 
   const handleSelectItem = (item: SelectedMapItem | null) => {
     console.log('handleSelectItem called with:', item?.type, item);
-    setSelectedItem(item);
+    if (item === null) {
+      // Clear all selections
+      clearSelections();
+    } else {
+      // Check if this item is already selected - if so, remove it (toggle behavior)
+      const existingIndex = selectedItems.findIndex((s) => isSameSelection(s, item));
+      if (existingIndex >= 0) {
+        removeSelection(existingIndex);
+      } else {
+        addSelection(item);
+      }
+    }
     // Auto-disable multi-select mode after a selection is made
     if (item && multiSelectMode) {
       setMultiSelectMode(false);
@@ -677,13 +750,62 @@ export function MapView() {
             sx={{
               position: 'absolute',
               top: 16,
-              right: isMobile || !selectedItem ? 16 : 324, // Show offset only when sidebar is visible (non-mobile + selected)
-              zIndex: 1000,
+              right: 16,
+              zIndex: 1001, // Above sidebar
               display: 'flex',
               gap: 1,
-              transition: 'right 0.3s ease',
             }}
           >
+            {/* Map Style Toggle */}
+            <Tooltip title={useGameMapStyle ? 'Switch to realistic map' : 'Switch to game map'}>
+              <Box
+                onClick={() => setUseGameMapStyle(!useGameMapStyle)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    p: 0.75,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: !useGameMapStyle ? theme.palette.primary.main : 'transparent',
+                    color: !useGameMapStyle
+                      ? theme.palette.primary.contrastText
+                      : theme.palette.text.secondary,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <Iconify icon="mdi:earth" width={20} />
+                </Box>
+                <Box
+                  sx={{
+                    p: 0.75,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: useGameMapStyle ? theme.palette.primary.main : 'transparent',
+                    color: useGameMapStyle
+                      ? theme.palette.primary.contrastText
+                      : theme.palette.text.secondary,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <Iconify icon="mdi:gamepad-variant" width={20} />
+                </Box>
+              </Box>
+            </Tooltip>
+
             {/* Multi-select toggle button (works alongside Ctrl+drag) */}
             <Tooltip
               title={
@@ -851,11 +973,13 @@ export function MapView() {
                   backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
                   backdropFilter: 'blur(8px)',
                   mt: 1,
+                  width: 280,
+                  maxHeight: '80vh',
                 },
               },
             }}
           >
-            <Box sx={{ p: 2, minWidth: 220 }}>
+            <Box sx={{ p: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
                 Layers
               </Typography>
@@ -1085,193 +1209,176 @@ export function MapView() {
                         </Box>
                       </Collapse>
                     )}
-                    {/* Resources sub-layers */}
+                    {/* Resources filter */}
                     {layer.key === 'resources' && (
                       <Collapse in={expandedLayers.has('resources')}>
-                        <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                          {resourceSubLayerOptions.map((subLayer) => (
-                            <FormControlLabel
-                              key={subLayer.key}
-                              control={
-                                <Checkbox
-                                  checked={resourceSubLayers.has(subLayer.key)}
-                                  onChange={() => toggleResourceSubLayer(subLayer.key)}
-                                  size="small"
-                                  sx={{
-                                    color: subLayer.color,
-                                    '&.Mui-checked': {
-                                      color: subLayer.color,
-                                    },
-                                  }}
-                                />
-                              }
-                              label={
-                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                  {subLayer.label}
-                                </Typography>
-                              }
-                              sx={{ ml: 0, my: -0.5 }}
-                            />
-                          ))}
-                          {/* Resource matrix filter */}
-                          {resourceSubLayers.has('nodes') && (
-                            <Box sx={{ mt: 1 }}>
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1.5 }}>
-                                {allResourceTypes.map((rt) => (
-                                  <Box
-                                    key={rt.key}
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'space-between',
-                                      gap: 1,
-                                    }}
-                                  >
-                                    {/* Resource name - left aligned, muted color */}
-                                    <Typography
-                                      variant="caption"
-                                      sx={{
-                                        color: 'text.secondary',
-                                        fontSize: '0.65rem',
-                                        minWidth: 60,
-                                      }}
-                                    >
-                                      {rt.label}
-                                    </Typography>
-
-                                    {/* Purity icons - right aligned */}
-                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                      {allPurities.map((p) => (
-                                        <IconButton
-                                          key={p.key}
-                                          size="small"
-                                          onClick={() => toggleCell(rt.key, p.key)}
-                                          sx={{
-                                            width: 24,
-                                            height: 24,
-                                            p: 0,
-                                            border: `2px solid ${p.color}`,
-                                            borderRadius: '50%',
-                                            opacity: isCellEnabled(rt.key, p.key) ? 1 : 0.3,
-                                            backgroundColor: 'rgba(0,0,0,0.5)',
-                                            '&:hover': {
-                                              backgroundColor: 'rgba(0,0,0,0.7)',
-                                            },
-                                          }}
-                                        >
-                                          <Box
-                                            component="img"
-                                            src={`assets/images/satisfactory/64x64/${getResourceImageName(rt.key)}.png`}
-                                            sx={{ width: 16, height: 16, objectFit: 'contain' }}
-                                            onError={(e) => {
-                                              (e.target as HTMLImageElement).style.display = 'none';
-                                            }}
-                                          />
-                                        </IconButton>
-                                      ))}
-                                    </Box>
-                                  </Box>
-                                ))}
-                              </Box>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ mb: 0.5, display: 'block' }}
+                        <Box
+                          sx={{ pl: 3, pt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}
+                        >
+                          {/* Resource matrix */}
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1 }}>
+                            {allResourceTypes.map((rt) => (
+                              <Box
+                                key={rt.key}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: 1,
+                                }}
                               >
-                                Filters
-                              </Typography>
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                <Chip
-                                  label="Exploited"
-                                  onClick={() =>
-                                    setResourceNodeFilter((prev) => ({
-                                      ...prev,
-                                      exploitedFilter:
-                                        prev.exploitedFilter === 'exploited' ? 'all' : 'exploited',
-                                    }))
-                                  }
-                                  size="small"
-                                  variant={
-                                    resourceNodeFilter.exploitedFilter === 'exploited'
-                                      ? 'filled'
-                                      : 'outlined'
-                                  }
-                                  color={
-                                    resourceNodeFilter.exploitedFilter === 'exploited'
-                                      ? 'success'
-                                      : 'default'
-                                  }
-                                  sx={{ fontSize: '0.65rem', height: 22 }}
-                                />
-                                <Chip
-                                  label="Not Exploited"
-                                  onClick={() =>
-                                    setResourceNodeFilter((prev) => ({
-                                      ...prev,
-                                      exploitedFilter:
-                                        prev.exploitedFilter === 'notExploited' ? 'all' : 'notExploited',
-                                    }))
-                                  }
-                                  size="small"
-                                  variant={
-                                    resourceNodeFilter.exploitedFilter === 'notExploited'
-                                      ? 'filled'
-                                      : 'outlined'
-                                  }
-                                  color={
-                                    resourceNodeFilter.exploitedFilter === 'notExploited'
-                                      ? 'warning'
-                                      : 'default'
-                                  }
-                                  sx={{ fontSize: '0.65rem', height: 22 }}
-                                />
-                                <Chip
-                                  label="Radar Visible"
-                                  onClick={() =>
-                                    setResourceNodeFilter((prev) => ({
-                                      ...prev,
-                                      radarVisibilityFilter:
-                                        prev.radarVisibilityFilter === 'visible' ? 'all' : 'visible',
-                                    }))
-                                  }
-                                  size="small"
-                                  variant={
-                                    resourceNodeFilter.radarVisibilityFilter === 'visible'
-                                      ? 'filled'
-                                      : 'outlined'
-                                  }
-                                  color={
-                                    resourceNodeFilter.radarVisibilityFilter === 'visible'
-                                      ? 'info'
-                                      : 'default'
-                                  }
-                                  sx={{ fontSize: '0.65rem', height: 22 }}
-                                />
-                                <Chip
-                                  label="Not Radar Visible"
-                                  onClick={() =>
-                                    setResourceNodeFilter((prev) => ({
-                                      ...prev,
-                                      radarVisibilityFilter:
-                                        prev.radarVisibilityFilter === 'notVisible' ? 'all' : 'notVisible',
-                                    }))
-                                  }
-                                  size="small"
-                                  variant={
-                                    resourceNodeFilter.radarVisibilityFilter === 'notVisible'
-                                      ? 'filled'
-                                      : 'outlined'
-                                  }
-                                  color={
-                                    resourceNodeFilter.radarVisibilityFilter === 'notVisible'
-                                      ? 'secondary'
-                                      : 'default'
-                                  }
-                                  sx={{ fontSize: '0.65rem', height: 22 }}
-                                />
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: 'text.secondary',
+                                    fontSize: '0.65rem',
+                                    minWidth: 60,
+                                  }}
+                                >
+                                  {rt.label}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                  {allPurities.map((p) => {
+                                    const isAvailable = availablePuritiesByResource
+                                      .get(rt.key)
+                                      ?.has(p.key);
+                                    if (!isAvailable) {
+                                      return <Box key={p.key} sx={{ width: 24, height: 24 }} />;
+                                    }
+                                    return (
+                                      <IconButton
+                                        key={p.key}
+                                        size="small"
+                                        onClick={() => toggleCell(rt.key, p.key)}
+                                        sx={{
+                                          width: 24,
+                                          height: 24,
+                                          p: 0,
+                                          border: `2px solid ${p.color}`,
+                                          borderRadius: '50%',
+                                          opacity: isCellEnabled(rt.key, p.key) ? 1 : 0.3,
+                                          backgroundColor: 'rgba(0,0,0,0.5)',
+                                          '&:hover': {
+                                            backgroundColor: 'rgba(0,0,0,0.7)',
+                                          },
+                                        }}
+                                      >
+                                        <Box
+                                          component="img"
+                                          src={`assets/images/satisfactory/32x32/${getResourceImageName(rt.key)}.png`}
+                                          sx={{ width: 16, height: 16, objectFit: 'contain' }}
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                          }}
+                                        />
+                                      </IconButton>
+                                    );
+                                  })}
+                                </Box>
                               </Box>
-                            </Box>
-                          )}
+                            ))}
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mb: 0.5, display: 'block' }}
+                          >
+                            Filters
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            <Chip
+                              label="Exploited"
+                              onClick={() =>
+                                setResourceNodeFilter((prev) => ({
+                                  ...prev,
+                                  exploitedFilter:
+                                    prev.exploitedFilter === 'exploited' ? 'all' : 'exploited',
+                                }))
+                              }
+                              size="small"
+                              variant={
+                                resourceNodeFilter.exploitedFilter === 'exploited'
+                                  ? 'filled'
+                                  : 'outlined'
+                              }
+                              color={
+                                resourceNodeFilter.exploitedFilter === 'exploited'
+                                  ? 'success'
+                                  : 'default'
+                              }
+                              sx={{ fontSize: '0.65rem', height: 22 }}
+                            />
+                            <Chip
+                              label="Not Exploited"
+                              onClick={() =>
+                                setResourceNodeFilter((prev) => ({
+                                  ...prev,
+                                  exploitedFilter:
+                                    prev.exploitedFilter === 'notExploited'
+                                      ? 'all'
+                                      : 'notExploited',
+                                }))
+                              }
+                              size="small"
+                              variant={
+                                resourceNodeFilter.exploitedFilter === 'notExploited'
+                                  ? 'filled'
+                                  : 'outlined'
+                              }
+                              color={
+                                resourceNodeFilter.exploitedFilter === 'notExploited'
+                                  ? 'warning'
+                                  : 'default'
+                              }
+                              sx={{ fontSize: '0.65rem', height: 22 }}
+                            />
+                            <Chip
+                              label="Radar Visible"
+                              onClick={() =>
+                                setResourceNodeFilter((prev) => ({
+                                  ...prev,
+                                  radarVisibilityFilter:
+                                    prev.radarVisibilityFilter === 'visible' ? 'all' : 'visible',
+                                }))
+                              }
+                              size="small"
+                              variant={
+                                resourceNodeFilter.radarVisibilityFilter === 'visible'
+                                  ? 'filled'
+                                  : 'outlined'
+                              }
+                              color={
+                                resourceNodeFilter.radarVisibilityFilter === 'visible'
+                                  ? 'info'
+                                  : 'default'
+                              }
+                              sx={{ fontSize: '0.65rem', height: 22 }}
+                            />
+                            <Chip
+                              label="Not Radar Visible"
+                              onClick={() =>
+                                setResourceNodeFilter((prev) => ({
+                                  ...prev,
+                                  radarVisibilityFilter:
+                                    prev.radarVisibilityFilter === 'notVisible'
+                                      ? 'all'
+                                      : 'notVisible',
+                                }))
+                              }
+                              size="small"
+                              variant={
+                                resourceNodeFilter.radarVisibilityFilter === 'notVisible'
+                                  ? 'filled'
+                                  : 'outlined'
+                              }
+                              color={
+                                resourceNodeFilter.radarVisibilityFilter === 'notVisible'
+                                  ? 'secondary'
+                                  : 'default'
+                              }
+                              sx={{ fontSize: '0.65rem', height: 22 }}
+                            />
+                          </Box>
                         </Box>
                       </Collapse>
                     )}
@@ -1298,7 +1405,7 @@ export function MapView() {
               },
             }}
           >
-            <Box sx={{ p: 2, minWidth: 200 }}>
+            <Box sx={{ p: 2, width: 220 }}>
               <Typography variant="subtitle2" sx={{ mb: 2 }}>
                 Map Settings
               </Typography>
@@ -1356,7 +1463,7 @@ export function MapView() {
             }}
           >
             <TileLayer
-              url="assets/images/satisfactory/map/1732184952/{z}/{x}/{y}.png"
+              url={`assets/images/satisfactory/map/1763022054/${useGameMapStyle ? 'game' : 'realistic'}/{z}/{x}/{y}.png`}
               tileSize={256}
               minZoom={3}
               maxZoom={8}
@@ -1364,6 +1471,7 @@ export function MapView() {
             />
             <Overlay
               machineGroups={machineGroups}
+              selectedItems={selectedItems}
               onSelectItem={handleSelectItem}
               onZoomEnd={setZoom}
               onDragStart={handleDragStart}
@@ -1399,17 +1507,22 @@ export function MapView() {
               spaceElevator={displayData.spaceElevator}
               radarTowers={displayData.radarTowers}
               resourceNodes={displayData.resourceNodes}
-              resourceSubLayers={resourceSubLayers}
               resourceNodeFilter={resourceNodeFilter}
+              towerVisibilityData={towerVisibilityData}
+              hypertubes={displayData.hypertubes}
+              hypertubeEntrances={displayData.hypertubeEntrances}
             />
           </MapContainer>
 
           {/* Only render sidebar on mobile or when something is selected */}
-          {(isMobile || selectedItem) && (
+          {(isMobile || selectedItems.length > 0) && (
             <SelectionSidebar
-              selectedItem={selectedItem}
+              selectedItems={selectedItems}
+              activeTabIndex={activeTabIndex}
+              onTabChange={setActiveTabIndex}
+              onTabClose={removeSelection}
               isMobile={isMobile}
-              onClose={() => setSelectedItem(null)}
+              onClose={clearSelections}
             />
           )}
         </Box>

@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Marker, Rectangle, useMap, useMapEvents } from 'react-leaflet';
 import {
   Belt,
@@ -7,6 +7,8 @@ import {
   Drone,
   DroneStation,
   Explorer,
+  Hypertube,
+  HypertubeEntrance,
   Machine,
   MachineCategory,
   MachineCategoryExtractor,
@@ -45,17 +47,16 @@ import { ResourceNodesLayer } from './layers/resourceNodesLayer';
 import { TractorVehicleLayer } from './layers/tractorVehicleLayer';
 import { TrainVehicleLayer } from './layers/trainVehicleLayer';
 import { TruckVehicleLayer } from './layers/truckVehicleLayer';
-import { RadarTowerSidebar } from './radarTowerSidebar';
 import { TractorRouteOverlay } from './tractorRouteOverlay';
 import { TrainRouteOverlay } from './trainRouteOverlay';
 import { TruckRouteOverlay } from './truckRouteOverlay';
 import { VehiclePathsOverlay } from './vehiclePathsOverlay';
+import { TowerVisibilityData } from './utils/resourceNodeUtils';
 import {
   BuildingSubLayer,
   InfrastructureSubLayer,
   MapLayer,
   ResourceNodeFilter,
-  ResourceSubLayer,
   VehicleSubLayer,
 } from './view/map-view';
 
@@ -103,6 +104,7 @@ const droneStationColor = '#4A5A6A'; // Dark cool grey
 
 type OverlayProps = {
   machineGroups: MachineGroup[];
+  selectedItems: SelectedMapItem[];
   onSelectItem: (item: SelectedMapItem | null) => void;
   onZoomEnd: (zoom: number) => void;
   onDragStart?: () => void;
@@ -138,18 +140,21 @@ type OverlayProps = {
   spaceElevator?: SpaceElevator | null;
   radarTowers?: RadarTower[];
   resourceNodes?: ResourceNode[];
-  resourceSubLayers?: Set<ResourceSubLayer>;
   resourceNodeFilter?: ResourceNodeFilter;
+  towerVisibilityData?: TowerVisibilityData[];
+  hypertubes?: Hypertube[];
+  hypertubeEntrances?: HypertubeEntrance[];
 };
 
 export function Overlay({
   machineGroups,
+  selectedItems,
   onSelectItem,
   onZoomEnd,
   onDragStart,
   onDragEnd,
   multiSelectMode = false,
-  isMobile = false,
+  isMobile: _isMobile = false,
   enabledLayers,
   belts,
   pipes,
@@ -179,8 +184,10 @@ export function Overlay({
   spaceElevator,
   radarTowers,
   resourceNodes,
-  resourceSubLayers,
   resourceNodeFilter,
+  towerVisibilityData,
+  hypertubes,
+  hypertubeEntrances,
 }: OverlayProps) {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{
@@ -193,9 +200,10 @@ export function Overlay({
   const [hoveredItem, setHoveredItem] = useState<HoveredItem | null>(null);
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
 
-  // Selected radar tower state
-  const [selectedRadarTower, setSelectedRadarTower] = useState<string | null>(null);
-
+  // Derive all selected radar tower IDs from selectedItems
+  const selectedRadarTowerIds = selectedItems
+    .filter((item) => item.type === 'radarTower')
+    .map((item) => item.data.id);
 
   // Get map instance for coordinate conversions
   const map = useMap();
@@ -256,7 +264,7 @@ export function Overlay({
     setClickedInfraItem(null);
   };
 
-  const handleItemHover = (event: HoverEvent) => {
+  const handleItemHover = useCallback((event: HoverEvent) => {
     if (event.item === null) {
       setHoveredItem(null);
       setHoverPosition(null);
@@ -264,35 +272,26 @@ export function Overlay({
       setHoveredItem(event.item);
       setHoverPosition(event.position);
     }
-  };
+  }, []);
 
-  const handleResourceNodeHover = (event: {
-    node: ResourceNode | null;
-    position: { x: number; y: number } | null;
-  }) => {
-    if (event.node === null) {
-      setHoveredItem(null);
-      setHoverPosition(null);
-    } else {
-      setHoveredItem({ type: 'resourceNode', data: event.node });
-      setHoverPosition(event.position);
-    }
-  };
+  const handleResourceNodeHover = useCallback(
+    (event: { node: ResourceNode | null; position: { x: number; y: number } | null }) => {
+      if (event.node === null) {
+        setHoveredItem(null);
+        setHoverPosition(null);
+      } else {
+        setHoveredItem({ type: 'resourceNode', data: event.node });
+        setHoverPosition(event.position);
+      }
+    },
+    []
+  );
 
-  const handleRadarTowerClick = (
-    tower: RadarTower,
-    _containerPoint: { x: number; y: number }
-  ) => {
+  const handleRadarTowerClick = (tower: RadarTower, _containerPoint: { x: number; y: number }) => {
     ignoreMapClickRef.current = true;
-    if (selectedRadarTower === tower.id) {
-      // Clicking selected tower → deselect
-      setSelectedRadarTower(null);
-    } else {
-      // Clicking unselected tower → select
-      setSelectedRadarTower(tower.id);
-    }
+    // Use onSelectItem - the toggle logic is handled by the parent
+    onSelectItem({ type: 'radarTower', data: tower });
   };
-
 
   const handleTrainClick = (train: Train, animatedPos: AnimatedPosition) => {
     clearAllVehicleSelections();
@@ -557,20 +556,19 @@ export function Overlay({
     }
   }, [vehicleSubLayers, selectedExplorerName]);
 
-  // Clear radar tower selection when the radarTowers sub-layer is disabled
+  // Clear resource node hover tooltip when all radar towers are deselected AND resources layer is off
+  // (nodes would disappear from DOM in that case)
   useEffect(() => {
-    if (!buildingSubLayers.has('radarTowers') && selectedRadarTower) {
-      setSelectedRadarTower(null);
-    }
-  }, [buildingSubLayers, selectedRadarTower]);
-
-  // Clear resource node hover tooltip when radar tower is deselected (nodes disappear from DOM)
-  useEffect(() => {
-    if (!selectedRadarTower && hoveredItem?.type === 'resourceNode') {
+    const resourcesLayerEnabled = enabledLayers.has('resources');
+    if (
+      selectedRadarTowerIds.length === 0 &&
+      !resourcesLayerEnabled &&
+      hoveredItem?.type === 'resourceNode'
+    ) {
       setHoveredItem(null);
       setHoverPosition(null);
     }
-  }, [selectedRadarTower, hoveredItem?.type]);
+  }, [selectedRadarTowerIds.length, hoveredItem?.type, enabledLayers]);
 
   // Get all entity types present in a group
   const getGroupEntityTypes = (group: MachineGroup) => {
@@ -592,10 +590,13 @@ export function Overlay({
   };
 
   // Create unified icon for a group that may contain machines, train stations, and/or drone stations
-  const createUnifiedGroupIcon = (group: MachineGroup) => {
+  const createUnifiedGroupIcon = (group: MachineGroup, isSelected: boolean = false) => {
     const entityTypes = getGroupEntityTypes(group);
     const totalCount = getGroupTotalCount(group);
     const showBadge = totalCount > 1;
+
+    // Selection outline style
+    const outlineStyle = isSelected ? 'outline: 3px solid #3b82f6; outline-offset: 2px;' : '';
 
     // Collect SVGs based on what's in the group
     const svgs: string[] = [];
@@ -645,7 +646,7 @@ export function Overlay({
       // 1-2 icons: single row
       const width = svgs.length === 1 ? size : size * 1.2;
       iconHtml = `
-        <div style="position: relative; background-color: ${backgroundColor}; border-radius: 50%; padding: 7px; width: ${width}px; height: ${size}px; display: flex; justify-content: center; align-items: center; gap: 2px; pointer-events: auto; cursor: pointer;">
+        <div style="position: relative; background-color: ${backgroundColor}; border-radius: 50%; padding: 7px; width: ${width}px; height: ${size}px; display: flex; justify-content: center; align-items: center; gap: 2px; pointer-events: auto; cursor: pointer; ${outlineStyle}">
           ${svgs.join('')}
           ${
             showBadge
@@ -667,7 +668,7 @@ export function Overlay({
         `<div style="width: ${iconSize}px; height: ${iconSize}px; color: white;">${svg}</div>`;
 
       iconHtml = `
-        <div style="position: relative; background-color: ${backgroundColor}; border-radius: 12px; padding: 6px; width: ${width}px; height: ${height}px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; pointer-events: auto; cursor: pointer;">
+        <div style="position: relative; background-color: ${backgroundColor}; border-radius: 12px; padding: 6px; width: ${width}px; height: ${height}px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; pointer-events: auto; cursor: pointer; ${outlineStyle}">
           <div style="display: flex; justify-content: center; gap: 4px;">
             ${topRow.map(wrapSvg).join('')}
           </div>
@@ -718,13 +719,16 @@ export function Overlay({
         buildingOpacity={buildingOpacity}
         spaceElevator={spaceElevator}
         showSpaceElevator={buildingSubLayers.has('spaceElevator')}
+        hypertubes={hypertubes}
+        hypertubeEntrances={hypertubeEntrances}
+        showHypertubes={infrastructureSubLayers.has('hypertubes')}
       />
 
       {buildingSubLayers.has('radarTowers') && radarTowers && (
         <RadarTowerLayer
           radarTowers={radarTowers}
           enabled={true}
-          selectedId={selectedRadarTower}
+          selectedIds={selectedRadarTowerIds}
           onRadarTowerClick={handleRadarTowerClick}
           onResourceNodeHover={handleResourceNodeHover}
           opacity={buildingOpacity}
@@ -734,12 +738,11 @@ export function Overlay({
       {/* Resource Nodes Layer */}
       {enabledLayers.has('resources') &&
         resourceNodes &&
-        resourceSubLayers &&
-        resourceNodeFilter && (
+        resourceNodeFilter &&
+        towerVisibilityData && (
           <ResourceNodesLayer
             resourceNodes={resourceNodes}
-            radarTowers={radarTowers ?? []}
-            resourceSubLayers={resourceSubLayers}
+            towerVisibilityData={towerVisibilityData}
             filter={resourceNodeFilter}
             enabled={true}
             onNodeHover={handleResourceNodeHover}
@@ -873,24 +876,16 @@ export function Overlay({
       <ItemPopover item={clickedInfraItem} onClose={handleClosePopover} />
 
       {/* Hover tooltip for infrastructure */}
-      {hoveredItem && hoverPosition && (
-        <HoverTooltip item={hoveredItem} position={hoverPosition} />
-      )}
-
-      {/* Selected radar tower sidebar */}
-      <RadarTowerSidebar
-        tower={
-          selectedRadarTower ? radarTowers?.find((t) => t.id === selectedRadarTower) ?? null : null
-        }
-        isMobile={isMobile}
-        onClose={() => setSelectedRadarTower(null)}
-      />
+      {hoveredItem && hoverPosition && <HoverTooltip item={hoveredItem} position={hoverPosition} />}
 
       {/* Unified Groups (machines + train stations + drone stations) */}
       {enabledLayers.has('machineGroups') &&
         machineGroups.map((group, index) => {
           const position = ConvertToMapCoords2(group.center.x, group.center.y);
-          const icon = createUnifiedGroupIcon(group);
+          const isSelected = selectedItems.some(
+            (item) => item.type === 'machineGroup' && item.data.hash === group.hash
+          );
+          const icon = createUnifiedGroupIcon(group, isSelected);
 
           return (
             <Marker
@@ -900,7 +895,12 @@ export function Overlay({
                 click: (e) => {
                   console.log('Machine group clicked:', group.hash);
                   e.originalEvent.stopPropagation();
-                  onSelectItem({ type: 'machineGroup', data: group });
+                  // Toggle selection - deselect if already selected
+                  if (isSelected) {
+                    onSelectItem(null);
+                  } else {
+                    onSelectItem({ type: 'machineGroup', data: group });
+                  }
                 },
               }}
               icon={icon}

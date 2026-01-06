@@ -5,6 +5,8 @@ import {
   Belt,
   Cable,
   DroneStation,
+  Hypertube,
+  HypertubeEntrance,
   Location,
   Machine,
   MachineCategory,
@@ -74,6 +76,8 @@ const DRONE_STATION_COLOR = '#4A5A6A'; // Dark cool grey
 const TRUCK_STATION_COLOR = '#8B5A2B'; // Saddle brown for truck stations
 const STORAGE_COLOR = '#8B4513'; // Brown/tan for storage containers
 const SPACE_ELEVATOR_COLOR = '#9333EA'; // Purple for space elevator
+const HYPERTUBE_COLOR = '#00CED1'; // Dark cyan/teal for hypertubes
+const HYPERTUBE_ENTRANCE_COLOR = '#20B2AA'; // Light sea green for entrances
 
 type InfrastructureOverlayProps = {
   enabledLayers: Set<MapLayer>;
@@ -101,6 +105,9 @@ type InfrastructureOverlayProps = {
   buildingOpacity?: number;
   spaceElevator?: SpaceElevator | null;
   showSpaceElevator?: boolean;
+  hypertubes?: Hypertube[];
+  hypertubeEntrances?: HypertubeEntrance[];
+  showHypertubes?: boolean;
 };
 
 // Convert spline data to map coordinates
@@ -337,8 +344,7 @@ function TrainStationLayer({
 
         // Determine color based on mode
         const gridColors = getGridColor(station.circuitGroupId);
-        const stationColor =
-          buildingColorMode === 'grid' ? gridColors.fill : TRAIN_STATION_COLOR;
+        const stationColor = buildingColorMode === 'grid' ? gridColors.fill : TRAIN_STATION_COLOR;
         const platformColor =
           buildingColorMode === 'grid' ? gridColors.stroke : TRAIN_STATION_PLATFORM_COLOR;
 
@@ -425,8 +431,7 @@ function DroneStationLayer({
 
         // Determine color based on mode
         const gridColors = getGridColor(station.circuitGroupId);
-        const stationColor =
-          buildingColorMode === 'grid' ? gridColors.fill : DRONE_STATION_COLOR;
+        const stationColor = buildingColorMode === 'grid' ? gridColors.fill : DRONE_STATION_COLOR;
 
         return (
           <Rectangle
@@ -479,8 +484,7 @@ function TruckStationLayer({
 
         // Determine color based on mode
         const gridColors = getGridColor(station.circuitGroupId);
-        const stationColor =
-          buildingColorMode === 'grid' ? gridColors.fill : TRUCK_STATION_COLOR;
+        const stationColor = buildingColorMode === 'grid' ? gridColors.fill : TRUCK_STATION_COLOR;
 
         return (
           <Rectangle
@@ -633,6 +637,79 @@ function SpaceElevatorLayer({
   );
 }
 
+// Hypertube layer component (includes hypertube entrances)
+function HypertubeLayer({
+  hypertubes,
+  hypertubeEntrances,
+  onItemHover,
+}: {
+  hypertubes: Hypertube[];
+  hypertubeEntrances: HypertubeEntrance[];
+  onItemHover?: (event: HoverEvent) => void;
+}) {
+  return (
+    <>
+      {/* Hypertube polylines */}
+      {hypertubes.map((tube) => {
+        const positions =
+          tube.splineData.length > 0
+            ? convertSplineToMapCoords(tube.splineData)
+            : [
+                ConvertToMapCoords2(tube.location0.x, tube.location0.y),
+                ConvertToMapCoords2(tube.location1.x, tube.location1.y),
+              ];
+
+        return (
+          <Polyline
+            key={tube.id}
+            positions={positions}
+            pathOptions={{
+              color: HYPERTUBE_COLOR,
+              weight: 3,
+              opacity: 0.8,
+            }}
+            eventHandlers={{
+              mouseover: (e) =>
+                onItemHover?.({
+                  item: { type: 'hypertube', data: tube },
+                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
+                }),
+              mouseout: () => onItemHover?.({ item: null, position: null }),
+            }}
+          />
+        );
+      })}
+
+      {/* Hypertube entrance markers */}
+      {hypertubeEntrances.map((entrance) => {
+        const position = ConvertToMapCoords2(entrance.x, entrance.y);
+
+        return (
+          <CircleMarker
+            key={entrance.id}
+            center={position}
+            radius={5}
+            pathOptions={{
+              color: HYPERTUBE_ENTRANCE_COLOR,
+              fillColor: HYPERTUBE_ENTRANCE_COLOR,
+              fillOpacity: 0.8,
+              weight: 2,
+            }}
+            eventHandlers={{
+              mouseover: (e) =>
+                onItemHover?.({
+                  item: { type: 'hypertubeEntrance', data: entrance },
+                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
+                }),
+              mouseout: () => onItemHover?.({ item: null, position: null }),
+            }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 function arePropsEqual(
   prev: InfrastructureOverlayProps,
   next: InfrastructureOverlayProps
@@ -647,7 +724,8 @@ function arePropsEqual(
     prev.showTruckStations !== next.showTruckStations ||
     prev.buildingColorMode !== next.buildingColorMode ||
     prev.buildingOpacity !== next.buildingOpacity ||
-    prev.showSpaceElevator !== next.showSpaceElevator
+    prev.showSpaceElevator !== next.showSpaceElevator ||
+    prev.showHypertubes !== next.showHypertubes
   ) {
     return false;
   }
@@ -677,7 +755,9 @@ function arePropsEqual(
     (prev.trainStations?.length ?? 0) !== (next.trainStations?.length ?? 0) ||
     (prev.droneStations?.length ?? 0) !== (next.droneStations?.length ?? 0) ||
     (prev.truckStations?.length ?? 0) !== (next.truckStations?.length ?? 0) ||
-    (prev.spaceElevator != null) !== (next.spaceElevator != null)
+    (prev.spaceElevator != null) !== (next.spaceElevator != null) ||
+    (prev.hypertubes?.length ?? 0) !== (next.hypertubes?.length ?? 0) ||
+    (prev.hypertubeEntrances?.length ?? 0) !== (next.hypertubeEntrances?.length ?? 0)
   ) {
     return false;
   }
@@ -717,6 +797,9 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
   buildingOpacity = 0.5,
   spaceElevator,
   showSpaceElevator = false,
+  hypertubes = [],
+  hypertubeEntrances = [],
+  showHypertubes: showHypertubesProp = false,
 }: InfrastructureOverlayProps) {
   const showBeltsLayer = showBeltsProp && belts.length > 0;
   const showPipesLayer = showPipesProp && pipes.length > 0;
@@ -729,6 +812,8 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
   const showDroneStationMarkers = showDroneStations && droneStations.length > 0;
   const showTruckStationMarkers = showTruckStations && truckStations.length > 0;
   const showSpaceElevatorLayer = showSpaceElevator && spaceElevator != null;
+  const showHypertubesLayer =
+    showHypertubesProp && (hypertubes.length > 0 || hypertubeEntrances.length > 0);
 
   // Handle machine hover from canvas layer
   const handleMachineHover = React.useCallback(
@@ -756,7 +841,8 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
     !showTrainStationMarkers &&
     !showDroneStationMarkers &&
     !showTruckStationMarkers &&
-    !showSpaceElevatorLayer
+    !showSpaceElevatorLayer &&
+    !showHypertubesLayer
   ) {
     return null;
   }
@@ -779,38 +865,22 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
       )}
 
       {/* Train rails (thicker lines) */}
-      {showTrainRails && (
-        <TrainRailLayer
-          trainRails={trainRails}
-          onItemHover={onItemHover}
-        />
-      )}
+      {showTrainRails && <TrainRailLayer trainRails={trainRails} onItemHover={onItemHover} />}
 
       {/* Power cables */}
-      {showPower && (
-        <CableLayer cables={cables} onItemHover={onItemHover} />
-      )}
+      {showPower && <CableLayer cables={cables} onItemHover={onItemHover} />}
 
       {/* Belts */}
-      {showBeltsLayer && (
-        <BeltLayer belts={belts} onItemHover={onItemHover} />
-      )}
+      {showBeltsLayer && <BeltLayer belts={belts} onItemHover={onItemHover} />}
 
       {/* Splitter/Mergers (rendered with belts layer) */}
       {showSplitterMergers && (
-        <SplitterMergerLayer
-          splitterMergers={splitterMergers}
-          onItemHover={onItemHover}
-        />
+        <SplitterMergerLayer splitterMergers={splitterMergers} onItemHover={onItemHover} />
       )}
 
       {/* Pipes + junctions */}
       {showPipesLayer && (
-        <PipeLayer
-          pipes={pipes}
-          pipeJunctions={pipeJunctions}
-          onItemHover={onItemHover}
-        />
+        <PipeLayer pipes={pipes} pipeJunctions={pipeJunctions} onItemHover={onItemHover} />
       )}
 
       {/* Train stations */}
@@ -849,6 +919,15 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
           spaceElevator={spaceElevator}
           onItemHover={onItemHover}
           opacity={buildingOpacity}
+        />
+      )}
+
+      {/* Hypertubes */}
+      {showHypertubesLayer && (
+        <HypertubeLayer
+          hypertubes={hypertubes}
+          hypertubeEntrances={hypertubeEntrances}
+          onItemHover={onItemHover}
         />
       )}
     </>
