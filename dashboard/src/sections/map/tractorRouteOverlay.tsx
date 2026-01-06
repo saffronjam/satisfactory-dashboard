@@ -8,8 +8,9 @@ import {
   TractorStatusSelfDriving,
 } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
-import { fShortenNumber, MetricUnits } from 'src/utils/format-number';
+import { fShortenNumber } from 'src/utils/format-number';
 import { ConvertToMapCoords2 } from './bounds';
+import { LocationInfo } from './components/locationInfo';
 
 interface AnimatedPosition {
   x: number;
@@ -152,7 +153,7 @@ function TractorRouteOverlayInner({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Iconify icon="mdi:gas-station" width={14} sx={{ color: 'text.secondary' }} />
                 <Typography variant="caption" color="text.secondary">
-                  Fuel: {fShortenNumber(tractor.fuel.amount, MetricUnits, { decimals: 1 })}
+                  Fuel: {fShortenNumber(tractor.fuel.amount, [], { decimals: 1 })}
                 </Typography>
               </Box>
             </Box>
@@ -200,7 +201,7 @@ function TractorRouteOverlayInner({
                       }}
                     />
                     <Typography variant="caption" color="text.primary">
-                      {fShortenNumber(item.count, MetricUnits, { decimals: 1 })}
+                      {fShortenNumber(item.count, [], { decimals: 1 })}
                     </Typography>
                     <Typography
                       variant="caption"
@@ -223,6 +224,8 @@ function TractorRouteOverlayInner({
               </Typography>
             </Box>
           )}
+
+          <LocationInfo x={tractor.x} y={tractor.y} z={tractor.z} />
         </Paper>
       )}
     </>

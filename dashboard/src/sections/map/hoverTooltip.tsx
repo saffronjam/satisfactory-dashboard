@@ -4,6 +4,8 @@ import {
   Belt,
   Cable,
   DroneStation,
+  Hypertube,
+  HypertubeEntrance,
   Machine,
   MachineStatusIdle,
   MachineStatusOperating,
@@ -24,6 +26,7 @@ import {
 import { getPurityLabel, PURITY_COLORS } from './utils/radarTowerUtils';
 import { Iconify } from 'src/components/iconify';
 import { fShortenNumber, MetricUnits, WattUnits } from 'src/utils/format-number';
+import { LocationInfo } from './components/locationInfo';
 
 // CSS animation for docking pulse on platform arrows
 const dockingPulseStyles = `
@@ -50,7 +53,9 @@ export type HoveredItem =
   | { type: 'droneStation'; data: DroneStation }
   | { type: 'truckStation'; data: TruckStation }
   | { type: 'spaceElevator'; data: SpaceElevator }
-  | { type: 'resourceNode'; data: ResourceNode };
+  | { type: 'resourceNode'; data: ResourceNode }
+  | { type: 'hypertube'; data: Hypertube }
+  | { type: 'hypertubeEntrance'; data: HypertubeEntrance };
 
 interface HoverTooltipProps {
   item: HoveredItem;
@@ -100,6 +105,11 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                 </Typography>
               )}
             </Box>
+            <LocationInfo
+              x={item.data.location0.x}
+              y={item.data.location0.y}
+              z={item.data.location0.z}
+            />
           </>
         );
 
@@ -122,6 +132,11 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                 </Typography>
               )}
             </Box>
+            <LocationInfo
+              x={item.data.location0.x}
+              y={item.data.location0.y}
+              z={item.data.location0.z}
+            />
           </>
         );
 
@@ -134,10 +149,11 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
             <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.75rem' }}>
               {item.data.name || 'Junction'}
             </Typography>
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
           </>
         );
 
-      case 'splitterMerger':
+      case 'splitterMerger': {
         const isMerger = item.data.type.toLowerCase().includes('merger');
         return (
           <>
@@ -147,8 +163,10 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
             <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.75rem' }}>
               {item.data.type}
             </Typography>
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
           </>
         );
+      }
 
       case 'cable':
         return (
@@ -166,6 +184,11 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
             >
               {formatLength(item.data.length)}
             </Typography>
+            <LocationInfo
+              x={item.data.location0.x}
+              y={item.data.location0.y}
+              z={item.data.location0.z}
+            />
           </>
         );
 
@@ -185,6 +208,11 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
             >
               {formatLength(item.data.length)}
             </Typography>
+            <LocationInfo
+              x={item.data.location0.x}
+              y={item.data.location0.y}
+              z={item.data.location0.z}
+            />
           </>
         );
 
@@ -252,6 +280,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                   Max {fShortenNumber(maxMW, WattUnits, { decimals: 1 })}
                 </Typography>
               </Box>
+              <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
             </>
           );
         }
@@ -290,7 +319,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Box
                   component="img"
-                  src={`assets/images/satisfactory/64x64/${recipe}.png`}
+                  src={`assets/images/satisfactory/32x32/${recipe}.png`}
                   alt={recipe}
                   sx={{ width: 14, height: 14, objectFit: 'contain', flexShrink: 0 }}
                   onError={(e) => {
@@ -310,6 +339,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                 </Typography>
               </Box>
             )}
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
           </>
         );
       }
@@ -344,7 +374,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                     >
                       <Box
                         component="img"
-                        src={`assets/images/satisfactory/64x64/${invItem.name}.png`}
+                        src={`assets/images/satisfactory/32x32/${invItem.name}.png`}
                         alt={invItem.name}
                         sx={{ width: 14, height: 14, objectFit: 'contain', flexShrink: 0 }}
                       />
@@ -389,6 +419,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                 Empty
               </Typography>
             )}
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
           </>
         );
       }
@@ -524,7 +555,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                               >
                                 <Box
                                   component="img"
-                                  src={`assets/images/satisfactory/64x64/${invItem.name}.png`}
+                                  src={`assets/images/satisfactory/32x32/${invItem.name}.png`}
                                   alt={invItem.name}
                                   sx={{
                                     width: 12,
@@ -575,6 +606,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                 No platforms
               </Typography>
             )}
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
           </>
         );
       }
@@ -602,6 +634,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                 )}
               </Box>
             }
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
           </>
         );
 
@@ -623,6 +656,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                 Transfer: {fShortenNumber(item.data.transferRate, MetricUnits, { decimals: 1 })}/s
               </Typography>
             )}
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
           </>
         );
 
@@ -694,7 +728,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                         >
                           <Box
                             component="img"
-                            src={`assets/images/satisfactory/64x64/${obj.name}.png`}
+                            src={`assets/images/satisfactory/32x32/${obj.name}.png`}
                             alt={obj.name}
                             sx={{ width: 14, height: 14, objectFit: 'contain', flexShrink: 0 }}
                             onError={(e) => {
@@ -744,6 +778,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                 })}
               </Box>
             )}
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
           </>
         );
       }
@@ -770,7 +805,7 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Box
                   component="img"
-                  src={`assets/images/satisfactory/64x64/${item.data.name}.png`}
+                  src={`assets/images/satisfactory/32x32/${item.data.name}.png`}
                   alt={item.data.name}
                   sx={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0 }}
                   onError={(e) => {
@@ -798,9 +833,40 @@ function HoverTooltipInner({ item, position }: HoverTooltipProps) {
                 {purityLabel}
               </Typography>
             </Box>
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
           </>
         );
       }
+
+      case 'hypertube':
+        return (
+          <>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+              Hypertube
+            </Typography>
+            <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.75rem' }}>
+              Hypertube Segment
+            </Typography>
+            <LocationInfo
+              x={item.data.location0.x}
+              y={item.data.location0.y}
+              z={item.data.location0.z}
+            />
+          </>
+        );
+
+      case 'hypertubeEntrance':
+        return (
+          <>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+              Hypertube Entrance
+            </Typography>
+            <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.75rem' }}>
+              Entrance
+            </Typography>
+            <LocationInfo x={item.data.x} y={item.data.y} z={item.data.z} />
+          </>
+        );
     }
   };
 

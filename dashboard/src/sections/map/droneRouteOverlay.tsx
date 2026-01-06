@@ -4,8 +4,9 @@ import { memo, useCallback, useEffect, useState } from 'react';
 import { Polyline, useMap, useMapEvents } from 'react-leaflet';
 import { Drone, DroneStation, DroneStatusDocking, DroneStatusFlying } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
-import { fShortenNumber, MetricUnits } from 'src/utils/format-number';
+import { fShortenNumber } from 'src/utils/format-number';
 import { ConvertToMapCoords2 } from './bounds';
+import { LocationInfo } from './components/locationInfo';
 
 interface AnimatedPosition {
   x: number;
@@ -261,8 +262,7 @@ function DroneRouteOverlayInner({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Iconify icon="mdi:gas-station" width={14} sx={{ color: 'text.secondary' }} />
                 <Typography variant="caption" color="text.secondary">
-                  Dest. Fuel:{' '}
-                  {fShortenNumber(destinationStation.fuel.amount, MetricUnits, { decimals: 1 })}
+                  Dest. Fuel: {fShortenNumber(destinationStation.fuel.amount, [], { decimals: 1 })}
                 </Typography>
               </Box>
             </Box>
@@ -274,6 +274,8 @@ function DroneRouteOverlayInner({
               Speed: {drone.speed.toFixed(0)} km/h
             </Typography>
           </Box>
+
+          <LocationInfo x={drone.x ?? 0} y={drone.y ?? 0} z={drone.z} />
         </Paper>
       )}
 

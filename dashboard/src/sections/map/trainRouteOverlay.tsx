@@ -10,8 +10,9 @@ import {
   TrainTypeLocomotive,
   TrainVehicle,
 } from 'src/apiTypes';
-import { fShortenNumber, MetricUnits } from 'src/utils/format-number';
+import { fShortenNumber } from 'src/utils/format-number';
 import { ConvertToMapCoords2 } from './bounds';
+import { LocationInfo } from './components/locationInfo';
 
 interface AnimatedPosition {
   x: number;
@@ -329,7 +330,7 @@ function TrainRouteOverlayInner({
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              {fShortenNumber(item.count, MetricUnits, { decimals: 1 })}
+                              {fShortenNumber(item.count, [], { decimals: 1 })}
                             </Typography>
                           </Box>
                         ))}
@@ -359,6 +360,8 @@ function TrainRouteOverlayInner({
               Speed: {train.speed.toFixed(0)} km/h
             </Typography>
           </Box>
+
+          <LocationInfo x={train.x} y={train.y} z={train.z} />
         </Paper>
       )}
 

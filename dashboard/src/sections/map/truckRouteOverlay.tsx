@@ -8,8 +8,9 @@ import {
   TruckStatusSelfDriving,
 } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
-import { fShortenNumber, MetricUnits } from 'src/utils/format-number';
+import { fShortenNumber } from 'src/utils/format-number';
 import { ConvertToMapCoords2 } from './bounds';
+import { LocationInfo } from './components/locationInfo';
 
 interface AnimatedPosition {
   x: number;
@@ -52,7 +53,13 @@ const getStatusLabel = (status: string): string => {
   }
 };
 
-function TruckRouteOverlayInner({ truck, onHide, onClose, animatedPosition, showPopover = true }: TruckRouteOverlayProps) {
+function TruckRouteOverlayInner({
+  truck,
+  onHide,
+  onClose,
+  animatedPosition,
+  showPopover = true,
+}: TruckRouteOverlayProps) {
   const map = useMap();
   const [screenPos, setScreenPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -146,7 +153,7 @@ function TruckRouteOverlayInner({ truck, onHide, onClose, animatedPosition, show
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Iconify icon="mdi:gas-station" width={14} sx={{ color: 'text.secondary' }} />
                 <Typography variant="caption" color="text.secondary">
-                  Fuel: {fShortenNumber(truck.fuel.amount, MetricUnits, { decimals: 1 })}
+                  Fuel: {fShortenNumber(truck.fuel.amount, [], { decimals: 1 })}
                 </Typography>
               </Box>
             </Box>
@@ -194,7 +201,7 @@ function TruckRouteOverlayInner({ truck, onHide, onClose, animatedPosition, show
                       }}
                     />
                     <Typography variant="caption" color="text.primary">
-                      {fShortenNumber(item.count, MetricUnits, { decimals: 1 })}
+                      {fShortenNumber(item.count, [], { decimals: 1 })}
                     </Typography>
                     <Typography
                       variant="caption"
@@ -217,6 +224,8 @@ function TruckRouteOverlayInner({ truck, onHide, onClose, animatedPosition, show
               </Typography>
             </Box>
           )}
+
+          <LocationInfo x={truck.x} y={truck.y} z={truck.z} />
         </Paper>
       )}
     </>
