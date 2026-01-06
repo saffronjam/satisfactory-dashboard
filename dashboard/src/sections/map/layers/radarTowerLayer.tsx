@@ -1,36 +1,63 @@
 import L from 'leaflet';
 import { memo, useMemo } from 'react';
-import { Circle, Marker, Polygon } from 'react-leaflet';
+import { Circle, Marker } from 'react-leaflet';
 import { RadarTower, ResourceNode } from 'src/apiTypes';
 import { ConvertToMapCoords2 } from '../bounds';
-import { rotatePoint, toRotationRad } from '../utils';
-import { createResourceNodeIcon } from '../utils/resourceNodeUtils';
+import { getResourceNodeIcon } from '../utils/resourceNodeUtils';
 import { RADAR_TOWER_COLOR } from '../utils/radarTowerUtils';
 
-// Get rotated bounding box corners
-function getRotatedBoundingBoxCorners(
-  minX: number,
-  minY: number,
-  maxX: number,
-  maxY: number,
-  rotation: number
-): L.LatLngExpression[] {
-  const centerX = (minX + maxX) / 2;
-  const centerY = (minY + maxY) / 2;
-  const rotationRad = toRotationRad(rotation || 0);
+// Radar icon SVG (material-symbols:radar)
+const radarIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8s8 3.58 8 8s-3.58 8-8 8m4.95-12.95L15.54 8.46A4.96 4.96 0 0 1 17 12c0 2.76-2.24 5-5 5s-5-2.24-5-5s2.24-5 5-5c1.38 0 2.64.56 3.54 1.46l1.41-1.41A6.96 6.96 0 0 0 12 5c-3.87 0-7 3.13-7 7s3.13 7 7 7s7-3.13 7-7c0-1.93-.78-3.68-2.05-4.95M14 12c0 1.1-.9 2-2 2s-2-.9-2-2s.9-2 2-2s2 .9 2 2"/>
+</svg>`;
 
-  const corners = [
-    { x: minX, y: minY },
-    { x: maxX, y: minY },
-    { x: maxX, y: maxY },
-    { x: minX, y: maxY },
-  ];
+// Create radar tower icon
+const createRadarTowerIcon = (isSelected: boolean) => {
+  const size = 28;
+  const containerSize = size + 12;
+  const color = RADAR_TOWER_COLOR;
 
-  return corners.map((corner) => {
-    const rotated = rotatePoint(corner.x, corner.y, centerX, centerY, rotationRad);
-    return ConvertToMapCoords2(rotated.x, rotated.y);
+  return L.divIcon({
+    className: 'radar-tower-marker',
+    html: `
+      <div style="
+        width: ${containerSize}px;
+        height: ${containerSize}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        pointer-events: auto;
+        cursor: pointer;
+      ">
+        ${
+          isSelected
+            ? `
+          <div style="
+            position: absolute;
+            width: ${containerSize}px;
+            height: ${containerSize}px;
+            background-color: ${color}33;
+            border: 2px solid ${color};
+            border-radius: 50%;
+          "></div>
+        `
+            : ''
+        }
+        <div style="
+          width: ${size}px;
+          height: ${size}px;
+          color: ${color};
+          filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+        ">
+          ${radarIconSvg}
+        </div>
+      </div>
+    `,
+    iconSize: [containerSize, containerSize],
+    iconAnchor: [containerSize / 2, containerSize / 2],
   });
-}
+};
 
 type ResourceNodeHoverEvent = {
   node: ResourceNode | null;
@@ -40,7 +67,7 @@ type ResourceNodeHoverEvent = {
 type RadarTowerLayerProps = {
   radarTowers: RadarTower[];
   enabled: boolean;
-  selectedId: string | null;
+  selectedIds: string[];
   onRadarTowerClick?: (tower: RadarTower, containerPoint: { x: number; y: number }) => void;
   onResourceNodeHover?: (event: ResourceNodeHoverEvent) => void;
   opacity?: number;
@@ -49,54 +76,38 @@ type RadarTowerLayerProps = {
 function RadarTowerLayerInner({
   radarTowers,
   enabled,
-  selectedId,
+  selectedIds,
   onRadarTowerClick,
   onResourceNodeHover,
-  opacity = 0.5,
+  opacity: _opacity = 0.5,
 }: RadarTowerLayerProps) {
   const getRadiusInMapUnits = (radiusMeters: number) => {
     return radiusMeters / 58.6; // This is an arbitrary number that I found out to best fit the map scale.
   };
 
-  // Find selected tower for reveal radius
-  const selectedTower = useMemo(() => {
-    if (!selectedId) return null;
-    return radarTowers.find((t) => t.id === selectedId) ?? null;
-  }, [selectedId, radarTowers]);
-
-  const selectedTowerCenter = useMemo(() => {
-    if (!selectedTower) return null;
-    const centerX = (selectedTower.boundingBox.min.x + selectedTower.boundingBox.max.x) / 2;
-    const centerY = (selectedTower.boundingBox.min.y + selectedTower.boundingBox.max.y) / 2;
-    return ConvertToMapCoords2(centerX, centerY);
-  }, [selectedTower]);
+  // Find all selected towers for reveal radius circles and resource nodes
+  const selectedTowers = useMemo(() => {
+    if (selectedIds.length === 0) return [];
+    return radarTowers.filter((t) => selectedIds.includes(t.id));
+  }, [selectedIds, radarTowers]);
 
   if (!enabled) return null;
 
   return (
     <>
-      {/* Render radar tower buildings */}
+      {/* Render radar tower icons */}
       {radarTowers.map((tower) => {
-        const corners = getRotatedBoundingBoxCorners(
-          tower.boundingBox.min.x,
-          tower.boundingBox.min.y,
-          tower.boundingBox.max.x,
-          tower.boundingBox.max.y,
-          tower.rotation
-        );
-
-        const isSelected = selectedId === tower.id;
+        const centerX = (tower.boundingBox.min.x + tower.boundingBox.max.x) / 2;
+        const centerY = (tower.boundingBox.min.y + tower.boundingBox.max.y) / 2;
+        const position = ConvertToMapCoords2(centerX, centerY);
+        const isSelected = selectedIds.includes(tower.id);
+        const icon = createRadarTowerIcon(isSelected);
 
         return (
-          <Polygon
+          <Marker
             key={`radar-tower-${tower.id}`}
-            positions={corners}
-            pathOptions={{
-              color: isSelected ? '#60A5FA' : RADAR_TOWER_COLOR,
-              fillColor: RADAR_TOWER_COLOR,
-              fillOpacity: isSelected ? Math.min(opacity + 0.2, 1) : opacity,
-              weight: isSelected ? 3 : 2,
-            }}
+            position={position}
+            icon={icon}
             eventHandlers={{
               click: (e) => {
                 e.originalEvent.stopPropagation();
@@ -113,56 +124,65 @@ function RadarTowerLayerInner({
         );
       })}
 
-      {/* Render reveal radius circle when selected */}
-      {selectedTower && selectedTowerCenter && (
-        <Circle
-          center={selectedTowerCenter}
-          radius={getRadiusInMapUnits(selectedTower.revealRadius)}
-          pathOptions={{
-            color: '#60A5FA',
-            fillColor: '#3B82F6',
-            fillOpacity: 0.1,
-            weight: 2,
-            dashArray: '8, 8',
-          }}
-          interactive={false}
-        />
-      )}
-
-      {/* Render scanned resource nodes when tower is selected */}
-      {selectedTower?.nodes?.map((node) => {
-        const nodeCenter = ConvertToMapCoords2(node.x, node.y);
-        const icon = createResourceNodeIcon(node, node.id);
-
+      {/* Render reveal radius circles for all selected towers */}
+      {selectedTowers.map((tower) => {
+        const centerX = (tower.boundingBox.min.x + tower.boundingBox.max.x) / 2;
+        const centerY = (tower.boundingBox.min.y + tower.boundingBox.max.y) / 2;
+        const center = ConvertToMapCoords2(centerX, centerY);
         return (
-          <Marker
-            key={`node-${node.id}`}
-            position={nodeCenter}
-            icon={icon}
-            eventHandlers={{
-              mouseover: (e) => {
-                e.originalEvent.stopPropagation();
-                onResourceNodeHover?.({
-                  node,
-                  position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-                });
-              },
-              mouseout: () => {
-                onResourceNodeHover?.({ node: null, position: null });
-              },
-              // Add redundant handler for reliability
-              add: (e) => {
-                const element = e.target.getElement();
-                if (element) {
-                  element.addEventListener('mouseleave', () => {
-                    onResourceNodeHover?.({ node: null, position: null });
-                  });
-                }
-              },
+          <Circle
+            key={`reveal-${tower.id}`}
+            center={center}
+            radius={getRadiusInMapUnits(tower.revealRadius)}
+            pathOptions={{
+              color: '#60A5FA',
+              fillColor: '#3B82F6',
+              fillOpacity: 0.1,
+              weight: 2,
+              dashArray: '8, 8',
             }}
+            interactive={false}
           />
         );
       })}
+
+      {/* Render scanned resource nodes for all selected towers */}
+      {selectedTowers.flatMap(
+        (tower) =>
+          tower.nodes?.map((node) => {
+            const nodeCenter = ConvertToMapCoords2(node.x, node.y);
+            const icon = getResourceNodeIcon(node);
+
+            return (
+              <Marker
+                key={`node-${tower.id}-${node.id}`}
+                position={nodeCenter}
+                icon={icon}
+                eventHandlers={{
+                  mouseover: (e) => {
+                    e.originalEvent.stopPropagation();
+                    onResourceNodeHover?.({
+                      node,
+                      position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
+                    });
+                  },
+                  mouseout: () => {
+                    onResourceNodeHover?.({ node: null, position: null });
+                  },
+                  // Add redundant handler for reliability
+                  add: (e) => {
+                    const element = e.target.getElement();
+                    if (element) {
+                      element.addEventListener('mouseleave', () => {
+                        onResourceNodeHover?.({ node: null, position: null });
+                      });
+                    }
+                  },
+                }}
+              />
+            );
+          }) ?? []
+      )}
     </>
   );
 }
