@@ -6,7 +6,9 @@ import {
   Chip,
   Container,
   IconButton,
+  InputAdornment,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -338,6 +340,7 @@ function DataRoot({
 export function DebugView() {
   const [paused, setPaused] = useState(false);
   const [pausedData, setPausedData] = useState<Record<string, JsonValue> | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { selectedSession } = useSession();
 
   // Get all API data
@@ -357,11 +360,14 @@ export function DebugView() {
     pipes: v.pipes,
     pipeJunctions: v.pipeJunctions,
     trainRails: v.trainRails,
+    hypertubes: v.hypertubes,
+    hypertubeEntrances: v.hypertubeEntrances,
     tractors: v.tractors,
     explorers: v.explorers,
     vehiclePaths: v.vehiclePaths,
     spaceElevator: v.spaceElevator,
     radarTowers: v.radarTowers,
+    resourceNodes: v.resourceNodes,
     isLoading: v.isLoading,
   }));
 
@@ -386,11 +392,14 @@ export function DebugView() {
       pipes: api.pipes as unknown as JsonValue,
       pipeJunctions: api.pipeJunctions as unknown as JsonValue,
       trainRails: api.trainRails as unknown as JsonValue,
+      hypertubes: api.hypertubes as unknown as JsonValue,
+      hypertubeEntrances: api.hypertubeEntrances as unknown as JsonValue,
       tractors: api.tractors as unknown as JsonValue,
       explorers: api.explorers as unknown as JsonValue,
       vehiclePaths: api.vehiclePaths as unknown as JsonValue,
       spaceElevator: api.spaceElevator as unknown as JsonValue,
       radarTowers: api.radarTowers as unknown as JsonValue,
+      resourceNodes: api.resourceNodes as unknown as JsonValue,
     }),
     [api]
   );
@@ -436,12 +445,22 @@ export function DebugView() {
     { name: 'pipes', icon: 'mdi:pipe' },
     { name: 'pipeJunctions', icon: 'mdi:pipe-valve' },
     { name: 'trainRails', icon: 'mdi:railroad-light' },
+    { name: 'hypertubes', icon: 'mdi:transit-connection-variant' },
+    { name: 'hypertubeEntrances', icon: 'mdi:transit-transfer' },
     { name: 'tractors', icon: 'mdi:tractor' },
     { name: 'explorers', icon: 'mdi:car-outline' },
     { name: 'vehiclePaths', icon: 'mdi:road-variant' },
     { name: 'spaceElevator', icon: 'mdi:rocket-launch' },
     { name: 'radarTowers', icon: 'mdi:radar' },
+    { name: 'resourceNodes', icon: 'tabler:pick' },
   ];
+
+  // Filter data roots by search term
+  const filteredDataRoots = useMemo(() => {
+    if (!searchTerm.trim()) return dataRoots;
+    const term = searchTerm.toLowerCase();
+    return dataRoots.filter(({ name }) => name.toLowerCase().includes(term));
+  }, [searchTerm]);
 
   return (
     <>
@@ -458,7 +477,30 @@ export function DebugView() {
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={2} alignItems="center">
+            <TextField
+              size="small"
+              placeholder="Filter boxes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Iconify icon="mdi:magnify" width={20} sx={{ color: 'text.disabled' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchTerm && (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setSearchTerm('')} edge="end">
+                        <Iconify icon="mdi:close" width={16} />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              sx={{ width: 200 }}
+            />
             <Chip
               label={selectedSession?.isOnline ? 'Online' : 'Offline'}
               color={selectedSession?.isOnline ? 'success' : 'error'}
@@ -497,7 +539,7 @@ export function DebugView() {
             gap: 2,
           }}
         >
-          {dataRoots.map(({ name }) => (
+          {filteredDataRoots.map(({ name }) => (
             <DataRoot
               key={name}
               name={name}
@@ -507,6 +549,12 @@ export function DebugView() {
             />
           ))}
         </Box>
+        {filteredDataRoots.length === 0 && searchTerm && (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Iconify icon="mdi:database-off" width={48} sx={{ color: 'text.disabled', mb: 1 }} />
+            <Typography color="text.secondary">No data sources match "{searchTerm}"</Typography>
+          </Box>
+        )}
       </Container>
     </>
   );
