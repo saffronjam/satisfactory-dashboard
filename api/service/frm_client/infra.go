@@ -253,3 +253,106 @@ func (client *Client) ListTrainRails(ctx context.Context) ([]models.TrainRail, e
 
 	return []models.TrainRail{}, nil
 }
+
+// GetHypertubes fetches hypertube data and entrances
+func (client *Client) GetHypertubes(ctx context.Context) (models.Hypertubes, error) {
+	var hypertubes []models.Hypertube
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var firstError error
+
+	wg.Add(2)
+
+	// Fetch hypertubes
+	go func() {
+		defer wg.Done()
+		h, err := client.ListHypertubes(ctx)
+		if err != nil {
+			mu.Lock()
+			if firstError == nil {
+				firstError = err
+			}
+			mu.Unlock()
+			return
+		}
+		mu.Lock()
+		hypertubes = h
+		mu.Unlock()
+	}()
+
+	// Fetch hypertube entrances
+	var entrances []models.HypertubeEntrance
+	go func() {
+		defer wg.Done()
+		e, err := client.ListHypertubeEntrances(ctx)
+		if err != nil {
+			mu.Lock()
+			if firstError == nil {
+				firstError = err
+			}
+			mu.Unlock()
+			return
+		}
+		mu.Lock()
+		entrances = e
+		mu.Unlock()
+	}()
+
+	wg.Wait()
+
+	if firstError != nil {
+		return models.Hypertubes{}, firstError
+	}
+
+	return models.Hypertubes{
+		Hypertubes:         hypertubes,
+		HypertubeEntrances: entrances,
+	}, nil
+}
+
+// ListHypertubes fetches hypertube data
+func (client *Client) ListHypertubes(ctx context.Context) ([]models.Hypertube, error) {
+	var rawHypertubes []frm_models.Hypertube
+	err := client.makeSatisfactoryCallWithTimeout(ctx, "/getHypertube", &rawHypertubes, infraApiTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get hypertubes. details: %w", err)
+	}
+
+	hypertubes := make([]models.Hypertube, len(rawHypertubes))
+	for i, raw := range rawHypertubes {
+		splineData := make([]models.Location, len(raw.SplineData))
+		for j, pt := range raw.SplineData {
+			splineData[j] = models.Location{X: pt.X, Y: pt.Y, Z: pt.Z, Rotation: pt.Rotation}
+		}
+
+		hypertubes[i] = models.Hypertube{
+			ID:          raw.ID,
+			Location0:   models.Location{X: raw.Location0.X, Y: raw.Location0.Y, Z: raw.Location0.Z, Rotation: raw.Location0.Rotation},
+			Location1:   models.Location{X: raw.Location1.X, Y: raw.Location1.Y, Z: raw.Location1.Z, Rotation: raw.Location1.Rotation},
+			SplineData:  splineData,
+			BoundingBox: parseBoundingBox(raw.BoundingBox),
+		}
+	}
+	return hypertubes, nil
+}
+
+// ListHypertubeEntrances fetches hypertube entrance data
+func (client *Client) ListHypertubeEntrances(ctx context.Context) ([]models.HypertubeEntrance, error) {
+	var rawEntrances []frm_models.HypertubeEntrance
+	err := client.makeSatisfactoryCallWithTimeout(ctx, "/getHyperEntrance", &rawEntrances, infraApiTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get hypertube entrances. details: %w", err)
+	}
+
+	entrances := make([]models.HypertubeEntrance, len(rawEntrances))
+	for i, raw := range rawEntrances {
+		entrances[i] = models.HypertubeEntrance{
+			ID:          raw.ID,
+			Location:    parseLocation(raw.Location),
+			BoundingBox: parseBoundingBox(raw.BoundingBox),
+			PowerInfo:   parsePowerInfo(raw.PowerInfo),
+		}
+	}
+	return entrances, nil
+}

@@ -13,25 +13,27 @@ func GetCachedState(sessionID string) *models.State {
 	kvClient := key_value.New()
 	state := &models.State{
 		// Initialize with empty defaults
-		Circuits:        []models.Circuit{},
-		Players:         []models.Player{},
-		Drones:          []models.Drone{},
-		Trains:          []models.Train{},
-		TrainStations:   []models.TrainStation{},
-		DroneStations:   []models.DroneStation{},
-		Belts:           []models.Belt{},
-		Pipes:           []models.Pipe{},
-		PipeJunctions:   []models.PipeJunction{},
-		TrainRails:      []models.TrainRail{},
-		SplitterMergers: []models.SplitterMerger{},
-		Cables:          []models.Cable{},
-		Storages:        []models.Storage{},
-		Machines:        []models.Machine{},
-		Tractors:        []models.Tractor{},
-		Explorers:       []models.Explorer{},
-		VehiclePaths:    []models.VehiclePath{},
-		RadarTowers:     []models.RadarTower{},
-		ResourceNodes:   []models.ResourceNode{},
+		Circuits:           []models.Circuit{},
+		Players:            []models.Player{},
+		Drones:             []models.Drone{},
+		Trains:             []models.Train{},
+		TrainStations:      []models.TrainStation{},
+		DroneStations:      []models.DroneStation{},
+		Belts:              []models.Belt{},
+		Pipes:              []models.Pipe{},
+		PipeJunctions:      []models.PipeJunction{},
+		TrainRails:         []models.TrainRail{},
+		SplitterMergers:    []models.SplitterMerger{},
+		Hypertubes:         []models.Hypertube{},
+		HypertubeEntrances: []models.HypertubeEntrance{},
+		Cables:             []models.Cable{},
+		Storages:           []models.Storage{},
+		Machines:           []models.Machine{},
+		Tractors:           []models.Tractor{},
+		Explorers:          []models.Explorer{},
+		VehiclePaths:       []models.VehiclePath{},
+		RadarTowers:        []models.RadarTower{},
+		ResourceNodes:      []models.ResourceNode{},
 	}
 
 	// Helper to get cached data and unmarshal
@@ -65,6 +67,12 @@ func GetCachedState(sessionID string) *models.State {
 	getCached(models.SatisfactoryEventRadarTowers, &state.RadarTowers)
 	getCached(models.SatisfactoryEventResourceNodes, &state.ResourceNodes)
 
+	// Handle composite hypertubes event
+	var hypertubesData models.Hypertubes
+	getCached(models.SatisfactoryEventHypertubes, &hypertubesData)
+	state.Hypertubes = hypertubesData.Hypertubes
+	state.HypertubeEntrances = hypertubesData.HypertubeEntrances
+
 	return state
 }
 
@@ -95,6 +103,7 @@ func ClearCachedState(sessionID string) {
 		models.SatisfactoryEventSpaceElevator,
 		models.SatisfactoryEventRadarTowers,
 		models.SatisfactoryEventResourceNodes,
+		models.SatisfactoryEventHypertubes,
 	}
 
 	for _, eventType := range eventTypes {

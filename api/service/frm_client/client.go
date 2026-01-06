@@ -23,11 +23,15 @@ const (
 
 // Client handles interactions with the Satisfactory Mod API
 type Client struct {
-	httpClient    *http.Client
-	apiIsUp       bool
-	apiStatusLock sync.RWMutex
-	apiUrl        string
-	requestQueue  *RequestQueue
+	httpClient          *http.Client
+	apiIsUp             bool
+	apiStatusLock       sync.RWMutex
+	apiUrl              string
+	requestQueue        *RequestQueue
+	consecutiveFailures int          // Counter for consecutive connection failures
+	failureLock         sync.RWMutex // Protects failure counter and disconnected state
+	onDisconnected      func()       // Callback triggered when failure threshold reached
+	wasDisconnected     bool         // Tracks previous disconnected state for logging
 }
 
 // NewClientWithAddress creates a new Satisfactory API service instance with a custom URL
@@ -70,6 +74,58 @@ func (client *Client) setApiUp(isUp bool) {
 		log.Printf("Satisfactory API status changed: %s", isUpStr)
 		client.apiIsUp = isUp
 	}
+}
+
+const failureThreshold = 5
+
+func (client *Client) incrementFailureCount() {
+	client.failureLock.Lock()
+	defer client.failureLock.Unlock()
+
+	client.consecutiveFailures++
+	log.Debugf("Network failure count: %d/%d for %s", client.consecutiveFailures, failureThreshold, client.apiUrl)
+
+	// Trigger disconnection callback on threshold
+	if client.consecutiveFailures >= failureThreshold && !client.wasDisconnected {
+		client.wasDisconnected = true
+		if client.onDisconnected != nil {
+			client.onDisconnected()
+		}
+	}
+}
+
+func (client *Client) resetFailureCount() {
+	client.failureLock.Lock()
+	defer client.failureLock.Unlock()
+
+	if client.consecutiveFailures > 0 {
+		log.Debugf("Resetting failure count for %s (was %d)", client.apiUrl, client.consecutiveFailures)
+		client.consecutiveFailures = 0
+	}
+
+	// Log reconnection
+	if client.wasDisconnected {
+		client.wasDisconnected = false
+		log.Infof("Session is online: %s", client.apiUrl)
+	}
+}
+
+func (client *Client) GetFailureCount() int {
+	client.failureLock.RLock()
+	defer client.failureLock.RUnlock()
+	return client.consecutiveFailures
+}
+
+func (client *Client) IsDisconnected() bool {
+	client.failureLock.RLock()
+	defer client.failureLock.RUnlock()
+	return client.consecutiveFailures >= failureThreshold
+}
+
+func (client *Client) SetDisconnectedCallback(callback func()) {
+	client.failureLock.Lock()
+	defer client.failureLock.Unlock()
+	client.onDisconnected = callback
 }
 
 // satisfactoryStatusToTrainStatus converts raw train data to models.TrainStatus
@@ -228,6 +284,11 @@ func (client *Client) SetupEventStream(ctx context.Context, callback func(*model
 			Endpoint: func(c context.Context) (interface{}, error) { return client.ListResourceNodes(c) },
 			Interval: 20 * time.Second,
 		},
+		{
+			Type:     models.SatisfactoryEventHypertubes,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetHypertubes(c) },
+			Interval: 120 * time.Second,
+		},
 	}
 
 	log.Infoln("Starting event listeners for Satisfactory API")
@@ -290,6 +351,56 @@ func (client *Client) SetupEventStream(ctx context.Context, callback func(*model
 	}()
 
 	return nil
+}
+
+// SetupLightPolling polls only /getSessionInfo for disconnected sessions
+// This is a lightweight alternative to SetupEventStream when the server is offline
+func (client *Client) SetupLightPolling(ctx context.Context, callback func(*models.SatisfactoryEvent)) error {
+	log.Infoln("Starting light polling mode (disconnected state)")
+
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	// Helper to poll session info
+	pollSessionInfo := func() {
+		fetchCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
+		_, err := client.GetSessionInfo(fetchCtx)
+		if err != nil {
+			// Network error already handled by makeSatisfactoryCall
+			// incrementFailureCount() already called
+			log.Debugf("Session is still offline")
+
+			// Send offline status
+			callback(&models.SatisfactoryEvent{
+				Type: models.SatisfactoryEventApiStatus,
+				Data: &models.SatisfactoryApiStatus{Running: false},
+			})
+			return
+		}
+
+		// SUCCESS - resetFailureCount() already called
+		// This will trigger reconnection in SessionManager
+		callback(&models.SatisfactoryEvent{
+			Type: models.SatisfactoryEventApiStatus,
+			Data: &models.SatisfactoryApiStatus{Running: true},
+		})
+	}
+
+	// Poll immediately on start
+	pollSessionInfo()
+
+	// Then poll on ticker
+	for {
+		select {
+		case <-ticker.C:
+			pollSessionInfo()
+		case <-ctx.Done():
+			log.Infoln("Stopping light polling mode")
+			return nil
+		}
+	}
 }
 
 // GetSatisfactoryApiStatus checks if the API root endpoint is reachable
@@ -361,15 +472,19 @@ func (client *Client) makeSatisfactoryCallWithTimeout(ctx context.Context, path 
 	}
 
 	if err != nil {
+		// NETWORK ERROR: Connection refused, timeout, DNS failure, etc.
 		client.setApiUp(false)
+		client.incrementFailureCount()
 		return models.NewSatisfactoryApiError(fmt.Sprintf("Failed to make request to %s: %v", path, err))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		// HTTP ERROR: Server responded but with error status
 		statusCode := resp.StatusCode
 		if statusCode == http.StatusServiceUnavailable || statusCode == http.StatusNotFound {
 			client.setApiUp(false)
+			// Don't increment failure count - server is reachable but returning errors
 		}
 		return models.NewSatisfactoryApiError(fmt.Sprintf("API call to %s failed with status code %d", path, statusCode))
 	}
@@ -381,6 +496,9 @@ func (client *Client) makeSatisfactoryCallWithTimeout(ctx context.Context, path 
 		// We don't necessarily setApiUp(false) here, as the endpoint might be partially functional.
 		return models.NewSatisfactoryApiError(fmt.Sprintf("Failed to decode JSON response from %s: %v", path, err))
 	}
+
+	// SUCCESS: Reset failure counter
+	client.resetFailureCount()
 
 	// If we reached here, the call was successful
 	// We don't necessarily setApiUp(true) here, as the main status check handles that.

@@ -112,3 +112,32 @@ func ListTrainRails(ginContext *gin.Context) {
 
 	requestContext.Ok(state.TrainRails)
 }
+
+// ListHypertubes godoc
+// @Summary List Hypertubes
+// @Description List all hypertubes and entrances from cached session state
+// @Tags Infrastructure
+// @Accept json
+// @Produce json
+// @Param session_id query string true "Session ID"
+// @Success 200 {object} models.Hypertubes "Hypertubes and entrances"
+// @Success 400 {object} models.ErrorResponse "Bad Request"
+// @Router /v1/hypertubes [get]
+func ListHypertubes(ginContext *gin.Context) {
+	requestContext := NewRequestContext(ginContext)
+
+	sessionID := ginContext.Query("session_id")
+	if sessionID == "" {
+		requestContext.UserError("session_id query parameter is required")
+		return
+	}
+
+	state := session.GetCachedState(sessionID)
+
+	hypertubesDto := models.Hypertubes{
+		Hypertubes:         state.Hypertubes,
+		HypertubeEntrances: state.HypertubeEntrances,
+	}
+
+	requestContext.Ok(hypertubesDto)
+}
