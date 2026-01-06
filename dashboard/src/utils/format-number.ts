@@ -35,6 +35,12 @@ function processInput(inputValue: InputNumberValue): number | null {
 
 // ----------------------------------------------------------------------
 
+/**
+ * Formats a number with locale-specific formatting.
+ * @param inputValue - The number to format
+ * @param options - Formatting options (decimals, ensureConstantDecimals, etc.)
+ * @returns Formatted number string (e.g., "1,234,567")
+ */
 export function fNumber(inputValue: InputNumberValue, options?: Options) {
   const locale = DEFAULT_LOCALE;
 
@@ -58,6 +64,12 @@ export function fNumber(inputValue: InputNumberValue, options?: Options) {
 
 // ----------------------------------------------------------------------
 
+/**
+ * Formats a number as currency.
+ * @param inputValue - The number to format
+ * @param options - Formatting options (decimals, ensureConstantDecimals, etc.)
+ * @returns Formatted currency string (e.g., "$1,234.56")
+ */
 export function fCurrency(inputValue: InputNumberValue, options?: Options) {
   const locale = DEFAULT_LOCALE;
 
@@ -83,6 +95,12 @@ export function fCurrency(inputValue: InputNumberValue, options?: Options) {
 
 // ----------------------------------------------------------------------
 
+/**
+ * Formats a number as a percentage.
+ * @param inputValue - The number to format (0-100 scale)
+ * @param options - Formatting options (decimals, ensureConstantDecimals, etc.)
+ * @returns Formatted percentage string (e.g., "85%")
+ */
 export function fPercent(inputValue: InputNumberValue, options?: Options) {
   const locale = DEFAULT_LOCALE;
 
@@ -107,6 +125,28 @@ export function fPercent(inputValue: InputNumberValue, options?: Options) {
 
 // ----------------------------------------------------------------------
 
+/**
+ * Shortens a large number with optional unit suffixes (K, M, G, etc.).
+ *
+ * @param inputValue - The number to shorten
+ * @param units - Array of unit suffixes to use at each magnitude (e.g., MetricUnits, WattUnits).
+ *   Pass an empty array `[]` for compact notation without unit suffix (e.g., "2K" for coordinates).
+ *   Pass MetricUnits for values with units (e.g., "2 K" with space).
+ * @param options - Formatting options (decimals, ensureConstantDecimals, onlyDecimalsWhenDivisible)
+ * @returns Shortened string (e.g., "1.5K", "2.3 MW", "-150K")
+ *
+ * @example
+ * // Coordinates (no unit suffix): "150K"
+ * fShortenNumber(150000, [], { decimals: 0 })
+ *
+ * @example
+ * // Power with units: "1.5 MW"
+ * fShortenNumber(1500000, WattUnits, { decimals: 1 })
+ *
+ * @example
+ * // Item counts: "2.5 K"
+ * fShortenNumber(2500, MetricUnits, { decimals: 1 })
+ */
 export function fShortenNumber(
   inputValue: number,
   units: string[],
@@ -151,6 +191,11 @@ export function fShortenNumber(
 
 // ----------------------------------------------------------------------
 
+/**
+ * Formats a number as data size (bytes, Kb, Mb, etc.).
+ * @param inputValue - The number of bytes
+ * @returns Formatted data size string (e.g., "1.5 Mb")
+ */
 export function fData(inputValue: InputNumberValue) {
   const number = processInput(inputValue);
   if (number === null || number === 0) return '0 bytes';
