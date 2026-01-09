@@ -162,10 +162,9 @@ DASHBOARD_IMAGES := dashboard/public/assets/images/satisfactory
 prepare:
 	@echo "Extracting LFS assets..."
 	@mkdir -p $(MAP_DIR)
-	@mkdir -p $(SCRAPE_OUTPUT)
 	tar -xzf $(ASSETS_DIR)/map-realistic.tar.gz -C $(MAP_DIR)
 	tar -xzf $(ASSETS_DIR)/map-game.tar.gz -C $(MAP_DIR)
-	tar -xzf $(ASSETS_DIR)/scraped-images.tar.gz -C $(SCRAPE_OUTPUT)
+	tar -xzf $(ASSETS_DIR)/scraped-images.tar.gz -C scripts/scrape_images
 	@echo "Copying icons to dashboard..."
 	@cp -r $(SCRAPE_OUTPUT)/32x32 $(DASHBOARD_IMAGES)/
 	@cp -r $(SCRAPE_OUTPUT)/64x64 $(DASHBOARD_IMAGES)/
