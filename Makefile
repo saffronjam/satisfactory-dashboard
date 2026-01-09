@@ -7,7 +7,7 @@ BUN := $(shell command -v bun 2>/dev/null || echo "$(HOME)/.bun/bin/bun")
 # Container runtime: set CONTAINER_CMD=podman to use podman instead of docker
 CONTAINER_CMD ?= docker
 
-.PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down
+.PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down prepare
 
 # Default target - show help
 help:
@@ -34,9 +34,12 @@ help:
 	@echo "  make deps             - Start Redis (required for local dev)"
 	@echo "  make deps-down        - Stop Redis"
 	@echo ""
+	@echo "Setup:"
+	@echo "  make prepare          - Extract LFS assets (run after clone)"
+	@echo "  make install          - Install all dependencies"
+	@echo ""
 	@echo "Other:"
 	@echo "  make generate         - Generate TypeScript types from Go structs"
-	@echo "  make install          - Install all dependencies"
 	@echo "  make tidy             - Run go mod tidy"
 	@echo ""
 
@@ -145,6 +148,28 @@ install:
 tidy:
 	@echo "Running go mod tidy..."
 	$(MAKE) -C api tidy
+
+# ============================================================================
+# Asset preparation (run after clone)
+# ============================================================================
+
+# Asset paths
+ASSETS_DIR := assets
+MAP_DIR := dashboard/public/assets/images/satisfactory/map/1763022054
+SCRAPE_OUTPUT := scripts/scrape_images/output
+DASHBOARD_IMAGES := dashboard/public/assets/images/satisfactory
+
+prepare:
+	@echo "Extracting LFS assets..."
+	@mkdir -p $(MAP_DIR)
+	@mkdir -p $(SCRAPE_OUTPUT)
+	tar -xzf $(ASSETS_DIR)/map-realistic.tar.gz -C $(MAP_DIR)
+	tar -xzf $(ASSETS_DIR)/map-game.tar.gz -C $(MAP_DIR)
+	tar -xzf $(ASSETS_DIR)/scraped-images.tar.gz -C $(SCRAPE_OUTPUT)
+	@echo "Copying icons to dashboard..."
+	@cp -r $(SCRAPE_OUTPUT)/32x32 $(DASHBOARD_IMAGES)/
+	@cp -r $(SCRAPE_OUTPUT)/64x64 $(DASHBOARD_IMAGES)/
+	@echo "Assets prepared successfully"
 
 # ============================================================================
 # Dependencies
