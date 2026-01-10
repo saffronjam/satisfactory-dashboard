@@ -122,3 +122,10 @@ docker compose logs -f api          # Follow API logs
 - **api/CLAUDE.md**: Backend architecture, patterns, and development guide
 - **dashboard/CLAUDE.md**: Frontend architecture, patterns, and development guide
 - **Swagger UI**: `/v2/docs/` when API is running
+
+## Active Technologies
+- Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), Redis (session store), React 18, Material-UI 6 (001-access-key-auth)
+- Redis for access tokens and hashed password (001-access-key-auth)
+
+## Recent Changes
+- 001-access-key-auth: Added Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), Redis (session store), React 18, Material-UI 6
