@@ -7,7 +7,7 @@ BUN := $(shell command -v bun 2>/dev/null || echo "$(HOME)/.bun/bin/bun")
 # Container runtime: set CONTAINER_CMD=podman to use podman instead of docker
 CONTAINER_CMD ?= docker
 
-.PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down prepare
+.PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down prepare prepare-for-commit
 
 # Default target - show help
 help:
@@ -23,6 +23,7 @@ help:
 	@echo "Code Quality:"
 	@echo "  make lint             - Run all linters (backend + frontend)"
 	@echo "  make format           - Format all code (Go + TypeScript)"
+	@echo "  make prepare-for-commit - Run generate, format, and lint"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build            - Build both frontend and backend"
@@ -104,6 +105,9 @@ format-frontend:
 	@echo "Formatting frontend TypeScript code..."
 	cd dashboard && $(BUN) run format:fix
 	@echo "Frontend formatting complete"
+
+prepare-for-commit: generate format lint
+	@echo "Ready to commit!"
 
 # ============================================================================
 # Build
