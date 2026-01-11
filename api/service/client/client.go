@@ -40,6 +40,7 @@ type Client interface {
 	GetVehicles(ctx context.Context) (models.Vehicles, error)
 	GetVehicleStations(ctx context.Context) (models.VehicleStations, error)
 	GetSpaceElevator(ctx context.Context) (*models.SpaceElevator, error)
+	GetHub(ctx context.Context) (*models.Hub, error)
 	ListRadarTowers(ctx context.Context) ([]models.RadarTower, error)
 	ListResourceNodes(ctx context.Context) ([]models.ResourceNode, error)
 
