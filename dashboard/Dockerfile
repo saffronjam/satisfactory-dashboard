@@ -6,15 +6,21 @@ WORKDIR /app
 COPY dashboard/package.json dashboard/bun.lock* ./
 RUN bun install --frozen-lockfile
 
-# Copy tar assets and extract them (keeps build context small)
+# ARG to control asset inclusion (default: false for production builds)
+ARG INCLUDE_ASSETS=false
+
+# Copy and extract assets only if INCLUDE_ASSETS=true
+# When false, assets are served by a separate asset server
 COPY assets/*.tar.gz /tmp/assets/
-RUN mkdir -p public/assets/images/satisfactory/map/1763022054 && \
-    tar -xzf /tmp/assets/map-realistic.tar.gz -C public/assets/images/satisfactory/map/1763022054 && \
-    tar -xzf /tmp/assets/map-game.tar.gz -C public/assets/images/satisfactory/map/1763022054 && \
-    tar -xzf /tmp/assets/scraped-images.tar.gz --strip-components=1 -C public/assets/images/satisfactory && \
+RUN if [ "$INCLUDE_ASSETS" = "true" ]; then \
+        mkdir -p public/assets/images/satisfactory/map/1763022054 && \
+        tar -xzf /tmp/assets/map-realistic.tar.gz -C public/assets/images/satisfactory/map/1763022054 && \
+        tar -xzf /tmp/assets/map-game.tar.gz -C public/assets/images/satisfactory/map/1763022054 && \
+        tar -xzf /tmp/assets/scraped-images.tar.gz --strip-components=1 -C public/assets/images/satisfactory; \
+    fi && \
     rm -rf /tmp/assets
 
-# Copy source code (excluding assets that are already extracted)
+# Copy source code
 COPY dashboard/ .
 
 ARG VITE_BUILD_VERSION=localbuild

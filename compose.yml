@@ -1,7 +1,10 @@
 services:
   dashboard:
     build:
-      context: ./dashboard
+      context: .
+      dockerfile: dashboard/Dockerfile
+      args:
+        INCLUDE_ASSETS: "true"
     container_name: dashboard
     ports:
       - "3000:3000"

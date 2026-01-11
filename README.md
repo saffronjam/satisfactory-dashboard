@@ -80,6 +80,49 @@ make build     # Build for production
 - **Backend:** Go, Gin, Redis
 - **Real-time:** Server-Sent Events (SSE)
 
+## Production Deployment
+
+For production deployments, the dashboard is split into three services:
+
+```
+                  Ingress
+                     │
+    ┌────────────────┼────────────────┐
+    │                │                │
+/assets/images/*     /api/*           /*
+    │                │                │
+Asset Server       API Server      Dashboard
+ (nginx)            (Go)           (nginx)
+```
+
+### Services
+
+| Service | Description | Port |
+|---------|-------------|------|
+| Dashboard | React frontend (no assets) | 3000 |
+| API | Go backend with Redis | 8081 |
+| Asset Server | Static assets (map tiles, icons) | 80 |
+
+### Building
+
+```bash
+# Build all images
+make docker-build                    # Dashboard with assets (local dev)
+make asset-server                    # Asset server image
+
+# Push to registry
+make asset-server-push               # Build and push asset server
+```
+
+### Local Development vs Production
+
+| Environment | Assets Location |
+|-------------|-----------------|
+| Local (`docker compose up`) | Bundled in dashboard container |
+| Production | Separate asset server container |
+
+The `INCLUDE_ASSETS` build argument controls whether assets are bundled into the dashboard image. For local development, `compose.yml` sets `INCLUDE_ASSETS=true`. For production, assets are served by a dedicated nginx container.
+
 ## Note on Repository Size
 
 This repository includes all assets (map tiles, images, etc.) and does not rely on third-party hosting. This makes the repo self-contained but relatively large.

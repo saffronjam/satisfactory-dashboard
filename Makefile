@@ -7,7 +7,10 @@ BUN := $(shell command -v bun 2>/dev/null || echo "$(HOME)/.bun/bin/bun")
 # Container runtime: set CONTAINER_CMD=podman to use podman instead of docker
 CONTAINER_CMD ?= docker
 
-.PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down unpack-assets pack-assets prepare-for-commit
+# Container image names
+ASSET_SERVER_IMAGE ?= ghcr.io/saffronjam/satisfactory-dashboard-asset-server
+
+.PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down unpack-assets pack-assets prepare-for-commit asset-server asset-server-push
 
 # Default target - show help
 help:
@@ -43,6 +46,10 @@ help:
 	@echo "Other:"
 	@echo "  make generate         - Generate TypeScript types from Go structs"
 	@echo "  make tidy             - Run go mod tidy"
+	@echo ""
+	@echo "Asset Server (production):"
+	@echo "  make asset-server     - Build asset server Docker image"
+	@echo "  make asset-server-push- Build and push asset server image"
 	@echo ""
 
 # ============================================================================
@@ -214,3 +221,17 @@ docker-down:
 docker-logs:
 	@echo "Showing Docker logs..."
 	$(CONTAINER_CMD) compose logs -f
+
+# ============================================================================
+# Asset Server (production deployment)
+# ============================================================================
+
+asset-server:
+	@echo "Building asset server image..."
+	$(CONTAINER_CMD) build -f asset-server/Dockerfile -t $(ASSET_SERVER_IMAGE):latest \
+		--label org.opencontainers.image.source=https://github.com/saffronjam/satisfactory-dashboard \
+		.
+
+asset-server-push: asset-server
+	@echo "Pushing asset server image..."
+	$(CONTAINER_CMD) push $(ASSET_SERVER_IMAGE):latest
