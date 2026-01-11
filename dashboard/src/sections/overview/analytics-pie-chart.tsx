@@ -71,7 +71,6 @@ export function AnalyticsPieChart({ title, subheader, chart, ...other }: Props) 
           ]}
           width={260}
           height={260}
-          skipAnimation={false}
           margin={{ top: 0, bottom: 0, left: 0, right: 0 }}
           hideLegend
         />
