@@ -366,6 +366,7 @@ export function DebugView() {
     explorers: v.explorers,
     vehiclePaths: v.vehiclePaths,
     spaceElevator: v.spaceElevator,
+    hub: v.hub,
     radarTowers: v.radarTowers,
     resourceNodes: v.resourceNodes,
     isLoading: v.isLoading,
@@ -398,6 +399,7 @@ export function DebugView() {
       explorers: api.explorers as unknown as JsonValue,
       vehiclePaths: api.vehiclePaths as unknown as JsonValue,
       spaceElevator: api.spaceElevator as unknown as JsonValue,
+      hub: api.hub as unknown as JsonValue,
       radarTowers: api.radarTowers as unknown as JsonValue,
       resourceNodes: api.resourceNodes as unknown as JsonValue,
     }),
@@ -451,6 +453,7 @@ export function DebugView() {
     { name: 'explorers', icon: 'mdi:car-outline' },
     { name: 'vehiclePaths', icon: 'mdi:road-variant' },
     { name: 'spaceElevator', icon: 'mdi:rocket-launch' },
+    { name: 'hub', icon: 'material-symbols:house-rounded' },
     { name: 'radarTowers', icon: 'mdi:radar' },
     { name: 'resourceNodes', icon: 'tabler:pick' },
   ];
