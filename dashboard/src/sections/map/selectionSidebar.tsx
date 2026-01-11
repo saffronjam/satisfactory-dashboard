@@ -17,7 +17,13 @@ import {
 import { Iconify } from 'src/components/iconify';
 import { ApiContext } from 'src/contexts/api/useApi';
 import { MachineGroup, SelectedMapItem } from 'src/types';
-import { fShortenNumber, LengthUnits, MetricUnits, WattUnits } from 'src/utils/format-number';
+import {
+  fNumber,
+  fShortenNumber,
+  LengthUnits,
+  MetricUnits,
+  WattUnits,
+} from 'src/utils/format-number';
 import { useContextSelector } from 'use-context-selector';
 import { MapSidebar } from './mapSidebar';
 import { getPurityLabel, PURITY_COLORS } from './utils/radarTowerUtils';
@@ -120,6 +126,10 @@ const getTabInfo = (item: SelectedMapItem): { icon: string; label: string } => {
       return { icon: 'mdi:drone', label: 'Station' };
     case 'radarTower':
       return { icon: 'material-symbols:radar', label: 'Radar' };
+    case 'hub':
+      return { icon: 'material-symbols:house-rounded', label: 'HUB' };
+    case 'spaceElevator':
+      return { icon: 'tdesign:tower-filled', label: 'Space Elevator' };
     default:
       return { icon: 'mdi:help', label: 'Unknown' };
   }
@@ -1706,6 +1716,246 @@ export const SelectionSidebar = ({
             No items scanned
           </Typography>
         )}
+
+        {/* Location */}
+        <Box sx={{ pt: 1, mt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Location
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Coordinates
+            </Typography>
+            <Typography variant="caption">
+              {fNumber(tower.x / 100, { decimals: 0 })} / {fNumber(tower.y / 100, { decimals: 0 })}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Altitude
+            </Typography>
+            <Typography variant="caption">{fNumber(tower.z / 100, { decimals: 0 })}</Typography>
+          </Box>
+        </Box>
+      </>
+    );
+  };
+
+  const renderHub = () => {
+    if (selectedItem?.type !== 'hub') return null;
+    const hubData = selectedItem.data;
+
+    return (
+      <>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Iconify icon="material-symbols:house-rounded" width={20} sx={{ color: '#F59E0B' }} />
+          <Typography variant="body1" fontWeight="medium">
+            HUB
+          </Typography>
+        </Box>
+
+        {/* Level info */}
+        <Box sx={{ mb: 1.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Level
+            </Typography>
+            <Typography variant="body2" fontWeight="medium">
+              {hubData.hubLevel}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Location */}
+        <Box sx={{ pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Location
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Coordinates
+            </Typography>
+            <Typography variant="caption">
+              {fNumber(hubData.x / 100, { decimals: 0 })} /{' '}
+              {fNumber(hubData.y / 100, { decimals: 0 })}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Altitude
+            </Typography>
+            <Typography variant="caption">{fNumber(hubData.z / 100, { decimals: 0 })}</Typography>
+          </Box>
+        </Box>
+      </>
+    );
+  };
+
+  const renderSpaceElevator = () => {
+    if (selectedItem?.type !== 'spaceElevator') return null;
+    const elevatorData = selectedItem.data;
+    const phases = elevatorData.currentPhase || [];
+    const isFullyUpgraded = elevatorData.fullyUpgraded;
+    const isUpgradeReady = elevatorData.upgradeReady;
+
+    return (
+      <>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Iconify icon="tdesign:tower-filled" width={20} sx={{ color: '#9333EA' }} />
+          <Typography variant="body1" fontWeight="medium">
+            {elevatorData.name || 'Space Elevator'}
+          </Typography>
+        </Box>
+
+        {/* Status */}
+        <Box sx={{ mb: 1.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Status
+            </Typography>
+            {isFullyUpgraded ? (
+              <Chip
+                label="Fully Upgraded"
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.65rem',
+                  bgcolor: 'rgba(34, 197, 94, 0.15)',
+                  color: '#22c55e',
+                }}
+              />
+            ) : isUpgradeReady ? (
+              <Chip
+                label="Upgrade Ready"
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.65rem',
+                  bgcolor: 'rgba(245, 158, 11, 0.15)',
+                  color: '#f59e0b',
+                }}
+              />
+            ) : (
+              <Chip
+                label="In Progress"
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.65rem',
+                  bgcolor: 'rgba(147, 51, 234, 0.15)',
+                  color: '#9333EA',
+                }}
+              />
+            )}
+          </Box>
+        </Box>
+
+        {/* Phase Requirements */}
+        {phases.length > 0 && !isFullyUpgraded && (
+          <Box sx={{ pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              Phase Requirements
+            </Typography>
+            {phases.map((obj, idx) => {
+              const progress = obj.totalCost > 0 ? (obj.amount / obj.totalCost) * 100 : 0;
+              const isComplete = progress >= 100;
+              return (
+                <Box key={idx} sx={{ mb: idx < phases.length - 1 ? 1.5 : 0 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 1,
+                      mb: 0.5,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        minWidth: 0,
+                        flex: 1,
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={`assets/images/satisfactory/32x32/${obj.name}.png`}
+                        alt={obj.name}
+                        sx={{ width: 20, height: 20, objectFit: 'contain', flexShrink: 0 }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {obj.name}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="body2"
+                      sx={{ flexShrink: 0, color: isComplete ? '#22c55e' : 'text.primary' }}
+                    >
+                      {fShortenNumber(obj.amount, MetricUnits, { decimals: 0 })} /{' '}
+                      {fShortenNumber(obj.totalCost, MetricUnits, { decimals: 0 })}
+                    </Typography>
+                  </Box>
+                  {/* Progress bar */}
+                  <Box
+                    sx={{
+                      height: 6,
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        height: '100%',
+                        width: `${Math.min(progress, 100)}%`,
+                        backgroundColor: isComplete ? '#22c55e' : '#9333EA',
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
+        )}
+
+        {/* Location */}
+        <Box sx={{ pt: 1, mt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Location
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Coordinates
+            </Typography>
+            <Typography variant="caption">
+              {fNumber(elevatorData.x / 100, { decimals: 0 })} /{' '}
+              {fNumber(elevatorData.y / 100, { decimals: 0 })}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Altitude
+            </Typography>
+            <Typography variant="caption">
+              {fNumber(elevatorData.z / 100, { decimals: 0 })}
+            </Typography>
+          </Box>
+        </Box>
       </>
     );
   };
@@ -1807,6 +2057,8 @@ export const SelectionSidebar = ({
       {selectedItem?.type === 'trainStation' && renderTrainStation()}
       {selectedItem?.type === 'droneStation' && renderDroneStation()}
       {selectedItem?.type === 'radarTower' && renderRadarTower()}
+      {selectedItem?.type === 'hub' && renderHub()}
+      {selectedItem?.type === 'spaceElevator' && renderSpaceElevator()}
     </MapSidebar>
   );
 };
