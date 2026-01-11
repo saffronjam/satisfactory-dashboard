@@ -2,10 +2,12 @@ import Box from '@mui/material/Box';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, useRoutes } from 'react-router-dom';
+import { AuthGuard } from 'src/components/auth-guard/AuthGuard';
+import { GuestGuard } from 'src/components/auth-guard/GuestGuard';
 import { DashboardLayout } from 'src/layouts/dashboard';
 import DebugPage from 'src/pages/debug';
 import DronesPage from 'src/pages/drones';
-
+import LoginPage from 'src/pages/login';
 import MapPage from 'src/pages/map';
 import PlayersPage from 'src/pages/players';
 import PowerPage from 'src/pages/power';
@@ -37,12 +39,22 @@ const renderFallback = (
 export function Router() {
   return useRoutes([
     {
+      path: 'login',
       element: (
-        <DashboardLayout>
-          <Suspense fallback={renderFallback}>
-            <Outlet />
-          </Suspense>
-        </DashboardLayout>
+        <GuestGuard>
+          <LoginPage />
+        </GuestGuard>
+      ),
+    },
+    {
+      element: (
+        <AuthGuard>
+          <DashboardLayout>
+            <Suspense fallback={renderFallback}>
+              <Outlet />
+            </Suspense>
+          </DashboardLayout>
+        </AuthGuard>
       ),
       children: [
         { element: <HomePage />, index: true },
