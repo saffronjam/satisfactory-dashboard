@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as API from 'src/apiTypes';
 import { config } from 'src/config';
+import { dispatchAuthExpired } from 'src/contexts/auth/AuthContext';
 import { ApiContext, ApiData } from './useApi';
 
 const API_URL = config.apiUrl;
@@ -34,6 +35,7 @@ const DEFAULT_DATA: ApiData = {
   explorers: [],
   vehiclePaths: [],
   spaceElevator: undefined,
+  hub: undefined,
   radarTowers: [],
   resourceNodes: [],
 };
@@ -86,13 +88,18 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
       setData(newData);
       setDataHistory([]);
 
-      const eventSource = new EventSource(`${API_URL}/sessions/${currentSessionId}/events`);
+      const eventSource = new EventSource(`${API_URL}/sessions/${currentSessionId}/events`, {
+        withCredentials: true,
+      });
       eventSourceRef.current = eventSource;
 
       const fetchState = async () => {
-        return fetch(`${API_URL}/sessions/${currentSessionId}/state`)
+        return fetch(`${API_URL}/sessions/${currentSessionId}/state`, { credentials: 'include' })
           .then((response) => {
             if (!response.ok) {
+              if (response.status === 401) {
+                dispatchAuthExpired();
+              }
               throw new Error('Failed to get full state');
             }
             return response.json() as Promise<API.State>;
@@ -123,6 +130,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             dataRef.current.explorers = fullState.explorers ?? [];
             dataRef.current.vehiclePaths = fullState.vehiclePaths ?? [];
             dataRef.current.spaceElevator = fullState.spaceElevator;
+            dataRef.current.hub = fullState.hub;
             dataRef.current.radarTowers = fullState.radarTowers ?? [];
             dataRef.current.resourceNodes = fullState.resourceNodes ?? [];
             dataRef.current.isLoading = false;
@@ -226,6 +234,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             break;
           case API.SatisfactoryEventSpaceElevator:
             dataRef.current.spaceElevator = parsed.data;
+            break;
+          case API.SatisfactoryEventHub:
+            dataRef.current.hub = parsed.data;
             break;
           case API.SatisfactoryEventRadarTowers:
             dataRef.current.radarTowers = parsed.data;

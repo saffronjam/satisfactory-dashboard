@@ -199,6 +199,20 @@ func (c *Client) GetSpaceElevator(_ context.Context) (*models.SpaceElevator, err
 	}, nil
 }
 
+func (c *Client) GetHub(_ context.Context) (*models.Hub, error) {
+	time.Sleep(time.Duration(rand.Float64()*50) * time.Millisecond)
+
+	return &models.Hub{
+		ID:       "hub-1",
+		HubLevel: 4,
+		Location: loc(8000, 500, 3000, 0),
+		BoundingBox: models.BoundingBox{
+			Min: models.Location{X: 7500, Y: 0, Z: 2500},
+			Max: models.Location{X: 8500, Y: 1000, Z: 3500},
+		},
+	}, nil
+}
+
 func (c *Client) ListRadarTowers(_ context.Context) ([]models.RadarTower, error) {
 	time.Sleep(time.Duration(rand.Float64()*50) * time.Millisecond)
 	return []models.RadarTower{

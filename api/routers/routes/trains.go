@@ -17,7 +17,7 @@ type TrainsRoutingGroup struct{ RoutingGroupBase }
 
 func TrainRoutes() *TrainsRoutingGroup { return &TrainsRoutingGroup{} }
 
-func (group *TrainsRoutingGroup) PublicRoutes() []Route {
+func (group *TrainsRoutingGroup) PrivateRoutes() []Route {
 	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
 		{Method: "GET", Pattern: TrainsPath, HandlerFunc: v1.ListTrains, Middleware: stageCheck},

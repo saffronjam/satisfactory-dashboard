@@ -7,7 +7,6 @@ import { AnimatedPosition, useVehicleAnimation } from '../hooks/useVehicleAnimat
 
 type PlayerVehicleLayerProps = {
   players: Player[];
-  enabled: boolean;
   onPlayerClick?: (player: Player) => void;
   onPositionsUpdate?: (positions: Map<string, AnimatedPosition>) => void;
   selectedName?: string | null;
@@ -110,7 +109,6 @@ const createPlayerIcon = (color: string, isSelected: boolean, showName: boolean,
 
 function PlayerVehicleLayerInner({
   players,
-  enabled,
   onPlayerClick,
   onPositionsUpdate,
   selectedName,
@@ -130,7 +128,7 @@ function PlayerVehicleLayerInner({
     return colors;
   }, [sortedPlayers]);
 
-  const animatedPositions = useVehicleAnimation(players, enabled);
+  const animatedPositions = useVehicleAnimation(players);
 
   // Pass animated positions to parent
   useEffect(() => {

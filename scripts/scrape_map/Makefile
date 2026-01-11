@@ -1,4 +1,4 @@
-.PHONY: help venv deps clean download download-realistic download-all clean-tiles
+.PHONY: help venv deps clean download-game download-realistic download-all clean-tiles prod
 
 # Virtual environment directory
 VENV := venv
@@ -13,10 +13,11 @@ help:
 	@echo ""
 	@echo "  make venv               - Create virtual environment and install dependencies"
 	@echo "  make deps               - Install/update dependencies in existing venv"
-	@echo "  make download           - Download game layer tiles (10 parallel workers)"
+	@echo "  make download-game      - Download game layer tiles (10 parallel workers)"
 	@echo "  make download-realistic - Download realistic layer tiles (10 parallel workers)"
 	@echo "  make download-all       - Download both game and realistic layer tiles"
 	@echo "  make clean-tiles        - Clean all tiles in output/ (remove background)"
+	@echo "  make prod               - Clean tiles and copy to dashboard"
 	@echo "  make clean              - Remove virtual environment and output"
 	@echo "  make help               - Show this help message"
 	@echo ""
@@ -24,8 +25,8 @@ help:
 	@echo "Current version: $(VERSION)"
 	@echo ""
 	@echo "Workflow:"
-	@echo "  1. make download        # Download tiles"
-	@echo "  2. make clean-tiles     # Remove gray background"
+	@echo "  1. make download-all    # Download tiles"
+	@echo "  2. make prod            # Clean tiles and move to dashboard"
 	@echo ""
 	@echo "Manual usage:"
 	@echo "  source venv/bin/activate && python download_tiles.py --help"
@@ -52,7 +53,7 @@ deps: $(VENV)/bin/activate
 	@echo "✓ Dependencies updated!"
 
 # Download game layer tiles (10 parallel workers)
-download: $(VENV)/bin/activate
+download-game: $(VENV)/bin/activate
 	@echo "Downloading game layer tiles to output/$(VERSION)/game/..."
 	$(PYTHON) download_tiles.py --layer gameLayer -j 10
 
@@ -62,13 +63,20 @@ download-realistic: $(VENV)/bin/activate
 	$(PYTHON) download_tiles.py --layer realisticLayer -j 10
 
 # Download both layers
-download-all: download download-realistic
-	@echo "✓ All tiles downloaded!"
+download-all: download-game download-realistic
+	@echo "All tiles downloaded!"
 
 # Clean all tiles in output/ (remove background)
 clean-tiles: $(VENV)/bin/activate
 	@echo "Cleaning all tiles in output/..."
 	$(PYTHON) clean_tiles.py --input output -j 20
+
+# Process and copy tiles to dashboard
+prod: clean-tiles
+	@echo "Copying tiles to dashboard..."
+	@rm -rf ../../dashboard/public/assets/images/satisfactory/map/$(VERSION)
+	cp -r output/$(VERSION) ../../dashboard/public/assets/images/satisfactory/map/
+	@echo "Tiles copied to dashboard!"
 
 # Clean up virtual environment and output
 clean:

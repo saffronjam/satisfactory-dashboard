@@ -15,7 +15,7 @@ type ResourceNodesRoutingGroup struct{ RoutingGroupBase }
 
 func ResourceNodesRoutes() *ResourceNodesRoutingGroup { return &ResourceNodesRoutingGroup{} }
 
-func (group *ResourceNodesRoutingGroup) PublicRoutes() []Route {
+func (group *ResourceNodesRoutingGroup) PrivateRoutes() []Route {
 	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
 		{Method: "GET", Pattern: ResourceNodesPath, HandlerFunc: v1.ListResourceNodes, Middleware: stageCheck},

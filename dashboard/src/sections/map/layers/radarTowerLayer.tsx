@@ -66,7 +66,6 @@ type ResourceNodeHoverEvent = {
 
 type RadarTowerLayerProps = {
   radarTowers: RadarTower[];
-  enabled: boolean;
   selectedIds: string[];
   onRadarTowerClick?: (tower: RadarTower, containerPoint: { x: number; y: number }) => void;
   onResourceNodeHover?: (event: ResourceNodeHoverEvent) => void;
@@ -75,7 +74,6 @@ type RadarTowerLayerProps = {
 
 function RadarTowerLayerInner({
   radarTowers,
-  enabled,
   selectedIds,
   onRadarTowerClick,
   onResourceNodeHover,
@@ -90,8 +88,6 @@ function RadarTowerLayerInner({
     if (selectedIds.length === 0) return [];
     return radarTowers.filter((t) => selectedIds.includes(t.id));
   }, [selectedIds, radarTowers]);
-
-  if (!enabled) return null;
 
   return (
     <>

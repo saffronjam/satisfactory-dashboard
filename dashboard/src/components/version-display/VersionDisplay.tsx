@@ -45,11 +45,19 @@ export function VersionDisplay() {
           <Chip
             label="Debug mode"
             size="small"
+            onDelete={disableDebugMode}
             sx={{
               bgcolor: 'warning.main',
               color: 'warning.contrastText',
               fontWeight: 'bold',
               fontSize: '0.7rem',
+              '& .MuiChip-deleteIcon': {
+                color: 'warning.contrastText',
+                '&:hover': {
+                  color: 'warning.contrastText',
+                  opacity: 0.7,
+                },
+              },
             }}
           />
         </Box>

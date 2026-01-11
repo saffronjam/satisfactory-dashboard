@@ -60,6 +60,49 @@ import { SelectionSidebar } from '../selectionSidebar';
 import { computeUnifiedGroups, zoomToGroupDistance } from '../utils';
 import { computeTowerVisibilityData } from '../utils/resourceNodeUtils';
 
+// localStorage key for persisting map state
+const MAP_STATE_KEY = 'satisfactory-dashboard-map-state';
+
+// Type for persisted map state
+type PersistedMapState = {
+  enabledLayers: string[];
+  buildingSubLayers: string[];
+  infrastructureSubLayers: string[];
+  vehicleSubLayers: string[];
+  useGameMapStyle: boolean;
+  buildingOpacity: number;
+  buildingColorMode: BuildingColorMode;
+  showVehicleNames: boolean;
+  zoom: number;
+  center: [number, number];
+  resourceNodeFilter: {
+    enabledCells: string[];
+    exploitedFilter: string;
+    radarVisibilityFilter: string;
+  };
+};
+
+// Load map state from localStorage
+const loadMapState = (): PersistedMapState | null => {
+  try {
+    const stored = localStorage.getItem(MAP_STATE_KEY);
+    if (!stored) return null;
+    return JSON.parse(stored);
+  } catch {
+    localStorage.removeItem(MAP_STATE_KEY);
+    return null;
+  }
+};
+
+// Save map state to localStorage
+const saveMapState = (state: PersistedMapState) => {
+  try {
+    localStorage.setItem(MAP_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignore storage errors
+  }
+};
+
 // Grouping distance values (doubling/halving from 1000)
 const groupingValues = [
   0, 1, 2, 4, 8, 16, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000,
@@ -127,6 +170,11 @@ const allPurities: { key: ResourceNodePurity; label: string; color: string }[] =
   { key: ResourceNodePurityPure, label: 'Pure', color: '#22C55E' },
 ];
 
+// Default resource filter cells (all enabled)
+const defaultResourceCells = allResourceTypes.flatMap((rt) =>
+  allPurities.map((p) => `${rt.key}:${p.key}`)
+);
+
 // Building sub-layers
 export type BuildingSubLayer =
   | 'factory'
@@ -137,6 +185,7 @@ export type BuildingSubLayer =
   | 'truckStation'
   | 'storage'
   | 'spaceElevator'
+  | 'hub'
   | 'radarTowers';
 
 // Infrastructure sub-layers
@@ -170,6 +219,7 @@ const buildingSubLayerOptions: { key: BuildingSubLayer; label: string; color: st
   { key: 'truckStation', label: 'Truck stations', color: '#8B5A2B' },
   { key: 'storage', label: 'Storage', color: '#8B4513' },
   { key: 'spaceElevator', label: 'Space Elevator', color: '#9333EA' },
+  { key: 'hub', label: 'HUB', color: '#F59E0B' },
   { key: 'radarTowers', label: 'Radar Towers', color: '#3B82F6' },
 ];
 
@@ -222,6 +272,7 @@ export function MapView() {
       cables: v.cables,
       storages: v.storages,
       spaceElevator: v.spaceElevator,
+      hub: v.hub,
       radarTowers: v.radarTowers,
       resourceNodes: v.resourceNodes,
       hypertubes: v.hypertubes,
@@ -231,7 +282,14 @@ export function MapView() {
   const [machineGroups, setMachineGroups] = useState<MachineGroup[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedMapItem[]>([]);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
-  const [zoom, setZoom] = useState(3);
+  const [zoom, setZoom] = useState(() => {
+    const saved = loadMapState();
+    return saved?.zoom ?? 3;
+  });
+  const [center, setCenter] = useState<[number, number]>(() => {
+    const saved = loadMapState();
+    return saved?.center ?? [-80, 80];
+  });
   const [autoGroup, setAutoGroup] = useState(false);
   const [manualGroupIndex, setManualGroupIndex] = useState(15); // Index 15 = 16000
   const [visibleCategories, setVisibleCategories] = useState<Set<FilterCategory>>(
@@ -240,25 +298,60 @@ export function MapView() {
   const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null);
   const [layersAnchor, setLayersAnchor] = useState<HTMLElement | null>(null);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
-  const [enabledLayers, setEnabledLayers] = useState<Set<MapLayer>>(new Set());
-  const [buildingSubLayers, setBuildingSubLayers] = useState<Set<BuildingSubLayer>>(new Set());
+  const [enabledLayers, setEnabledLayers] = useState<Set<MapLayer>>(() => {
+    const saved = loadMapState();
+    return saved ? new Set(saved.enabledLayers as MapLayer[]) : new Set();
+  });
+  const [buildingSubLayers, setBuildingSubLayers] = useState<Set<BuildingSubLayer>>(() => {
+    const saved = loadMapState();
+    return saved ? new Set(saved.buildingSubLayers as BuildingSubLayer[]) : new Set();
+  });
   const [infrastructureSubLayers, setInfrastructureSubLayers] = useState<
     Set<InfrastructureSubLayer>
-  >(new Set());
-  const [vehicleSubLayers, setVehicleSubLayers] = useState<Set<VehicleSubLayer>>(new Set());
-  const [resourceNodeFilter, setResourceNodeFilter] = useState<ResourceNodeFilter>({
-    enabledCells: new Set(
-      allResourceTypes.flatMap((rt) => allPurities.map((p) => `${rt.key}:${p.key}`))
-    ),
-    exploitedFilter: 'all',
-    radarVisibilityFilter: 'all',
+  >(() => {
+    const saved = loadMapState();
+    return saved ? new Set(saved.infrastructureSubLayers as InfrastructureSubLayer[]) : new Set();
   });
-  const [showVehicleNames, setShowVehicleNames] = useState(true);
-  const [buildingColorMode, setBuildingColorMode] = useState<BuildingColorMode>('type');
-  const [buildingOpacity, setBuildingOpacity] = useState(0.5);
+  const [vehicleSubLayers, setVehicleSubLayers] = useState<Set<VehicleSubLayer>>(() => {
+    const saved = loadMapState();
+    return saved ? new Set(saved.vehicleSubLayers as VehicleSubLayer[]) : new Set();
+  });
+  const [resourceNodeFilter, setResourceNodeFilter] = useState<ResourceNodeFilter>(() => {
+    const saved = loadMapState();
+    if (saved?.resourceNodeFilter) {
+      return {
+        enabledCells: new Set(saved.resourceNodeFilter.enabledCells),
+        exploitedFilter: saved.resourceNodeFilter
+          .exploitedFilter as ResourceNodeFilter['exploitedFilter'],
+        radarVisibilityFilter: saved.resourceNodeFilter
+          .radarVisibilityFilter as ResourceNodeFilter['radarVisibilityFilter'],
+      };
+    }
+    return {
+      enabledCells: new Set(defaultResourceCells),
+      exploitedFilter: 'all',
+      radarVisibilityFilter: 'all',
+    };
+  });
+  const [showVehicleNames, setShowVehicleNames] = useState(() => {
+    const saved = loadMapState();
+    return saved?.showVehicleNames ?? true;
+  });
+  const [buildingColorMode, setBuildingColorMode] = useState<BuildingColorMode>(() => {
+    const saved = loadMapState();
+    return (saved?.buildingColorMode as BuildingColorMode) ?? 'type';
+  });
+  const [buildingOpacity, setBuildingOpacity] = useState(() => {
+    const saved = loadMapState();
+    return saved?.buildingOpacity ?? 0.5;
+  });
   const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
   const [expandedLayers, setExpandedLayers] = useState<Set<MapLayer>>(new Set());
-  const [useGameMapStyle, setUseGameMapStyle] = useState(false);
+  const [useGameMapStyle, setUseGameMapStyle] = useState(() => {
+    const saved = loadMapState();
+    return saved?.useGameMapStyle ?? false;
+  });
+  const [mapKey, setMapKey] = useState(0);
 
   const [isDragging, setIsDragging] = useState(false);
   const frozenDataRef = useRef<typeof api>(api);
@@ -279,6 +372,61 @@ export function MapView() {
 
   const groupDistance = autoGroup ? zoomToGroupDistance(zoom) : groupingValues[manualGroupIndex];
 
+  // Save map state to localStorage when relevant state changes
+  useEffect(() => {
+    saveMapState({
+      enabledLayers: [...enabledLayers],
+      buildingSubLayers: [...buildingSubLayers],
+      infrastructureSubLayers: [...infrastructureSubLayers],
+      vehicleSubLayers: [...vehicleSubLayers],
+      useGameMapStyle,
+      buildingOpacity,
+      buildingColorMode,
+      showVehicleNames,
+      zoom,
+      center,
+      resourceNodeFilter: {
+        enabledCells: [...resourceNodeFilter.enabledCells],
+        exploitedFilter: resourceNodeFilter.exploitedFilter,
+        radarVisibilityFilter: resourceNodeFilter.radarVisibilityFilter,
+      },
+    });
+  }, [
+    enabledLayers,
+    buildingSubLayers,
+    infrastructureSubLayers,
+    vehicleSubLayers,
+    useGameMapStyle,
+    buildingOpacity,
+    buildingColorMode,
+    showVehicleNames,
+    zoom,
+    center,
+    resourceNodeFilter,
+  ]);
+
+  // Reset map state to defaults
+  const resetMapState = useCallback(() => {
+    localStorage.removeItem(MAP_STATE_KEY);
+    setEnabledLayers(new Set());
+    setBuildingSubLayers(new Set());
+    setInfrastructureSubLayers(new Set());
+    setVehicleSubLayers(new Set());
+    setUseGameMapStyle(false);
+    setBuildingOpacity(0.5);
+    setBuildingColorMode('type');
+    setShowVehicleNames(true);
+    setZoom(3);
+    setCenter([-80, 80]);
+    setResourceNodeFilter({
+      enabledCells: new Set(defaultResourceCells),
+      exploitedFilter: 'all',
+      radarVisibilityFilter: 'all',
+    });
+    // Force map to remount with new center/zoom
+    setMapKey((k) => k + 1);
+  }, []);
+
   // Helper to check if two selections are the same
   const isSameSelection = (a: SelectedMapItem, b: SelectedMapItem): boolean => {
     if (a.type !== b.type) return false;
@@ -296,6 +444,10 @@ export function MapView() {
         return a.data.station.name === (b as typeof a).data.station.name;
       case 'radarTower':
         return a.data.id === (b as typeof a).data.id;
+      case 'hub':
+        return a.data.id === (b as typeof a).data.id;
+      case 'spaceElevator':
+        return a.data.name === (b as typeof a).data.name;
       case 'multiSelection':
         return false; // Multi-selections are always unique
       default:
@@ -412,6 +564,7 @@ export function MapView() {
               'truckStation',
               'storage',
               'spaceElevator',
+              'hub',
               'radarTowers',
             ])
           );
@@ -469,25 +622,8 @@ export function MapView() {
     });
   };
 
-  // Map ResourceType to image filename
-  const getResourceImageName = (resourceType: ResourceType): string => {
-    const mapping: Record<ResourceType, string> = {
-      [ResourceTypeIronOre]: 'Iron Ore',
-      [ResourceTypeCopperOre]: 'Copper Ore',
-      [ResourceTypeLimestone]: 'Limestone',
-      [ResourceTypeCoal]: 'Coal',
-      [ResourceTypeSulfur]: 'Sulfur',
-      [ResourceTypeCateriumOre]: 'Caterium Ore',
-      [ResourceTypeRawQuartz]: 'Raw Quartz',
-      [ResourceTypeBauxite]: 'Bauxite',
-      [ResourceTypeUranium]: 'Uranium',
-      [ResourceTypeSAM]: 'SAM',
-      [ResourceTypeCrudeOil]: 'Crude Oil',
-      [ResourceTypeNitrogenGas]: 'Nitrogen Gas',
-      [ResourceTypeGeyser]: 'Geyser',
-    };
-    return mapping[resourceType] ?? resourceType;
-  };
+  // ResourceType values now match image filenames directly
+  const getResourceImageName = (resourceType: ResourceType): string => resourceType;
 
   // Toggle building sub-layer
   const toggleBuildingSubLayer = (subLayer: BuildingSubLayer) => {
@@ -756,6 +892,23 @@ export function MapView() {
               gap: 1,
             }}
           >
+            {/* Reset Button */}
+            <Tooltip title="Reset map to defaults">
+              <IconButton
+                onClick={resetMapState}
+                size="small"
+                sx={{
+                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
+                  backdropFilter: 'blur(8px)',
+                  '&:hover': {
+                    backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
+                  },
+                }}
+              >
+                <Iconify icon="mdi:refresh" width={20} />
+              </IconButton>
+            </Tooltip>
+
             {/* Map Style Toggle */}
             <Tooltip title={useGameMapStyle ? 'Switch to realistic map' : 'Switch to game map'}>
               <Box
@@ -1442,12 +1595,13 @@ export function MapView() {
 
           {/* MapContainer */}
           <MapContainer
-            center={[-80, 80]}
+            key={mapKey}
+            center={center}
             maxBounds={MapBounds}
             crs={CRS.Simple}
             preferCanvas={true}
             attributionControl={false}
-            zoom={3}
+            zoom={zoom}
             minZoom={3}
             maxZoom={8}
             zoomDelta={0.25}
@@ -1463,6 +1617,7 @@ export function MapView() {
             }}
           >
             <TileLayer
+              key={useGameMapStyle ? 'game' : 'realistic'}
               url={`assets/images/satisfactory/map/1763022054/${useGameMapStyle ? 'game' : 'realistic'}/{z}/{x}/{y}.png`}
               tileSize={256}
               minZoom={3}
@@ -1474,6 +1629,7 @@ export function MapView() {
               selectedItems={selectedItems}
               onSelectItem={handleSelectItem}
               onZoomEnd={setZoom}
+              onMoveEnd={setCenter}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               multiSelectMode={multiSelectMode}
@@ -1505,6 +1661,7 @@ export function MapView() {
               buildingColorMode={buildingColorMode}
               buildingOpacity={buildingOpacity}
               spaceElevator={displayData.spaceElevator}
+              hub={displayData.hub}
               radarTowers={displayData.radarTowers}
               resourceNodes={displayData.resourceNodes}
               resourceNodeFilter={resourceNodeFilter}

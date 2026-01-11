@@ -13,7 +13,6 @@ import { AnimatedPosition, useVehicleAnimation } from '../hooks/useVehicleAnimat
 
 type TruckVehicleLayerProps = {
   trucks: Truck[];
-  enabled: boolean;
   onTruckClick?: (truck: Truck, animatedPos: AnimatedPosition) => void;
   onSelectedPositionUpdate?: (position: AnimatedPosition | null) => void;
   selectedName?: string | null;
@@ -186,14 +185,13 @@ function TruckMarkerComponent({
 
 function TruckVehicleLayerInner({
   trucks,
-  enabled,
   onTruckClick,
   onSelectedPositionUpdate,
   selectedName,
   showNames = false,
   buildingColorMode = 'type',
 }: TruckVehicleLayerProps) {
-  const animatedPositions = useVehicleAnimation(trucks, enabled);
+  const animatedPositions = useVehicleAnimation(trucks);
   const prevSelectedPosRef = useRef<AnimatedPosition | null>(null);
 
   // Only update parent with SELECTED vehicle's position to avoid 60fps cascade

@@ -9,6 +9,50 @@ export interface SatisfactoryApiStatus {
 }
 
 //////////
+// source: auth.go
+
+/**
+ * LoginRequest represents the request body for authentication.
+ */
+export interface LoginRequest {
+  password: string;
+}
+/**
+ * LoginResponse represents the response after successful authentication.
+ */
+export interface LoginResponse {
+  success: boolean;
+  usedDefaultPassword: boolean;
+}
+/**
+ * AuthStatusResponse represents the current authentication status.
+ */
+export interface AuthStatusResponse {
+  authenticated: boolean;
+  usedDefaultPassword?: boolean;
+}
+/**
+ * ChangePasswordRequest represents the request to change the access key.
+ */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+/**
+ * ChangePasswordResponse represents the response after password change.
+ */
+export interface ChangePasswordResponse {
+  success: boolean;
+  message?: string;
+}
+/**
+ * LogoutResponse represents the response after logout.
+ */
+export interface LogoutResponse {
+  success: boolean;
+}
+
+//////////
 // source: belt.go
 
 export interface Belt {
@@ -233,6 +277,15 @@ export interface GeneratorStats {
 }
 
 //////////
+// source: hub.go
+
+export interface Hub extends Location {
+  id: string;
+  hubLevel: number /* int */;
+  boundingBox: BoundingBox;
+}
+
+//////////
 // source: hypertube.go
 
 export interface Hypertube {
@@ -393,30 +446,24 @@ export interface ProdStats {
 //////////
 // source: radar_tower.go
 
-/**
- * Resource Node Purity
- */
 export type ResourceNodePurity = string;
 export const ResourceNodePurityImpure: ResourceNodePurity = 'Impure';
 export const ResourceNodePurityNormal: ResourceNodePurity = 'Normal';
 export const ResourceNodePurityPure: ResourceNodePurity = 'Pure';
-/**
- * ResourceType represents the type of resource (ore, liquid, gas)
- */
 export type ResourceType = string;
-export const ResourceTypeIronOre: ResourceType = 'IronOre';
-export const ResourceTypeCopperOre: ResourceType = 'CopperOre';
+export const ResourceTypeIronOre: ResourceType = 'Iron Ore';
+export const ResourceTypeCopperOre: ResourceType = 'Copper Ore';
 export const ResourceTypeLimestone: ResourceType = 'Limestone';
 export const ResourceTypeCoal: ResourceType = 'Coal';
 export const ResourceTypeSAM: ResourceType = 'SAM';
 export const ResourceTypeSulfur: ResourceType = 'Sulfur';
-export const ResourceTypeCateriumOre: ResourceType = 'CateriumOre';
+export const ResourceTypeCateriumOre: ResourceType = 'Caterium Ore';
 export const ResourceTypeBauxite: ResourceType = 'Bauxite';
-export const ResourceTypeRawQuartz: ResourceType = 'RawQuartz';
+export const ResourceTypeRawQuartz: ResourceType = 'Raw Quartz';
 export const ResourceTypeUranium: ResourceType = 'Uranium';
-export const ResourceTypeCrudeOil: ResourceType = 'CrudeOil';
+export const ResourceTypeCrudeOil: ResourceType = 'Crude Oil';
 export const ResourceTypeGeyser: ResourceType = 'Geyser';
-export const ResourceTypeNitrogenGas: ResourceType = 'NitrogenGas';
+export const ResourceTypeNitrogenGas: ResourceType = 'Nitrogen Gas';
 /**
  * NodeType represents the deposit classification
  */
@@ -426,34 +473,31 @@ export const NodeTypeGeyser: NodeType = 'Geyser';
 export const NodeTypeFrackingCore: NodeType = 'Fracking Core';
 export const NodeTypeFrackingSatellite: NodeType = 'Fracking Satellite';
 export type FaunaType = string;
-export const FaunaTypeLizardDoggo: FaunaType = 'LizardDoggo';
-export const FaunaTypeFluffyTailedHog: FaunaType = 'FluffyTailedHog';
+export const FaunaTypeLizardDoggo: FaunaType = 'Lizard Doggo';
+export const FaunaTypeFluffyTailedHog: FaunaType = 'Fluffy-Tailed Hog';
 export const FaunaTypeSpitter: FaunaType = 'Spitter';
 export const FaunaTypeStinger: FaunaType = 'Stinger';
-export const FaunaTypeFlyingCrab: FaunaType = 'FlyingCrab';
-export const FaunaTypeNonFlyingBird: FaunaType = 'NonFlyingBird';
-export const FaunaTypeSpaceGiraffe: FaunaType = 'SpaceGiraffe';
-export const FaunaTypeSporeFlower: FaunaType = 'SporeFlower';
-export const FaunaTypeLeafBug: FaunaType = 'LeafBug';
-export const FaunaTypeGrassSprite: FaunaType = 'GrassSprite';
-export const FaunaTypeCaveBat: FaunaType = 'CaveBat';
-export const FaunaTypeGiantFlyingManta: FaunaType = 'GiantFlyingManta';
-export const FaunaTypeLakeShark: FaunaType = 'LakeShark';
+export const FaunaTypeFlyingCrab: FaunaType = 'Flying Crab';
+export const FaunaTypeNonFlyingBird: FaunaType = 'Non-flying Bird';
+export const FaunaTypeSpaceGiraffe: FaunaType = 'Space Giraffe-Tick-Penguin-Whale Thing';
+export const FaunaTypeSporeFlower: FaunaType = 'Spore Flower';
+export const FaunaTypeLeafBug: FaunaType = 'Leaf Bug';
+export const FaunaTypeGrassSprite: FaunaType = 'Grass Sprite';
+export const FaunaTypeCaveBat: FaunaType = 'Cave Bat';
+export const FaunaTypeGiantFlyingManta: FaunaType = 'Giant Flying Manta';
+export const FaunaTypeLakeShark: FaunaType = 'Lake Shark';
 export const FaunaTypeWalker: FaunaType = 'Walker';
 export type FloraType = string;
 export const FloraTypeTree: FloraType = 'Tree';
 export const FloraTypeLeaves: FloraType = 'Leaves';
-export const FloraTypeFlowerPetals: FloraType = 'FlowerPetals';
-export const FloraTypeBaconAgaric: FloraType = 'BaconAgaric';
+export const FloraTypeFlowerPetals: FloraType = 'Flower Petals';
+export const FloraTypeBaconAgaric: FloraType = 'Bacon Agaric';
 export const FloraTypePaleberry: FloraType = 'Paleberry';
-export const FloraTypeBerylNut: FloraType = 'BerylNut';
+export const FloraTypeBerylNut: FloraType = 'Beryl Nut';
 export const FloraTypeMycelia: FloraType = 'Mycelia';
-export const FloraTypeVineLadder: FloraType = 'VineLadder';
-export const FloraTypeBlueCapMushroom: FloraType = 'BlueCapMushroom';
-export const FloraTypePinkJellyfish: FloraType = 'PinkJellyfish';
-/**
- * Signal Types
- */
+export const FloraTypeVineLadder: FloraType = 'Vines';
+export const FloraTypeBlueCapMushroom: FloraType = 'Blue Cap Mushroom';
+export const FloraTypePinkJellyfish: FloraType = 'Pink Jellyfish';
 export type SignalType = string;
 export const SignalTypeSomersloop: SignalType = 'Somersloop';
 export const SignalTypeMercerSphere: SignalType = 'Mercer Sphere';
@@ -520,6 +564,7 @@ export const SatisfactoryEventTractors: SatisfactoryEventType = 'tractors';
 export const SatisfactoryEventExplorers: SatisfactoryEventType = 'explorers';
 export const SatisfactoryEventVehiclePaths: SatisfactoryEventType = 'vehiclePaths';
 export const SatisfactoryEventSpaceElevator: SatisfactoryEventType = 'spaceElevator';
+export const SatisfactoryEventHub: SatisfactoryEventType = 'hub';
 export const SatisfactoryEventRadarTowers: SatisfactoryEventType = 'radarTowers';
 export const SatisfactoryEventResourceNodes: SatisfactoryEventType = 'resourceNodes';
 export const SatisfactoryEventHypertubes: SatisfactoryEventType = 'hypertubes';
@@ -689,6 +734,7 @@ export interface State {
   explorers: Explorer[];
   vehiclePaths: VehiclePath[];
   spaceElevator?: SpaceElevator;
+  hub?: Hub;
   radarTowers: RadarTower[];
   resourceNodes: ResourceNode[];
 }

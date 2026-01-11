@@ -7,6 +7,7 @@ import {
   Explorer,
   FactoryStats,
   GeneratorStats,
+  Hub,
   Hypertube,
   HypertubeEntrance,
   Machine,
@@ -60,6 +61,7 @@ export type ApiData = {
   explorers: Explorer[];
   vehiclePaths: VehiclePath[];
   spaceElevator?: SpaceElevator;
+  hub?: Hub;
   radarTowers: RadarTower[];
   resourceNodes: ResourceNode[];
 };
@@ -98,6 +100,7 @@ export const DefaultApiContext: ApiContextType = {
   explorers: [],
   vehiclePaths: [],
   spaceElevator: undefined,
+  hub: undefined,
   radarTowers: [],
   resourceNodes: [],
 
@@ -130,6 +133,7 @@ export const DefaultApiContext: ApiContextType = {
       explorers: [],
       vehiclePaths: [],
       spaceElevator: undefined,
+      hub: undefined,
       radarTowers: [],
       resourceNodes: [],
     },

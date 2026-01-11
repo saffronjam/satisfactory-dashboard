@@ -7,7 +7,7 @@ BUN := $(shell command -v bun 2>/dev/null || echo "$(HOME)/.bun/bin/bun")
 # Container runtime: set CONTAINER_CMD=podman to use podman instead of docker
 CONTAINER_CMD ?= docker
 
-.PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down prepare prepare-for-commit
+.PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down unpack-assets pack-assets prepare-for-commit
 
 # Default target - show help
 help:
@@ -36,7 +36,8 @@ help:
 	@echo "  make deps-down        - Stop Redis"
 	@echo ""
 	@echo "Setup:"
-	@echo "  make prepare          - Extract LFS assets (run after clone)"
+	@echo "  make unpack-assets    - Extract LFS assets (run after clone)"
+	@echo "  make pack-assets      - Pack assets back to tar files (after updates)"
 	@echo "  make install          - Install all dependencies"
 	@echo ""
 	@echo "Other:"
@@ -154,25 +155,32 @@ tidy:
 	$(MAKE) -C api tidy
 
 # ============================================================================
-# Asset preparation (run after clone)
+# Asset management (unpack after clone, pack after updates)
 # ============================================================================
 
 # Asset paths
 ASSETS_DIR := assets
 MAP_DIR := dashboard/public/assets/images/satisfactory/map/1763022054
-SCRAPE_OUTPUT := scripts/scrape_images/output
 DASHBOARD_IMAGES := dashboard/public/assets/images/satisfactory
 
-prepare:
+unpack-assets:
 	@echo "Extracting LFS assets..."
 	@mkdir -p $(MAP_DIR)
 	tar -xzf $(ASSETS_DIR)/map-realistic.tar.gz -C $(MAP_DIR)
 	tar -xzf $(ASSETS_DIR)/map-game.tar.gz -C $(MAP_DIR)
-	tar -xzf $(ASSETS_DIR)/scraped-images.tar.gz -C scripts/scrape_images
-	@echo "Copying icons to dashboard..."
-	@cp -r $(SCRAPE_OUTPUT)/32x32 $(DASHBOARD_IMAGES)/
-	@cp -r $(SCRAPE_OUTPUT)/64x64 $(DASHBOARD_IMAGES)/
-	@echo "Assets prepared successfully"
+	@echo "Extracting icons to dashboard..."
+	tar -xzf $(ASSETS_DIR)/scraped-images.tar.gz --strip-components=1 -C $(DASHBOARD_IMAGES)
+	@echo "Assets unpacked successfully"
+
+pack-assets:
+	@echo "Packing assets to tar files..."
+	@echo "Packing scraped-images.tar.gz..."
+	tar -czf $(ASSETS_DIR)/scraped-images.tar.gz -C $(DASHBOARD_IMAGES) --transform 's,^,output/,' 16x16 32x32 64x64 128x128 256x256
+	@echo "Packing map-realistic.tar.gz..."
+	tar -czf $(ASSETS_DIR)/map-realistic.tar.gz -C $(MAP_DIR) realistic
+	@echo "Packing map-game.tar.gz..."
+	tar -czf $(ASSETS_DIR)/map-game.tar.gz -C $(MAP_DIR) game
+	@echo "Assets packed successfully"
 
 # ============================================================================
 # Dependencies

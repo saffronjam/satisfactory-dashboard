@@ -3,6 +3,7 @@ import type { Breakpoint, SxProps, Theme } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { LogoutButton } from 'src/components/logout-button';
 import { AddSessionDialog } from 'src/components/session-dialog';
 import { SessionSelector } from 'src/components/session-selector';
 import { SessionInitOverlay } from 'src/components/session-init-overlay';
@@ -72,7 +73,12 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
     <SessionSelector onAddSession={() => setAddSessionDialogOpen(true)} />
   );
 
-  const versionSlot = <VersionDisplay />;
+  const bottomSlot = (
+    <>
+      <LogoutButton />
+      <VersionDisplay />
+    </>
+  );
 
   return (
     <>
@@ -125,7 +131,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
                       data={navData}
                       open={navOpen}
                       onClose={() => setNavOpen(false)}
-                      slots={{ topArea: sessionSelectorSlot, bottomArea: versionSlot }}
+                      slots={{ topArea: sessionSelectorSlot, bottomArea: bottomSlot }}
                     />
                   </>
                 ),
@@ -140,7 +146,7 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
           <NavDesktop
             data={navData}
             layoutQuery={layoutQuery}
-            slots={{ topArea: sessionSelectorSlot, bottomArea: versionSlot }}
+            slots={{ topArea: sessionSelectorSlot, bottomArea: bottomSlot }}
           />
         }
         /** **************************************

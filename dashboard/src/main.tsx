@@ -4,6 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './app';
+import { AuthProvider } from './contexts/auth/AuthContext';
 import { SessionAwareApiProvider } from './contexts/api/SessionAwareApiProvider';
 import { DebugProvider } from './contexts/debug/DebugContext';
 import { SessionProvider } from './contexts/sessions';
@@ -20,15 +21,17 @@ root.render(
     <HelmetProvider>
       <BrowserRouter>
         <Suspense>
-          <DebugProvider>
-            <SessionProvider>
-              <SessionAwareApiProvider>
-                <NotificationsProvider>
-                  <App />
-                </NotificationsProvider>
-              </SessionAwareApiProvider>
-            </SessionProvider>
-          </DebugProvider>
+          <AuthProvider>
+            <DebugProvider>
+              <SessionProvider>
+                <SessionAwareApiProvider>
+                  <NotificationsProvider>
+                    <App />
+                  </NotificationsProvider>
+                </SessionAwareApiProvider>
+              </SessionProvider>
+            </DebugProvider>
+          </AuthProvider>
         </Suspense>
       </BrowserRouter>
     </HelmetProvider>

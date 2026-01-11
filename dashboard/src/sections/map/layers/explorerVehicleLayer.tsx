@@ -13,7 +13,6 @@ import { AnimatedPosition, useVehicleAnimation } from '../hooks/useVehicleAnimat
 
 type ExplorerVehicleLayerProps = {
   explorers: Explorer[];
-  enabled: boolean;
   onExplorerClick?: (explorer: Explorer, animatedPos: AnimatedPosition) => void;
   onSelectedPositionUpdate?: (position: AnimatedPosition | null) => void;
   selectedName?: string | null;
@@ -186,14 +185,13 @@ function ExplorerMarkerComponent({
 
 function ExplorerVehicleLayerInner({
   explorers,
-  enabled,
   onExplorerClick,
   onSelectedPositionUpdate,
   selectedName,
   showNames = false,
   buildingColorMode = 'type',
 }: ExplorerVehicleLayerProps) {
-  const animatedPositions = useVehicleAnimation(explorers, enabled);
+  const animatedPositions = useVehicleAnimation(explorers);
   const prevSelectedPosRef = useRef<AnimatedPosition | null>(null);
 
   // Only update parent with SELECTED vehicle's position to avoid 60fps cascade

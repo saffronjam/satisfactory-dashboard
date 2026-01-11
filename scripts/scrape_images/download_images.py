@@ -55,6 +55,8 @@ class ColoredLogger:
             status_str = f"{cls.COLORS['green']}downloaded{cls.COLORS['reset']}"
         elif status == "skipped":
             status_str = f"{cls.COLORS['dim']}skipped (exists){cls.COLORS['reset']}"
+        elif status == "skipped_format":
+            status_str = f"{cls.COLORS['dim']}skipped (not PNG){cls.COLORS['reset']}"
         elif status == "failed":
             status_str = f"{cls.COLORS['red']}FAILED{cls.COLORS['reset']}"
         else:
@@ -76,7 +78,7 @@ class ImageDownloader:
         self.timeout = timeout
         self.retries = retries
         self.interrupted = False
-        self.stats = {"downloaded": 0, "skipped": 0, "failed": 0}
+        self.stats = {"downloaded": 0, "skipped": 0, "skipped_format": 0, "failed": 0}
         self.failures = []  # Track failed downloads for summary
 
         # Set up signal handler for graceful Ctrl+C
@@ -176,6 +178,12 @@ class ImageDownloader:
             url = image["url"]
             filepath = os.path.join(output_dir, name)
 
+            # Skip non-PNG files
+            if not name.lower().endswith(".png"):
+                ColoredLogger.progress(i, total, name, "skipped_format")
+                self.stats["skipped_format"] += 1
+                continue
+
             # Skip if already exists (unless force mode)
             if not force and os.path.exists(filepath):
                 ColoredLogger.progress(i, total, name, "skipped")
@@ -197,10 +205,11 @@ class ImageDownloader:
         ColoredLogger.info("=" * 50)
         ColoredLogger.info("Download Summary")
         ColoredLogger.info("=" * 50)
-        ColoredLogger.success(f"  Downloaded: {self.stats['downloaded']}")
-        print(f"  Skipped:    {self.stats['skipped']}")
+        ColoredLogger.success(f"  Downloaded:   {self.stats['downloaded']}")
+        print(f"  Skipped:      {self.stats['skipped']}")
+        print(f"  Non-PNG:      {self.stats['skipped_format']}")
         if self.stats["failed"] > 0:
-            ColoredLogger.error(f"  Failed:     {self.stats['failed']}")
+            ColoredLogger.error(f"  Failed:       {self.stats['failed']}")
             print()
             ColoredLogger.warning("Failed downloads:")
             for fail in self.failures[:10]:  # Show first 10 failures

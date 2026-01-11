@@ -17,6 +17,10 @@ services:
     container_name: api
     ports:
       - "8081:8081"
+    environment:
+      # SD_BOOTSTRAP_PASSWORD: Initial password for dashboard authentication.
+      # Defaults to "change-me" if not set. Change this in production!
+      - SD_BOOTSTRAP_PASSWORD=${SD_BOOTSTRAP_PASSWORD:-change-me}
     depends_on:
       - redis
     restart: unless-stopped

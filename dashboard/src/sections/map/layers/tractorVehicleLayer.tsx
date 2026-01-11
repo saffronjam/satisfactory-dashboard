@@ -13,7 +13,6 @@ import { AnimatedPosition, useVehicleAnimation } from '../hooks/useVehicleAnimat
 
 type TractorVehicleLayerProps = {
   tractors: Tractor[];
-  enabled: boolean;
   onTractorClick?: (tractor: Tractor, animatedPos: AnimatedPosition) => void;
   onSelectedPositionUpdate?: (position: AnimatedPosition | null) => void;
   selectedName?: string | null;
@@ -186,14 +185,13 @@ function TractorMarkerComponent({
 
 function TractorVehicleLayerInner({
   tractors,
-  enabled,
   onTractorClick,
   onSelectedPositionUpdate,
   selectedName,
   showNames = false,
   buildingColorMode = 'type',
 }: TractorVehicleLayerProps) {
-  const animatedPositions = useVehicleAnimation(tractors, enabled);
+  const animatedPositions = useVehicleAnimation(tractors);
   const prevSelectedPosRef = useRef<AnimatedPosition | null>(null);
 
   // Only update parent with SELECTED vehicle's position to avoid 60fps cascade

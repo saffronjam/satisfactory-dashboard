@@ -20,7 +20,7 @@ type SessionsRoutingGroup struct{ RoutingGroupBase }
 
 func SessionRoutes() *SessionsRoutingGroup { return &SessionsRoutingGroup{} }
 
-func (group *SessionsRoutingGroup) PublicRoutes() []Route {
+func (group *SessionsRoutingGroup) PrivateRoutes() []Route {
 	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
 		{Method: "GET", Pattern: SessionsPath, HandlerFunc: v1.ListSessions},

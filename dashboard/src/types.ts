@@ -1,4 +1,13 @@
-import { Drone, DroneStation, Machine, RadarTower, Train, TrainStation } from 'src/apiTypes';
+import {
+  Drone,
+  DroneStation,
+  Hub,
+  Machine,
+  RadarTower,
+  SpaceElevator,
+  Train,
+  TrainStation,
+} from 'src/apiTypes';
 
 export type Settings = {
   apiUrl: string;
@@ -62,4 +71,6 @@ export type SelectedMapItem =
   | { type: 'multiSelection'; data: MultiSelection }
   | { type: 'trainStation'; data: SelectedTrainStation }
   | { type: 'droneStation'; data: SelectedDroneStation }
-  | { type: 'radarTower'; data: RadarTower };
+  | { type: 'radarTower'; data: RadarTower }
+  | { type: 'hub'; data: Hub }
+  | { type: 'spaceElevator'; data: SpaceElevator };

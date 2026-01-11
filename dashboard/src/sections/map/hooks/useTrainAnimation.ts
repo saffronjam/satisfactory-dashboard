@@ -54,10 +54,7 @@ function positionsEqual(
   return true;
 }
 
-export function useTrainAnimation(
-  trains: Train[],
-  enabled: boolean = true
-): Map<string, AnimatedPosition> {
+export function useTrainAnimation(trains: Train[]): Map<string, AnimatedPosition> {
   const animatedTrainsRef = useRef<Map<string, AnimatedTrain>>(new Map());
   const [positions, setPositions] = useState<Map<string, AnimatedPosition>>(new Map());
   const lastPositionsRef = useRef<Map<string, AnimatedPosition>>(new Map());
@@ -67,13 +64,6 @@ export function useTrainAnimation(
 
   // Update targets when train data changes
   useEffect(() => {
-    if (!enabled) {
-      animatedTrainsRef.current.clear();
-      setPositions(new Map());
-      prevTrainHashRef.current = '';
-      return;
-    }
-
     // Create a hash of train positions to detect actual data changes (not just reference changes)
     const trainHash = trains.map((t) => `${t.name}:${t.x}:${t.y}:${t.rotation}`).join('|');
 
@@ -133,14 +123,10 @@ export function useTrainAnimation(
         return newPositions;
       });
     }
-  }, [trains, enabled]);
+  }, [trains]);
 
   // Animation loop
   useEffect(() => {
-    if (!enabled) {
-      return;
-    }
-
     const animate = (time: number) => {
       const newPositions = new Map<string, AnimatedPosition>();
 
@@ -176,7 +162,7 @@ export function useTrainAnimation(
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [enabled]);
+  }, []);
 
   return positions;
 }

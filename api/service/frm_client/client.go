@@ -275,6 +275,11 @@ func (client *Client) SetupEventStream(ctx context.Context, callback func(*model
 			Interval: 30 * time.Second,
 		},
 		{
+			Type:     models.SatisfactoryEventHub,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.GetHub(c) },
+			Interval: 30 * time.Second,
+		},
+		{
 			Type:     models.SatisfactoryEventRadarTowers,
 			Endpoint: func(c context.Context) (interface{}, error) { return client.ListRadarTowers(c) },
 			Interval: 4 * time.Second,

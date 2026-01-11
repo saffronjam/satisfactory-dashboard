@@ -12,7 +12,6 @@ import {
   MachineCategory,
   Pipe,
   PipeJunction,
-  SpaceElevator,
   SplitterMerger,
   Storage,
   TrainRail,
@@ -75,7 +74,6 @@ const TRAIN_STATION_PLATFORM_COLOR = '#7A6A5A'; // Lighter warm brown for platfo
 const DRONE_STATION_COLOR = '#4A5A6A'; // Dark cool grey
 const TRUCK_STATION_COLOR = '#8B5A2B'; // Saddle brown for truck stations
 const STORAGE_COLOR = '#8B4513'; // Brown/tan for storage containers
-const SPACE_ELEVATOR_COLOR = '#9333EA'; // Purple for space elevator
 const HYPERTUBE_COLOR = '#00CED1'; // Dark cyan/teal for hypertubes
 const HYPERTUBE_ENTRANCE_COLOR = '#20B2AA'; // Light sea green for entrances
 
@@ -103,8 +101,6 @@ type InfrastructureOverlayProps = {
   showTruckStations?: boolean;
   buildingColorMode?: BuildingColorMode;
   buildingOpacity?: number;
-  spaceElevator?: SpaceElevator | null;
-  showSpaceElevator?: boolean;
   hypertubes?: Hypertube[];
   hypertubeEntrances?: HypertubeEntrance[];
   showHypertubes?: boolean;
@@ -596,47 +592,6 @@ function StorageLayer({
   );
 }
 
-// Space elevator layer component
-function SpaceElevatorLayer({
-  spaceElevator,
-  onItemHover,
-  opacity = 0.5,
-}: {
-  spaceElevator: SpaceElevator | null | undefined;
-  onItemHover?: (event: HoverEvent) => void;
-  opacity?: number;
-}) {
-  if (!spaceElevator) return null;
-
-  const corners = getRotatedBoundingBoxCorners(
-    spaceElevator.boundingBox.min.x,
-    spaceElevator.boundingBox.min.y,
-    spaceElevator.boundingBox.max.x,
-    spaceElevator.boundingBox.max.y,
-    spaceElevator.rotation
-  );
-
-  return (
-    <Polygon
-      positions={corners}
-      pathOptions={{
-        color: SPACE_ELEVATOR_COLOR,
-        fillColor: SPACE_ELEVATOR_COLOR,
-        fillOpacity: opacity,
-        weight: 2,
-      }}
-      eventHandlers={{
-        mouseover: (e) =>
-          onItemHover?.({
-            item: { type: 'spaceElevator', data: spaceElevator },
-            position: { x: e.originalEvent.clientX, y: e.originalEvent.clientY },
-          }),
-        mouseout: () => onItemHover?.({ item: null, position: null }),
-      }}
-    />
-  );
-}
-
 // Hypertube layer component (includes hypertube entrances)
 function HypertubeLayer({
   hypertubes,
@@ -724,7 +679,6 @@ function arePropsEqual(
     prev.showTruckStations !== next.showTruckStations ||
     prev.buildingColorMode !== next.buildingColorMode ||
     prev.buildingOpacity !== next.buildingOpacity ||
-    prev.showSpaceElevator !== next.showSpaceElevator ||
     prev.showHypertubes !== next.showHypertubes
   ) {
     return false;
@@ -755,7 +709,6 @@ function arePropsEqual(
     (prev.trainStations?.length ?? 0) !== (next.trainStations?.length ?? 0) ||
     (prev.droneStations?.length ?? 0) !== (next.droneStations?.length ?? 0) ||
     (prev.truckStations?.length ?? 0) !== (next.truckStations?.length ?? 0) ||
-    (prev.spaceElevator != null) !== (next.spaceElevator != null) ||
     (prev.hypertubes?.length ?? 0) !== (next.hypertubes?.length ?? 0) ||
     (prev.hypertubeEntrances?.length ?? 0) !== (next.hypertubeEntrances?.length ?? 0)
   ) {
@@ -795,8 +748,6 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
   showTruckStations = false,
   buildingColorMode = 'type',
   buildingOpacity = 0.5,
-  spaceElevator,
-  showSpaceElevator = false,
   hypertubes = [],
   hypertubeEntrances = [],
   showHypertubes: showHypertubesProp = false,
@@ -811,7 +762,6 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
   const showTrainStationMarkers = showTrainStations && trainStations.length > 0;
   const showDroneStationMarkers = showDroneStations && droneStations.length > 0;
   const showTruckStationMarkers = showTruckStations && truckStations.length > 0;
-  const showSpaceElevatorLayer = showSpaceElevator && spaceElevator != null;
   const showHypertubesLayer =
     showHypertubesProp && (hypertubes.length > 0 || hypertubeEntrances.length > 0);
 
@@ -841,7 +791,6 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
     !showTrainStationMarkers &&
     !showDroneStationMarkers &&
     !showTruckStationMarkers &&
-    !showSpaceElevatorLayer &&
     !showHypertubesLayer
   ) {
     return null;
@@ -910,15 +859,6 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
           onItemHover={onItemHover}
           opacity={buildingOpacity}
           buildingColorMode={buildingColorMode}
-        />
-      )}
-
-      {/* Space elevator */}
-      {showSpaceElevatorLayer && (
-        <SpaceElevatorLayer
-          spaceElevator={spaceElevator}
-          onItemHover={onItemHover}
-          opacity={buildingOpacity}
         />
       )}
 

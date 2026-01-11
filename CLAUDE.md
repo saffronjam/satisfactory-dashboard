@@ -11,14 +11,14 @@ Architecture: React frontend (Dashboard) with Vite + Material-UI, Go backend (AP
 ## Quick Start
 
 ```bash
-make prepare                 # Extract LFS assets (required after clone)
+make unpack-assets           # Extract LFS assets (required after clone)
 docker compose up --build    # Run all services (frontend:3000, api:8081, redis:6379)
 ```
 
 ### Development
 
 ```bash
-make prepare   # Extract LFS assets (required after clone)
+make unpack-assets   # Extract LFS assets (required after clone)
 make deps      # Start Redis
 make run       # Run frontend (3039) + backend (8081) with hot reload
 ```
@@ -122,3 +122,10 @@ docker compose logs -f api          # Follow API logs
 - **api/CLAUDE.md**: Backend architecture, patterns, and development guide
 - **dashboard/CLAUDE.md**: Frontend architecture, patterns, and development guide
 - **Swagger UI**: `/v2/docs/` when API is running
+
+## Active Technologies
+- Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), Redis (session store), React 18, Material-UI 6 (001-access-key-auth)
+- Redis for access tokens and hashed password (001-access-key-auth)
+
+## Recent Changes
+- 001-access-key-auth: Added Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), Redis (session store), React 18, Material-UI 6

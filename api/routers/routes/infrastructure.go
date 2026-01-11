@@ -19,7 +19,7 @@ type InfrastructureRoutingGroup struct{ RoutingGroupBase }
 
 func InfrastructureRoutes() *InfrastructureRoutingGroup { return &InfrastructureRoutingGroup{} }
 
-func (group *InfrastructureRoutingGroup) PublicRoutes() []Route {
+func (group *InfrastructureRoutingGroup) PrivateRoutes() []Route {
 	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
 		{Method: "GET", Pattern: BeltsPath, HandlerFunc: v1.ListBelts, Middleware: stageCheck},

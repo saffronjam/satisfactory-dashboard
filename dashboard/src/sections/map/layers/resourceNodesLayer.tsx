@@ -19,7 +19,6 @@ type ResourceNodesLayerProps = {
   resourceNodes: ResourceNode[];
   towerVisibilityData: TowerVisibilityData[];
   filter: ResourceNodeFilter;
-  enabled: boolean;
   onNodeHover?: (event: ResourceNodeHoverEvent) => void;
 };
 
@@ -93,7 +92,6 @@ function ResourceNodesLayerInner({
   resourceNodes,
   towerVisibilityData,
   filter,
-  enabled,
   onNodeHover,
 }: ResourceNodesLayerProps) {
   // Filter resource nodes based on filter settings
@@ -127,10 +125,6 @@ function ResourceNodesLayerInner({
       return true;
     });
   }, [resourceNodes, towerVisibilityData, filter]);
-
-  if (!enabled) {
-    return null;
-  }
 
   return <ResourceNodesLayerContent filteredNodes={filteredNodes} onNodeHover={onNodeHover} />;
 }

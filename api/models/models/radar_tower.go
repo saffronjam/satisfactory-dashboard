@@ -1,6 +1,5 @@
 package models
 
-// Resource Node Purity
 type ResourceNodePurity string
 
 const (
@@ -9,23 +8,22 @@ const (
 	ResourceNodePurityPure   ResourceNodePurity = "Pure"
 )
 
-// ResourceType represents the type of resource (ore, liquid, gas)
 type ResourceType string
 
 const (
-	ResourceTypeIronOre     ResourceType = "IronOre"
-	ResourceTypeCopperOre   ResourceType = "CopperOre"
+	ResourceTypeIronOre     ResourceType = "Iron Ore"
+	ResourceTypeCopperOre   ResourceType = "Copper Ore"
 	ResourceTypeLimestone   ResourceType = "Limestone"
 	ResourceTypeCoal        ResourceType = "Coal"
 	ResourceTypeSAM         ResourceType = "SAM"
 	ResourceTypeSulfur      ResourceType = "Sulfur"
-	ResourceTypeCateriumOre ResourceType = "CateriumOre"
+	ResourceTypeCateriumOre ResourceType = "Caterium Ore"
 	ResourceTypeBauxite     ResourceType = "Bauxite"
-	ResourceTypeRawQuartz   ResourceType = "RawQuartz"
+	ResourceTypeRawQuartz   ResourceType = "Raw Quartz"
 	ResourceTypeUranium     ResourceType = "Uranium"
-	ResourceTypeCrudeOil    ResourceType = "CrudeOil"
+	ResourceTypeCrudeOil    ResourceType = "Crude Oil"
 	ResourceTypeGeyser      ResourceType = "Geyser"
-	ResourceTypeNitrogenGas ResourceType = "NitrogenGas"
+	ResourceTypeNitrogenGas ResourceType = "Nitrogen Gas"
 )
 
 // NodeType represents the deposit classification
@@ -41,19 +39,19 @@ const (
 type FaunaType string
 
 const (
-	FaunaTypeLizardDoggo      FaunaType = "LizardDoggo"
-	FaunaTypeFluffyTailedHog  FaunaType = "FluffyTailedHog"
+	FaunaTypeLizardDoggo      FaunaType = "Lizard Doggo"
+	FaunaTypeFluffyTailedHog  FaunaType = "Fluffy-Tailed Hog"
 	FaunaTypeSpitter          FaunaType = "Spitter"
 	FaunaTypeStinger          FaunaType = "Stinger"
-	FaunaTypeFlyingCrab       FaunaType = "FlyingCrab"
-	FaunaTypeNonFlyingBird    FaunaType = "NonFlyingBird"
-	FaunaTypeSpaceGiraffe     FaunaType = "SpaceGiraffe"
-	FaunaTypeSporeFlower      FaunaType = "SporeFlower"
-	FaunaTypeLeafBug          FaunaType = "LeafBug"
-	FaunaTypeGrassSprite      FaunaType = "GrassSprite"
-	FaunaTypeCaveBat          FaunaType = "CaveBat"
-	FaunaTypeGiantFlyingManta FaunaType = "GiantFlyingManta"
-	FaunaTypeLakeShark        FaunaType = "LakeShark"
+	FaunaTypeFlyingCrab       FaunaType = "Flying Crab"
+	FaunaTypeNonFlyingBird    FaunaType = "Non-flying Bird"
+	FaunaTypeSpaceGiraffe     FaunaType = "Space Giraffe-Tick-Penguin-Whale Thing"
+	FaunaTypeSporeFlower      FaunaType = "Spore Flower"
+	FaunaTypeLeafBug          FaunaType = "Leaf Bug"
+	FaunaTypeGrassSprite      FaunaType = "Grass Sprite"
+	FaunaTypeCaveBat          FaunaType = "Cave Bat"
+	FaunaTypeGiantFlyingManta FaunaType = "Giant Flying Manta"
+	FaunaTypeLakeShark        FaunaType = "Lake Shark"
 	FaunaTypeWalker           FaunaType = "Walker"
 )
 
@@ -62,17 +60,16 @@ type FloraType string
 const (
 	FloraTypeTree            FloraType = "Tree"
 	FloraTypeLeaves          FloraType = "Leaves"
-	FloraTypeFlowerPetals    FloraType = "FlowerPetals"
-	FloraTypeBaconAgaric     FloraType = "BaconAgaric"
+	FloraTypeFlowerPetals    FloraType = "Flower Petals"
+	FloraTypeBaconAgaric     FloraType = "Bacon Agaric"
 	FloraTypePaleberry       FloraType = "Paleberry"
-	FloraTypeBerylNut        FloraType = "BerylNut"
+	FloraTypeBerylNut        FloraType = "Beryl Nut"
 	FloraTypeMycelia         FloraType = "Mycelia"
-	FloraTypeVineLadder      FloraType = "VineLadder"
-	FloraTypeBlueCapMushroom FloraType = "BlueCapMushroom"
-	FloraTypePinkJellyfish   FloraType = "PinkJellyfish"
+	FloraTypeVineLadder      FloraType = "Vines"
+	FloraTypeBlueCapMushroom FloraType = "Blue Cap Mushroom"
+	FloraTypePinkJellyfish   FloraType = "Pink Jellyfish"
 )
 
-// Signal Types
 type SignalType string
 
 const (

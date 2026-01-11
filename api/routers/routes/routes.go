@@ -22,6 +22,7 @@ type RoutingGroup interface {
 // RoutingGroups returns a list of all routing groups that should be registered in the router
 func RoutingGroups() []RoutingGroup {
 	return []RoutingGroup{
+		AuthRoutes(),
 		SessionRoutes(),
 		CircuitRoutes(),
 		PlayerRoutes(),

@@ -452,3 +452,10 @@ type HypertubeEntrance struct {
 	BoundingBox BoundingBox `json:"BoundingBox"`
 	PowerInfo   PowerInfo   `json:"PowerInfo"`
 }
+
+type Hub struct {
+	ID          string      `json:"ID"`
+	HubLevel    int         `json:"HUBLevel"`
+	Location    Location    `json:"location"`
+	BoundingBox BoundingBox `json:"features"`
+}
