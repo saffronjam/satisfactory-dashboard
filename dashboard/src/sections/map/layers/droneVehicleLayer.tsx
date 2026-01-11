@@ -8,7 +8,6 @@ import { AnimatedPosition, useVehicleAnimation } from '../hooks/useVehicleAnimat
 
 type DroneVehicleLayerProps = {
   drones: Drone[];
-  enabled: boolean;
   onDroneClick?: (drone: Drone, animatedPos: AnimatedPosition) => void;
   onSelectedPositionUpdate?: (position: AnimatedPosition | null) => void;
   selectedName?: string | null;
@@ -182,14 +181,13 @@ function DroneMarkerComponent({
 
 function DroneVehicleLayerInner({
   drones,
-  enabled,
   onDroneClick,
   onSelectedPositionUpdate,
   selectedName,
   showNames = false,
   buildingColorMode = 'type',
 }: DroneVehicleLayerProps) {
-  const animatedPositions = useVehicleAnimation(drones, enabled);
+  const animatedPositions = useVehicleAnimation(drones);
   const prevSelectedPosRef = useRef<AnimatedPosition | null>(null);
 
   // Only update parent with SELECTED vehicle's position to avoid 60fps cascade

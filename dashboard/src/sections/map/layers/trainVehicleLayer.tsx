@@ -14,7 +14,6 @@ import { AnimatedPosition, useTrainAnimation } from '../hooks/useTrainAnimation'
 
 type TrainVehicleLayerProps = {
   trains: Train[];
-  enabled: boolean;
   onTrainClick?: (train: Train, animatedPos: AnimatedPosition) => void;
   onSelectedPositionUpdate?: (position: AnimatedPosition | null) => void;
   selectedName?: string | null;
@@ -189,14 +188,13 @@ function TrainMarkerComponent({
 
 function TrainVehicleLayerInner({
   trains,
-  enabled,
   onTrainClick,
   onSelectedPositionUpdate,
   selectedName,
   showNames = false,
   buildingColorMode = 'type',
 }: TrainVehicleLayerProps) {
-  const animatedPositions = useTrainAnimation(trains, enabled);
+  const animatedPositions = useTrainAnimation(trains);
   const prevSelectedPosRef = useRef<AnimatedPosition | null>(null);
 
   // Only update parent with SELECTED vehicle's position to avoid 60fps cascade
