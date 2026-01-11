@@ -61,8 +61,7 @@ function positionsEqual(
 }
 
 export function useVehicleAnimation<T extends VehicleWithLocation>(
-  vehicles: T[],
-  enabled: boolean = true
+  vehicles: T[]
 ): Map<string, AnimatedPosition> {
   const animatedVehiclesRef = useRef<Map<string, AnimatedVehicle<T>>>(new Map());
   const [positions, setPositions] = useState<Map<string, AnimatedPosition>>(new Map());
@@ -71,12 +70,6 @@ export function useVehicleAnimation<T extends VehicleWithLocation>(
 
   // Update targets when vehicle data changes
   useEffect(() => {
-    if (!enabled) {
-      animatedVehiclesRef.current.clear();
-      setPositions(new Map());
-      return;
-    }
-
     const now = performance.now();
 
     // Track which vehicles exist in the new data
@@ -135,14 +128,10 @@ export function useVehicleAnimation<T extends VehicleWithLocation>(
         return newPositions;
       });
     }
-  }, [vehicles, enabled]);
+  }, [vehicles]);
 
   // Animation loop
   useEffect(() => {
-    if (!enabled) {
-      return;
-    }
-
     const animate = (time: number) => {
       const newPositions = new Map<string, AnimatedPosition>();
 
@@ -175,7 +164,7 @@ export function useVehicleAnimation<T extends VehicleWithLocation>(
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [enabled]);
+  }, []);
 
   return positions;
 }
