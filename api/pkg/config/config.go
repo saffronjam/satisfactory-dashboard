@@ -15,4 +15,8 @@ type Type struct {
 		URL      string `json:"url"`
 		Password string `json:"password,default=default"`
 	}
+
+	Auth struct {
+		BootstrapPassword string
+	}
 }

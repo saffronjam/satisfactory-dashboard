@@ -29,5 +29,11 @@ func SetupEnvironment(appMode string) error {
 	Config.Mode = appMode
 	Config.Filepath = filepath
 
+	bootstrapPassword, ok := os.LookupEnv("SD_BOOTSTRAP_PASSWORD")
+	if !ok || bootstrapPassword == "" {
+		bootstrapPassword = "change-me"
+	}
+	Config.Auth.BootstrapPassword = bootstrapPassword
+
 	return nil
 }
