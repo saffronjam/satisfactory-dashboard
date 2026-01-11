@@ -36,6 +36,9 @@ jobs:
       - name: Pull LFS files
         run: git lfs pull
 
+      - name: Unpack assets
+        run: make unpack-assets
+
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
