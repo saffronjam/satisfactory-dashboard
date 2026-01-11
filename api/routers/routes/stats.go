@@ -18,7 +18,7 @@ type StatsRoutingGroup struct{ RoutingGroupBase }
 
 func StatsRoutes() *StatsRoutingGroup { return &StatsRoutingGroup{} }
 
-func (group *StatsRoutingGroup) PublicRoutes() []Route {
+func (group *StatsRoutingGroup) PrivateRoutes() []Route {
 	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
 		{Method: "GET", Pattern: GeneratorStatsPath, HandlerFunc: v1.GetGeneratorStats, Middleware: stageCheck},

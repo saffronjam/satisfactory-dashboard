@@ -16,7 +16,7 @@ type StatusRoutingGroup struct{ RoutingGroupBase }
 
 func StatusRoutes() *StatusRoutingGroup { return &StatusRoutingGroup{} }
 
-func (group *StatusRoutingGroup) PublicRoutes() []Route {
+func (group *StatusRoutingGroup) PrivateRoutes() []Route {
 	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
 		{Method: "GET", Pattern: SatisfactoryApiStatusPath, HandlerFunc: v1.GetSatisfactoryApiStatus, Middleware: stageCheck},

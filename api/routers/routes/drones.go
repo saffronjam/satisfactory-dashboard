@@ -17,7 +17,7 @@ type DronesRoutingGroup struct{ RoutingGroupBase }
 
 func DroneRoutes() *DronesRoutingGroup { return &DronesRoutingGroup{} }
 
-func (group *DronesRoutingGroup) PublicRoutes() []Route {
+func (group *DronesRoutingGroup) PrivateRoutes() []Route {
 	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
 		{Method: "GET", Pattern: DronesPath, HandlerFunc: v1.ListDrones, Middleware: stageCheck},

@@ -15,7 +15,7 @@ type PlayersRoutingGroup struct{ RoutingGroupBase }
 
 func PlayerRoutes() *PlayersRoutingGroup { return &PlayersRoutingGroup{} }
 
-func (group *PlayersRoutingGroup) PublicRoutes() []Route {
+func (group *PlayersRoutingGroup) PrivateRoutes() []Route {
 	stageCheck := []gin.HandlerFunc{middleware.RequireSessionReady()}
 	return []Route{
 		{Method: "GET", Pattern: PlayersPath, HandlerFunc: v1.ListPlayers, Middleware: stageCheck},
