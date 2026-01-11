@@ -11,14 +11,14 @@ Architecture: React frontend (Dashboard) with Vite + Material-UI, Go backend (AP
 ## Quick Start
 
 ```bash
-make prepare                 # Extract LFS assets (required after clone)
+make unpack-assets           # Extract LFS assets (required after clone)
 docker compose up --build    # Run all services (frontend:3000, api:8081, redis:6379)
 ```
 
 ### Development
 
 ```bash
-make prepare   # Extract LFS assets (required after clone)
+make unpack-assets   # Extract LFS assets (required after clone)
 make deps      # Start Redis
 make run       # Run frontend (3039) + backend (8081) with hot reload
 ```

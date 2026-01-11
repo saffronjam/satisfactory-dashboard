@@ -24,9 +24,9 @@
 
 **Purpose**: Configuration and dependency setup
 
-- [ ] T001 Add `SD_BOOTSTRAP_PASSWORD` env var to config in `api/pkg/config/config.go`
-- [ ] T002 [P] Add `golang.org/x/crypto/bcrypt` dependency to `api/go.mod`
-- [ ] T003 [P] Add `golang.org/x/time/rate` dependency to `api/go.mod`
+- [x] T001 Add `SD_BOOTSTRAP_PASSWORD` env var to config in `api/pkg/config/config.go`
+- [x] T002 [P] Add `golang.org/x/crypto/bcrypt` dependency to `api/go.mod`
+- [x] T003 [P] Add `golang.org/x/time/rate` dependency to `api/go.mod`
 
 ---
 
@@ -36,14 +36,14 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Create auth models in `api/models/models/auth.go` (LoginRequest, LoginResponse, AuthStatusResponse, ChangePasswordRequest, ChangePasswordResponse, LogoutResponse)
-- [ ] T005 Run `make generate` to create TypeScript types in `dashboard/src/apiTypes.ts`
-- [ ] T006 Create auth service in `api/service/auth/auth.go` with password hashing (bcrypt), token generation (crypto/rand), Redis storage
-- [ ] T007 [P] Create rate limiter in `api/service/auth/rate_limiter.go` (5 requests/min/IP using sync.Map + rate.Limiter)
-- [ ] T008 Create auth middleware in `api/routers/api/v1/middleware/auth.go` for token validation and TTL refresh
-- [ ] T009 Create auth routing group in `api/routers/routes/auth.go` implementing RoutingGroup interface
-- [ ] T010 Register auth routes in `api/routers/routes/routes.go` (add to RoutingGroups slice)
-- [ ] T011 Initialize password on startup in `api/cmd/main.go` (check Redis, hash bootstrap password if not exists)
+- [x] T004 Create auth models in `api/models/models/auth.go` (LoginRequest, LoginResponse, AuthStatusResponse, ChangePasswordRequest, ChangePasswordResponse, LogoutResponse)
+- [x] T005 Run `make generate` to create TypeScript types in `dashboard/src/apiTypes.ts`
+- [x] T006 Create auth service in `api/service/auth/auth.go` with password hashing (bcrypt), token generation (crypto/rand), Redis storage
+- [x] T007 [P] Create rate limiter in `api/service/auth/rate_limiter.go` (5 requests/min/IP using sync.Map + rate.Limiter)
+- [x] T008 Create auth middleware in `api/routers/api/v1/middleware/auth.go` for token validation and TTL refresh
+- [x] T009 Create auth routing group in `api/routers/routes/auth.go` implementing RoutingGroup interface
+- [x] T010 Register auth routes in `api/routers/routes/routes.go` (add to RoutingGroups slice)
+- [x] T011 Initialize password on startup in `api/cmd/main.go` (check Redis, hash bootstrap password if not exists)
 
 **Checkpoint**: Auth infrastructure ready - user story implementation can now begin
 
@@ -57,20 +57,20 @@
 
 ### Backend Implementation for User Story 1
 
-- [ ] T012 [US1] Implement POST `/v1/auth/login` handler in `api/routers/api/v1/auth.go` (validate password, create token, set HTTP-only cookie, return usedDefaultPassword flag)
-- [ ] T013 [US1] Implement GET `/v1/auth/status` handler in `api/routers/api/v1/auth.go` (check cookie, return authenticated status)
-- [ ] T014 [US1] Add Swagger annotations to login and status handlers in `api/routers/api/v1/auth.go`
-- [ ] T015 [US1] Run `swag init` in `api/` to regenerate Swagger docs
+- [x] T012 [US1] Implement POST `/v1/auth/login` handler in `api/routers/api/v1/auth.go` (validate password, create token, set HTTP-only cookie, return usedDefaultPassword flag)
+- [x] T013 [US1] Implement GET `/v1/auth/status` handler in `api/routers/api/v1/auth.go` (check cookie, return authenticated status)
+- [x] T014 [US1] Add Swagger annotations to login and status handlers in `api/routers/api/v1/auth.go`
+- [x] T015 [US1] Run `swag init` in `api/` to regenerate Swagger docs
 
 ### Frontend Implementation for User Story 1
 
-- [ ] T016 [P] [US1] Create auth service in `dashboard/src/services/auth.ts` (login, getStatus API calls)
-- [ ] T017 [P] [US1] Create AuthContext in `dashboard/src/contexts/auth/AuthContext.tsx` (authenticated state, usedDefaultPassword flag)
-- [ ] T018 [US1] Create useAuth hook in `dashboard/src/contexts/auth/useAuth.ts`
-- [ ] T019 [US1] Create login page in `dashboard/src/pages/login.tsx` (password input, submit button, error display)
-- [ ] T020 [US1] Create AuthGuard component in `dashboard/src/components/auth-guard/AuthGuard.tsx` (redirect unauthenticated to login)
-- [ ] T021 [US1] Wrap app routes with AuthGuard in `dashboard/src/App.tsx`
-- [ ] T022 [US1] Add default password warning notification in `dashboard/src/App.tsx` (show toast when usedDefaultPassword is true)
+- [x] T016 [P] [US1] Create auth service in `dashboard/src/services/auth.ts` (login, getStatus API calls)
+- [x] T017 [P] [US1] Create AuthContext in `dashboard/src/contexts/auth/AuthContext.tsx` (authenticated state, usedDefaultPassword flag)
+- [x] T018 [US1] Create useAuth hook in `dashboard/src/contexts/auth/useAuth.ts`
+- [x] T019 [US1] Create login page in `dashboard/src/pages/login.tsx` (password input, submit button, error display)
+- [x] T020 [US1] Create AuthGuard component in `dashboard/src/components/auth-guard/AuthGuard.tsx` (redirect unauthenticated to login)
+- [x] T021 [US1] Wrap app routes with AuthGuard in `dashboard/src/App.tsx`
+- [x] T022 [US1] Add default password warning notification in `dashboard/src/App.tsx` (show toast when usedDefaultPassword is true)
 
 **Checkpoint**: User Story 1 complete - users can authenticate and access the dashboard
 
@@ -84,12 +84,12 @@
 
 ### Backend Implementation for User Story 2
 
-- [ ] T023 [US2] Ensure auth middleware in `api/routers/api/v1/middleware/auth.go` refreshes Redis TTL on each validated request (sliding expiration)
-- [ ] T024 [US2] Apply auth middleware to all existing route groups in `api/routers/routes/routes.go` except auth login/status
+- [x] T023 [US2] Ensure auth middleware in `api/routers/api/v1/middleware/auth.go` refreshes Redis TTL on each validated request (sliding expiration)
+- [x] T024 [US2] Apply auth middleware to all existing route groups in `api/routers/routes/routes.go` except auth login/status
 
 ### Frontend Implementation for User Story 2
 
-- [ ] T025 [US2] Update AuthContext in `dashboard/src/contexts/auth/AuthContext.tsx` to check auth status on mount (persist across page reloads)
+- [x] T025 [US2] Update AuthContext in `dashboard/src/contexts/auth/AuthContext.tsx` to check auth status on mount (persist across page reloads)
 
 **Checkpoint**: User Story 2 complete - sessions persist and auto-refresh
 
@@ -103,14 +103,14 @@
 
 ### Backend Implementation for User Story 3
 
-- [ ] T026 [US3] Implement POST `/v1/auth/change-password` handler in `api/routers/api/v1/auth.go` (verify current password, update Redis hash)
-- [ ] T027 [US3] Add Swagger annotations to change-password handler in `api/routers/api/v1/auth.go`
-- [ ] T028 [US3] Run `swag init` in `api/` to regenerate Swagger docs
+- [x] T026 [US3] Implement POST `/v1/auth/change-password` handler in `api/routers/api/v1/auth.go` (verify current password, update Redis hash)
+- [x] T027 [US3] Add Swagger annotations to change-password handler in `api/routers/api/v1/auth.go`
+- [x] T028 [US3] Run `swag init` in `api/` to regenerate Swagger docs
 
 ### Frontend Implementation for User Story 3
 
-- [ ] T029 [P] [US3] Add changePassword function to auth service in `dashboard/src/services/auth.ts`
-- [ ] T030 [US3] Add password change form to Settings page in `dashboard/src/sections/settings/view/settings-view.tsx` (current password, new password, confirm, submit)
+- [x] T029 [P] [US3] Add changePassword function to auth service in `dashboard/src/services/auth.ts`
+- [x] T030 [US3] Add password change form to Settings page in `dashboard/src/sections/settings/view/settings-view.tsx` (current password, new password, confirm, submit)
 
 **Checkpoint**: User Story 3 complete - users can change the password
 
@@ -124,15 +124,15 @@
 
 ### Backend Implementation for User Story 4
 
-- [ ] T031 [US4] Implement POST `/v1/auth/logout` handler in `api/routers/api/v1/auth.go` (delete token from Redis, clear cookie)
-- [ ] T032 [US4] Add Swagger annotations to logout handler in `api/routers/api/v1/auth.go`
-- [ ] T033 [US4] Run `swag init` in `api/` to regenerate Swagger docs
+- [x] T031 [US4] Implement POST `/v1/auth/logout` handler in `api/routers/api/v1/auth.go` (delete token from Redis, clear cookie)
+- [x] T032 [US4] Add Swagger annotations to logout handler in `api/routers/api/v1/auth.go`
+- [x] T033 [US4] Run `swag init` in `api/` to regenerate Swagger docs
 
 ### Frontend Implementation for User Story 4
 
-- [ ] T034 [P] [US4] Add logout function to auth service in `dashboard/src/services/auth.ts`
-- [ ] T035 [US4] Update AuthContext in `dashboard/src/contexts/auth/AuthContext.tsx` to handle 401 responses (clear state, show expiration notification, redirect to login)
-- [ ] T036 [US4] Add logout button to dashboard header or settings in `dashboard/src/components/` or sidebar
+- [x] T034 [P] [US4] Add logout function to auth service in `dashboard/src/services/auth.ts`
+- [x] T035 [US4] Update AuthContext in `dashboard/src/contexts/auth/AuthContext.tsx` to handle 401 responses (clear state, show expiration notification, redirect to login)
+- [x] T036 [US4] Add logout button to dashboard header or settings in `dashboard/src/components/` or sidebar
 
 **Checkpoint**: User Story 4 complete - graceful session expiration handling
 
@@ -142,11 +142,11 @@
 
 **Purpose**: Code quality, documentation, and validation
 
-- [ ] T037 Run `make prepare-for-commit` (generate, format, lint)
-- [ ] T038 [P] Verify all exported functions have godoc comments in `api/service/auth/auth.go`
-- [ ] T039 [P] Verify all exported functions have JSDoc comments in `dashboard/src/contexts/auth/AuthContext.tsx`
-- [ ] T040 Run quickstart.md validation checklist manually
-- [ ] T041 Update `api/docker-compose.yml` or `.env.example` with `SD_BOOTSTRAP_PASSWORD` documentation
+- [x] T037 Run `make prepare-for-commit` (generate, format, lint)
+- [x] T038 [P] Verify all exported functions have godoc comments in `api/service/auth/auth.go`
+- [x] T039 [P] Verify all exported functions have JSDoc comments in `dashboard/src/contexts/auth/AuthContext.tsx`
+- [x] T040 Run quickstart.md validation checklist manually
+- [x] T041 Update `api/docker-compose.yml` or `.env.example` with `SD_BOOTSTRAP_PASSWORD` documentation
 
 ---
 
