@@ -36,9 +36,6 @@ jobs:
       - name: Pull LFS files
         run: git lfs pull
 
-      - name: Unpack assets
-        run: make unpack-assets
-
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
@@ -68,7 +65,8 @@ jobs:
       - name: Build and push frontend image
         uses: docker/build-push-action@v6
         with:
-          context: ./dashboard
+          context: .
+          file: ./dashboard/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -1,0 +1,34 @@
+# Dependencies
+node_modules
+dashboard/node_modules
+
+# Build outputs
+dashboard/dist
+api/tmp
+
+# Unpacked assets (we use tar files instead)
+dashboard/public/assets/images/satisfactory/map
+dashboard/public/assets/images/satisfactory/16x16
+dashboard/public/assets/images/satisfactory/32x32
+dashboard/public/assets/images/satisfactory/64x64
+dashboard/public/assets/images/satisfactory/128x128
+dashboard/public/assets/images/satisfactory/256x256
+
+# Scripts output
+scripts/scrape_images/output
+scripts/scrape_images/downloads
+scripts/scrape_images/venv
+scripts/scrape_map/output
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+
+# Misc
+*.md
+!dashboard/README.md
+.claude
