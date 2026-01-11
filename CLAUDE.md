@@ -126,6 +126,8 @@ docker compose logs -f api          # Follow API logs
 ## Active Technologies
 - Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), Redis (session store), React 18, Material-UI 6 (001-access-key-auth)
 - Redis for access tokens and hashed password (001-access-key-auth)
+- Go 1.24.1 + go-redis/v9 (existing), gin-gonic (existing), zap (logging) (002-redis-poll-lease)
+- Redis (existing infrastructure, used for sessions and caching) (002-redis-poll-lease)
 
 ## Recent Changes
 - 001-access-key-auth: Added Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), Redis (session store), React 18, Material-UI 6
