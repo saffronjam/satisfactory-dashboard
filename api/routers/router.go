@@ -2,7 +2,10 @@ package routers
 
 import (
 	"api/pkg/metrics"
+	"api/routers/api/v1/middleware"
 	"api/routers/routes"
+	"api/service/auth"
+
 	"github.com/gin-contrib/cors"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/penglongli/gin-metrics/ginmetrics"
@@ -14,14 +17,15 @@ import (
 	"api/models/mode"
 	"api/pkg/config"
 	"api/pkg/log"
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/go-playground/validator/v10"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 )
 
 func NewRouter() *gin.Engine {
@@ -40,8 +44,10 @@ func NewRouter() *gin.Engine {
 	m.SetMetricPrefix(metrics.Prefix)
 	m.Use(router)
 
-	// Private routing group (unused)
+	// Private routing group - requires authentication
+	authService := auth.NewService()
 	private := router.Group("/")
+	private.Use(middleware.RequireAuth(authService))
 
 	// Public routing group
 	public := router.Group("/")
@@ -61,8 +67,6 @@ func NewRouter() *gin.Engine {
 	public.Any("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
-
-	// TODO: Answer /livez or/and /readyz with 200 if the server is up
 
 	// Hook routing group
 	hook := router.Group("/")
@@ -95,9 +99,15 @@ func HandleRoute(engine *gin.RouterGroup, method, path string, handler gin.Handl
 
 func corsAllowAll() gin.HandlerFunc {
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"*"}
 	corsConfig.AllowCredentials = true
 	corsConfig.AddAllowHeaders("authorization")
+
+	// When AllowCredentials is true, we cannot use wildcard "*" for origins.
+	// Instead, use AllowOriginFunc to dynamically allow the requesting origin.
+	corsConfig.AllowOriginFunc = func(origin string) bool {
+		// Allow all origins dynamically (mirrors the origin back)
+		return true
+	}
 
 	return cors.New(corsConfig)
 }

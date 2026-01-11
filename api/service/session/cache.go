@@ -64,6 +64,7 @@ func GetCachedState(sessionID string) *models.State {
 	getCached(models.SatisfactoryEventExplorers, &state.Explorers)
 	getCached(models.SatisfactoryEventVehiclePaths, &state.VehiclePaths)
 	getCached(models.SatisfactoryEventSpaceElevator, &state.SpaceElevator)
+	getCached(models.SatisfactoryEventHub, &state.Hub)
 	getCached(models.SatisfactoryEventRadarTowers, &state.RadarTowers)
 	getCached(models.SatisfactoryEventResourceNodes, &state.ResourceNodes)
 
@@ -101,6 +102,7 @@ func ClearCachedState(sessionID string) {
 		models.SatisfactoryEventExplorers,
 		models.SatisfactoryEventVehiclePaths,
 		models.SatisfactoryEventSpaceElevator,
+		models.SatisfactoryEventHub,
 		models.SatisfactoryEventRadarTowers,
 		models.SatisfactoryEventResourceNodes,
 		models.SatisfactoryEventHypertubes,

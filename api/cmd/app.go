@@ -6,6 +6,7 @@ import (
 	"api/pkg/db"
 	"api/pkg/log"
 	"api/routers"
+	"api/service/auth"
 	"context"
 	"errors"
 	argFlag "flag"
@@ -48,6 +49,7 @@ func Create(opts *Options) *App {
 		{Name: "Validate application", Task: func() error { return validateApp(opts) }},
 		{Name: "Setup environment", Task: func() error { return config.SetupEnvironment(opts.Mode) }},
 		{Name: "Setup DB", Task: func() error { return db.Setup() }},
+		{Name: "Initialize auth", Task: initializeAuth},
 	}
 
 	for idx, task := range initTasks {
@@ -173,6 +175,22 @@ func validateApp(options *Options) error {
 				options.Flags.SetPassedValue(flag.Name, true)
 			}
 		}
+	}
+
+	return nil
+}
+
+// initializeAuth initializes the authentication system by checking if a password
+// exists in Redis and setting the bootstrap password if not.
+func initializeAuth() error {
+	authService := auth.NewService()
+	usedBootstrap, err := authService.InitializePassword()
+	if err != nil {
+		return fmt.Errorf("failed to initialize auth: %w", err)
+	}
+
+	if usedBootstrap {
+		log.Printf("%sInitialized with bootstrap password - change it via Settings%s", log.Orange, log.Reset)
 	}
 
 	return nil
