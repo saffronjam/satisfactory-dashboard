@@ -288,6 +288,7 @@ func (c *Client) SetupEventStream(ctx context.Context, onEvent func(*models.Sati
 	Publish(ctx, models.SatisfactoryEventExplorers, c.ListExplorers, onEvent)
 	Publish(ctx, models.SatisfactoryEventVehiclePaths, c.ListVehiclePaths, onEvent)
 	Publish(ctx, models.SatisfactoryEventSpaceElevator, c.GetSpaceElevator, onEvent)
+	Publish(ctx, models.SatisfactoryEventHub, c.GetHub, onEvent)
 	Publish(ctx, models.SatisfactoryEventRadarTowers, c.ListRadarTowers, onEvent)
 	Publish(ctx, models.SatisfactoryEventResourceNodes, c.ListResourceNodes, onEvent)
 	return nil

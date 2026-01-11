@@ -74,6 +74,32 @@ func (client *Client) GetSpaceElevator(ctx context.Context) (*models.SpaceElevat
 	}, nil
 }
 
+// GetHub fetches HUB data (single object, not array)
+func (client *Client) GetHub(ctx context.Context) (*models.Hub, error) {
+	var rawList []frm_models.Hub
+	err := client.makeSatisfactoryCallWithTimeout(ctx, "/getTradingPost", &rawList, infraApiTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get hub. details: %w", err)
+	}
+
+	if len(rawList) == 0 {
+		return nil, nil
+	}
+	raw := rawList[0]
+
+	// If no hub exists, the ID will be empty
+	if raw.ID == "" {
+		return nil, nil
+	}
+
+	return &models.Hub{
+		ID:          raw.ID,
+		HubLevel:    raw.HubLevel,
+		Location:    parseLocation(raw.Location),
+		BoundingBox: parseBoundingBox(raw.BoundingBox),
+	}, nil
+}
+
 // ListRadarTowers fetches radar tower data
 func (client *Client) ListRadarTowers(ctx context.Context) ([]models.RadarTower, error) {
 	var rawTowers []frm_models.RadarTower

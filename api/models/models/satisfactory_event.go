@@ -23,6 +23,7 @@ const (
 	SatisfactoryEventExplorers       SatisfactoryEventType = "explorers"
 	SatisfactoryEventVehiclePaths    SatisfactoryEventType = "vehiclePaths"
 	SatisfactoryEventSpaceElevator   SatisfactoryEventType = "spaceElevator"
+	SatisfactoryEventHub             SatisfactoryEventType = "hub"
 	SatisfactoryEventRadarTowers     SatisfactoryEventType = "radarTowers"
 	SatisfactoryEventResourceNodes   SatisfactoryEventType = "resourceNodes"
 	SatisfactoryEventHypertubes      SatisfactoryEventType = "hypertubes"

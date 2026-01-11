@@ -29,6 +29,7 @@ type State struct {
 	Explorers          []Explorer          `json:"explorers"`
 	VehiclePaths       []VehiclePath       `json:"vehiclePaths"`
 	SpaceElevator      *SpaceElevator      `json:"spaceElevator"`
+	Hub                *Hub                `json:"hub"`
 	RadarTowers        []RadarTower        `json:"radarTowers"`
 	ResourceNodes      []ResourceNode      `json:"resourceNodes"`
 }
