@@ -6,6 +6,7 @@ import { AuthGuard } from 'src/components/auth-guard/AuthGuard';
 import { GuestGuard } from 'src/components/auth-guard/GuestGuard';
 import { DashboardLayout } from 'src/layouts/dashboard';
 import DebugPage from 'src/pages/debug';
+import DebugNodesPage from 'src/pages/debug-nodes';
 import DronesPage from 'src/pages/drones';
 import LoginPage from 'src/pages/login';
 import MapPage from 'src/pages/map';
@@ -66,6 +67,7 @@ export function Router() {
         { path: 'players', element: <PlayersPage /> },
         { path: 'settings', element: <SettingsPage /> },
         { path: 'debug', element: <DebugPage /> },
+        { path: 'debug/nodes', element: <DebugNodesPage /> },
       ],
     },
     {

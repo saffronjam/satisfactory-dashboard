@@ -14,14 +14,17 @@ import { varAlpha } from 'src/theme/styles';
 
 // ----------------------------------------------------------------------
 
+type NavItem = {
+  path: string;
+  title: string;
+  icon: React.ReactNode;
+  group: 'main' | 'sub' | 'debug';
+  info?: React.ReactNode;
+  children?: NavItem[];
+};
+
 export type NavContentProps = {
-  data: {
-    path: string;
-    title: string;
-    icon: React.ReactNode;
-    group: 'main' | 'sub' | 'debug';
-    info?: React.ReactNode;
-  }[];
+  data: NavItem[];
   slots?: {
     topArea?: React.ReactNode;
     bottomArea?: React.ReactNode;
@@ -112,6 +115,88 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
   const subItems = data.filter((item) => item.group === 'sub');
   const debugItems = data.filter((item) => item.group === 'debug');
 
+  // Recursive function to render nav item with children support
+  const renderNavItem = (item: NavItem, depth: number = 0): React.ReactNode => {
+    const isActive = item.path === pathname;
+    const hasChildren = item.children && item.children.length > 0;
+    const isChildActive = hasChildren && item.children?.some((child) => child.path === pathname);
+    const isChild = depth > 0;
+
+    return (
+      <Box key={item.title}>
+        <ListItem disableGutters disablePadding>
+          <ListItemButton
+            disableRipple
+            component={RouterLink}
+            href={item.path}
+            sx={{
+              pl: 2 + depth * 2,
+              py: isChild ? 0.5 : 1,
+              gap: isChild ? 1.5 : 2,
+              pr: 1.5,
+              borderRadius: 2,
+              typography: 'body2',
+              fontWeight: 'fontWeightMedium',
+              ...(isChild ? {} : { minHeight: 'var(--layout-nav-item-height)' }),
+              // Child items: lighter text on active, no background
+              ...(isChild && {
+                ...(!isActive && {
+                  color: 'text.secondary',
+                  '&:hover': {
+                    color: 'text.primary',
+                    bgcolor: 'action.hover',
+                  },
+                }),
+                ...(isActive && {
+                  color: theme.palette.primary.light,
+                  fontWeight: 'fontWeightSemiBold',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                }),
+              }),
+              // Parent items: purple background on active
+              ...(!isChild && {
+                ...(!isActive &&
+                  !isChildActive && {
+                    color: 'text.primary',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                    },
+                  }),
+                ...((isActive || isChildActive) && {
+                  fontWeight: 'fontWeightSemiBold',
+                  bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.66),
+                  color: theme.palette.primary.contrastText,
+                  '&:hover': {
+                    bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.86),
+                  },
+                }),
+              }),
+            }}
+          >
+            <Box component="span" sx={{ width: isChild ? 20 : 24, height: isChild ? 20 : 24 }}>
+              {item.icon}
+            </Box>
+
+            <Box component="span" flexGrow={1}>
+              {item.title}
+            </Box>
+
+            {item.info ? item.info : null}
+          </ListItemButton>
+        </ListItem>
+
+        {/* Render children if present (always expanded) */}
+        {hasChildren && (
+          <Box sx={{ mt: 0.5 }}>
+            {item.children?.map((child) => renderNavItem(child, depth + 1))}
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
   return (
     <>
       <Logo sx={{ display: 'none' }} />
@@ -125,157 +210,19 @@ export function NavContent({ data, slots, sx }: NavContentProps) {
         <Box component="nav" display="flex" flex="1 1 auto" flexDirection="column" sx={sx}>
           <Box component="ul" gap={1.5} display="flex" flexDirection="column">
             {/* Render main items */}
-            {mainItems.map((item) => {
-              const isActive = item.path === pathname;
-
-              return (
-                <ListItem disableGutters disablePadding key={item.title}>
-                  <ListItemButton
-                    disableRipple
-                    component={RouterLink}
-                    href={item.path}
-                    sx={{
-                      pl: 2,
-                      py: 1,
-                      gap: 2,
-                      pr: 1.5,
-                      borderRadius: 2,
-                      typography: 'body2',
-                      fontWeight: 'fontWeightMedium',
-                      minHeight: 'var(--layout-nav-item-height)',
-                      ...(!isActive && {
-                        color: 'text.primary',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                        },
-                      }),
-                      ...(isActive && {
-                        fontWeight: 'fontWeightSemiBold',
-                        bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.66),
-                        color: theme.palette.primary.contrastText,
-                        '&:hover': {
-                          bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.86),
-                        },
-                      }),
-                    }}
-                  >
-                    <Box component="span" sx={{ width: 24, height: 24 }}>
-                      {item.icon}
-                    </Box>
-
-                    <Box component="span" flexGrow={1}>
-                      {item.title}
-                    </Box>
-
-                    {item.info ? item.info : null}
-                  </ListItemButton>
-                </ListItem>
-              );
-            })}
+            {mainItems.map((item) => renderNavItem(item))}
 
             {/* Divider between main and sub items */}
             {subItems.length > 0 && <Divider sx={{ my: 2 }} />}
 
             {/* Render sub items */}
-            {subItems.map((item) => {
-              const isActive = item.path === pathname;
-
-              return (
-                <ListItem disableGutters disablePadding key={item.title}>
-                  <ListItemButton
-                    disableRipple
-                    component={RouterLink}
-                    href={item.path}
-                    sx={{
-                      pl: 2,
-                      py: 1,
-                      gap: 2,
-                      pr: 1.5,
-                      borderRadius: 2,
-                      typography: 'body2',
-                      fontWeight: 'fontWeightMedium',
-                      minHeight: 'var(--layout-nav-item-height)',
-                      ...(!isActive && {
-                        color: 'text.primary',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                        },
-                      }),
-                      ...(isActive && {
-                        fontWeight: 'fontWeightSemiBold',
-                        bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.66),
-                        color: theme.palette.primary.contrastText,
-                        '&:hover': {
-                          bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.86),
-                        },
-                      }),
-                    }}
-                  >
-                    <Box component="span" sx={{ width: 24, height: 24 }}>
-                      {item.icon}
-                    </Box>
-
-                    <Box component="span" flexGrow={1}>
-                      {item.title}
-                    </Box>
-
-                    {item.info ? item.info : null}
-                  </ListItemButton>
-                </ListItem>
-              );
-            })}
+            {subItems.map((item) => renderNavItem(item))}
 
             {/* Divider between sub and debug items */}
             {debugItems.length > 0 && <Divider sx={{ my: 2 }} />}
 
             {/* Render debug items */}
-            {debugItems.map((item) => {
-              const isActive = item.path === pathname;
-
-              return (
-                <ListItem disableGutters disablePadding key={item.title}>
-                  <ListItemButton
-                    disableRipple
-                    component={RouterLink}
-                    href={item.path}
-                    sx={{
-                      pl: 2,
-                      py: 1,
-                      gap: 2,
-                      pr: 1.5,
-                      borderRadius: 2,
-                      typography: 'body2',
-                      fontWeight: 'fontWeightMedium',
-                      minHeight: 'var(--layout-nav-item-height)',
-                      ...(!isActive && {
-                        color: 'text.primary',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                        },
-                      }),
-                      ...(isActive && {
-                        fontWeight: 'fontWeightSemiBold',
-                        bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.66),
-                        color: theme.palette.primary.contrastText,
-                        '&:hover': {
-                          bgcolor: varAlpha(theme.palette.primary.darkChannel, 0.86),
-                        },
-                      }),
-                    }}
-                  >
-                    <Box component="span" sx={{ width: 24, height: 24 }}>
-                      {item.icon}
-                    </Box>
-
-                    <Box component="span" flexGrow={1}>
-                      {item.title}
-                    </Box>
-
-                    {item.info ? item.info : null}
-                  </ListItemButton>
-                </ListItem>
-              );
-            })}
+            {debugItems.map((item) => renderNavItem(item))}
           </Box>
         </Box>
       </Scrollbar>
