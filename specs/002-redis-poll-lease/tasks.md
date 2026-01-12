@@ -26,9 +26,9 @@ Based on plan.md structure:
 
 **Purpose**: Create lease package structure and foundational types
 
-- [ ] T001 Create lease package directory at api/service/lease/
-- [ ] T002 [P] Create types and constants in api/service/lease/types.go (LeaseState, LeaseInfo, LeaseConfig, LeaseEventType, LeaseEvent)
-- [ ] T003 [P] Create Lua scripts as embedded strings in api/service/lease/lua_scripts.go (renew and release scripts)
+- [x] T001 Create lease package directory at api/service/lease/
+- [x] T002 [P] Create types and constants in api/service/lease/types.go (LeaseState, LeaseInfo, LeaseConfig, LeaseEventType, LeaseEvent)
+- [x] T003 [P] Create Lua scripts as embedded strings in api/service/lease/lua_scripts.go (renew and release scripts)
 
 ---
 
@@ -38,13 +38,13 @@ Based on plan.md structure:
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Implement instance ID generation in api/service/lease/instance.go (hostname-bootTimestamp-randomSuffix format)
-- [ ] T005 Implement heartbeat registration and refresh in api/service/lease/instance.go (poll:node:{instanceID} key with TTL)
-- [ ] T006 Implement GetLiveNodes() in api/service/lease/instance.go (SCAN poll:node:* pattern)
-- [ ] T007 Define LeaseManager interface in api/service/lease/manager.go (matching contracts/lease_manager.go)
-- [ ] T008 Create LeaseManager struct with constructor NewLeaseManager() in api/service/lease/manager.go
-- [ ] T009 Implement Start() method for LeaseManager in api/service/lease/manager.go (starts heartbeat and renewal loops)
-- [ ] T010 Implement Stop() method for LeaseManager in api/service/lease/manager.go (releases all leases, stops loops)
+- [x] T004 Implement instance ID generation in api/service/lease/instance.go (hostname-bootTimestamp-randomSuffix format)
+- [x] T005 Implement heartbeat registration and refresh in api/service/lease/instance.go (poll:node:{instanceID} key with TTL)
+- [x] T006 Implement GetLiveNodes() in api/service/lease/instance.go (SCAN poll:node:* pattern)
+- [x] T007 Define LeaseManager interface in api/service/lease/manager.go (matching contracts/lease_manager.go)
+- [x] T008 Create LeaseManager struct with constructor NewLeaseManager() in api/service/lease/manager.go
+- [x] T009 Implement Start() method for LeaseManager in api/service/lease/manager.go (starts heartbeat and renewal loops)
+- [x] T010 Implement Stop() method for LeaseManager in api/service/lease/manager.go (releases all leases, stops loops)
 
 **Checkpoint**: Foundation ready - LeaseManager can start, heartbeat, discover nodes, and stop cleanly
 
@@ -58,15 +58,15 @@ Based on plan.md structure:
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement TryAcquire() in api/service/lease/manager.go (SET NX PX for poll:lease:{sessionID})
-- [ ] T012 [US1] Implement Release() in api/service/lease/manager.go (conditional DEL via Lua script)
-- [ ] T013 [US1] Implement IsOwned() in api/service/lease/manager.go (check cached ownedLeases map)
-- [ ] T014 [US1] Implement OwnedSessions() in api/service/lease/manager.go (return keys from ownedLeases map)
-- [ ] T015 [US1] Implement lease renewal loop in api/service/lease/manager.go (renew every 10s via Lua script)
-- [ ] T016 [US1] Add structured logging for lease acquire success/failure in api/service/lease/manager.go
-- [ ] T017 [US1] Modify SessionManager to inject LeaseManager dependency in api/worker/session_manager.go
-- [ ] T018 [US1] Modify syncSessions() to call TryAcquire() before spawning publisher in api/worker/session_manager.go
-- [ ] T019 [US1] Modify publishLoop() to check IsOwned() before each poll cycle in api/worker/session_manager.go
+- [x] T011 [US1] Implement TryAcquire() in api/service/lease/manager.go (SET NX PX for poll:lease:{sessionID})
+- [x] T012 [US1] Implement Release() in api/service/lease/manager.go (conditional DEL via Lua script)
+- [x] T013 [US1] Implement IsOwned() in api/service/lease/manager.go (check cached ownedLeases map)
+- [x] T014 [US1] Implement OwnedSessions() in api/service/lease/manager.go (return keys from ownedLeases map)
+- [x] T015 [US1] Implement lease renewal loop in api/service/lease/manager.go (renew every 10s via Lua script)
+- [x] T016 [US1] Add structured logging for lease acquire success/failure in api/service/lease/manager.go
+- [x] T017 [US1] Modify SessionManager to inject LeaseManager dependency in api/worker/session_manager.go
+- [x] T018 [US1] Modify syncSessions() to call TryAcquire() before spawning publisher in api/worker/session_manager.go
+- [x] T019 [US1] Modify publishLoop() to check IsOwned() before each poll cycle in api/worker/session_manager.go
 
 **Checkpoint**: Single instance acquires leases for all sessions; multiple instances divide leases (first-come wins)
 
@@ -80,12 +80,12 @@ Based on plan.md structure:
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Implement lease state uncertainty handling in api/service/lease/manager.go (mark uncertain on renewal failure)
-- [ ] T021 [US2] Modify publishLoop() to pause polling when lease state is uncertain in api/worker/session_manager.go
-- [ ] T022 [US2] Implement periodic lease re-acquisition attempt for uncertain leases in api/service/lease/manager.go
-- [ ] T023 [US2] Add structured logging for lease renewal success/failure in api/service/lease/manager.go
-- [ ] T024 [US2] Add structured logging for lease release (voluntary/TTL expiry) in api/service/lease/manager.go
-- [ ] T025 [US2] Modify SessionManager.Stop() to call LeaseManager.Stop() for graceful shutdown in api/worker/session_manager.go
+- [x] T020 [US2] Implement lease state uncertainty handling in api/service/lease/manager.go (mark uncertain on renewal failure)
+- [x] T021 [US2] Modify publishLoop() to pause polling when lease state is uncertain in api/worker/session_manager.go
+- [x] T022 [US2] Implement periodic lease re-acquisition attempt for uncertain leases in api/service/lease/manager.go
+- [x] T023 [US2] Add structured logging for lease renewal success/failure in api/service/lease/manager.go
+- [x] T024 [US2] Add structured logging for lease release (voluntary/TTL expiry) in api/service/lease/manager.go
+- [x] T025 [US2] Modify SessionManager.Stop() to call LeaseManager.Stop() for graceful shutdown in api/worker/session_manager.go
 
 **Checkpoint**: Instance crash causes TTL expiry; other instances take over; restarted instance gets new ID
 
@@ -99,10 +99,10 @@ Based on plan.md structure:
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Implement IsOwnedStrict() in api/service/lease/manager.go (query Redis GET to verify ownership)
-- [ ] T027 [US3] Add pre-poll ownership verification using IsOwnedStrict() before critical polls in api/worker/session_manager.go
-- [ ] T028 [US3] Add mutex protection for ownedLeases map in api/service/lease/manager.go (concurrent access safety)
-- [ ] T029 [US3] Add log entry with instance ID and session ID on each successful poll start in api/worker/session_manager.go
+- [x] T026 [US3] Implement IsOwnedStrict() in api/service/lease/manager.go (query Redis GET to verify ownership)
+- [x] T027 [US3] Add pre-poll ownership verification using IsOwnedStrict() before critical polls in api/worker/session_manager.go
+- [x] T028 [US3] Add mutex protection for ownedLeases map in api/service/lease/manager.go (concurrent access safety)
+- [x] T029 [US3] Add log entry with instance ID and session ID on each successful poll start in api/worker/session_manager.go
 
 **Checkpoint**: Logs show each session polled by exactly one instance; no overlap during transitions
 
@@ -116,12 +116,12 @@ Based on plan.md structure:
 
 ### Implementation for User Story 4
 
-- [ ] T030 [P] [US4] Implement rendezvous hash function using FNV-1a in api/service/lease/rendezvous.go
-- [ ] T031 [US4] Implement PreferredOwner() in api/service/lease/rendezvous.go (compute highest weight node for session)
-- [ ] T032 [US4] Implement IsPreferredOwner() in api/service/lease/manager.go (compare PreferredOwner with self)
-- [ ] T033 [US4] Modify lease acquisition to prioritize preferred owner in api/service/lease/manager.go
-- [ ] T034 [US4] Implement voluntary lease release when not preferred owner in api/service/lease/manager.go
-- [ ] T035 [US4] Add node discovery refresh loop (every 10s) in api/service/lease/manager.go
+- [x] T030 [P] [US4] Implement rendezvous hash function using FNV-1a in api/service/lease/rendezvous.go
+- [x] T031 [US4] Implement PreferredOwner() in api/service/lease/rendezvous.go (compute highest weight node for session)
+- [x] T032 [US4] Implement IsPreferredOwner() in api/service/lease/manager.go (compare PreferredOwner with self)
+- [x] T033 [US4] Modify lease acquisition to prioritize preferred owner in api/service/lease/manager.go
+- [x] T034 [US4] Implement voluntary lease release when not preferred owner in api/service/lease/manager.go
+- [x] T035 [US4] Add node discovery refresh loop (every 10s) in api/service/lease/manager.go
 
 **Checkpoint**: Leases distributed within 20% of ideal balance; rebalancing occurs when instances join/leave
 
@@ -131,10 +131,10 @@ Based on plan.md structure:
 
 **Purpose**: Final cleanup and validation
 
-- [ ] T036 [P] Add godoc comments to all exported functions in api/service/lease/*.go
-- [ ] T037 Run make prepare-for-commit (generate, format, lint)
-- [ ] T038 Validate implementation against quickstart.md test scenarios
-- [ ] T039 Update api/cmd/app.go to initialize LeaseManager with SessionManager
+- [x] T036 [P] Add godoc comments to all exported functions in api/service/lease/*.go
+- [x] T037 Run make prepare-for-commit (generate, format, lint)
+- [x] T038 Validate implementation against quickstart.md test scenarios
+- [x] T039 Update api/cmd/app.go to initialize LeaseManager with SessionManager
 
 ---
 
