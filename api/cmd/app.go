@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,7 @@ type App struct {
 	httpServer *http.Server
 	ctx        context.Context
 	cancel     context.CancelFunc
+	workerWg   sync.WaitGroup
 }
 
 type InitTask struct {
@@ -63,6 +65,11 @@ func Create(opts *Options) *App {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	app := &App{
+		ctx:    ctx,
+		cancel: cancel,
+	}
+
 	for _, flag := range opts.Flags {
 		// Handle api worker separately
 		if flag.Name == "api" {
@@ -70,11 +77,14 @@ func Create(opts *Options) *App {
 		}
 
 		if flag.FlagType == FlagTypeWorker && flag.GetPassedValue().(bool) {
-			go flag.Run(ctx, cancel)
+			app.workerWg.Add(1)
+			runFunc := flag.Run
+			go func() {
+				defer app.workerWg.Done()
+				runFunc(ctx, cancel)
+			}()
 		}
 	}
-
-	var httpServer *http.Server
 
 	if opts.Flags.GetPassedValue("api").(bool) {
 		ginMode, exists := os.LookupEnv("GIN_MODE")
@@ -84,40 +94,50 @@ func Create(opts *Options) *App {
 			gin.SetMode("release")
 		}
 
-		httpServer = &http.Server{
+		app.httpServer = &http.Server{
 			Addr:    fmt.Sprintf("0.0.0.0:%d", config.Config.Port),
 			Handler: routers.NewRouter(),
 		}
 
 		go func() {
 			log.Printf("%sHTTP server listening on %s0.0.0.0:%d%s", log.Bold, log.Orange, config.Config.Port, log.Reset)
-			err := httpServer.ListenAndServe()
+			err := app.httpServer.ListenAndServe()
 			if err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Fatalln(fmt.Errorf("failed to start http server. details: %w", err))
 			}
 		}()
 	}
 
-	return &App{
-		httpServer: httpServer,
-		ctx:        ctx,
-		cancel:     cancel,
-	}
+	return app
 }
 
+// Stop gracefully shuts down the application.
+// It cancels the context to signal workers to stop, waits for workers to complete
+// their cleanup (including LeaseManager releasing leases), and shuts down the HTTP server.
 func (app *App) Stop() {
 	app.cancel()
 
-	if app.httpServer != nil {
+	// Wait for workers to complete graceful shutdown (e.g., LeaseManager releasing leases)
+	workersDone := make(chan struct{})
+	go func() {
+		app.workerWg.Wait()
+		close(workersDone)
+	}()
 
+	select {
+	case <-workersDone:
+		log.Println("All workers stopped gracefully")
+	case <-time.After(10 * time.Second):
+		log.Println("Timed out waiting for workers to stop")
+	}
+
+	if app.httpServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := app.httpServer.Shutdown(ctx); err != nil {
 			log.Fatalln(fmt.Errorf("failed to shutdown server. details: %w", err))
 		}
-
-		<-ctx.Done()
-		log.Println("Saiting for http server to shutdown...")
+		log.Println("HTTP server shutdown complete")
 	}
 
 	log.Println("Server exited successfully")

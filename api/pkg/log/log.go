@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	Logger    *zap.SugaredLogger
-	LoggerMap = make(map[string]*zap.SugaredLogger)
+	Logger     *zap.SugaredLogger
+	baseLogger *zap.Logger
+	LoggerMap  = make(map[string]*zap.SugaredLogger)
 )
 
 var (
@@ -29,11 +30,27 @@ var (
 	defaultLogger = "default"
 )
 
-func SetupLogger(mode string) error {
-	runMode = mode
+// SetupLogger initializes the logging system with the given run mode.
+func SetupLogger(m string) error {
+	runMode = m
 	Logger = Get(defaultLogger)
 
+	if runMode != mode.Prod {
+		baseLogger = zap.Must(zap.NewDevelopment(zap.WithCaller(false)))
+	} else {
+		baseLogger = zap.Must(zap.NewProduction(zap.WithCaller(false)))
+	}
+
 	return nil
+}
+
+// GetBaseLogger returns the underlying zap.Logger for use with components
+// that require structured logging with typed fields instead of sugared logging.
+func GetBaseLogger() *zap.Logger {
+	if baseLogger == nil {
+		baseLogger = zap.Must(zap.NewDevelopment(zap.WithCaller(false)))
+	}
+	return baseLogger
 }
 
 func Get(name string) *zap.SugaredLogger {

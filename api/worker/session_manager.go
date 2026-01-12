@@ -6,6 +6,7 @@ import (
 	"api/pkg/log"
 	"api/service"
 	"api/service/client"
+	"api/service/lease"
 	"api/service/session"
 	"context"
 	"encoding/json"
@@ -20,20 +21,43 @@ type publisherState struct {
 	isDisconnected bool
 }
 
-// SessionManager manages publishers for multiple sessions
-type SessionManager struct {
-	store      *session.Store
-	kvClient   *key_value.Client
-	publishers map[string]*publisherState // sessionID -> publisher state
-	mu         sync.RWMutex
+var (
+	globalLeaseManager   lease.LeaseManager
+	globalLeaseManagerMu sync.RWMutex
+)
+
+// SetGlobalLeaseManager stores the lease manager for access by API handlers.
+func SetGlobalLeaseManager(lm lease.LeaseManager) {
+	globalLeaseManagerMu.Lock()
+	defer globalLeaseManagerMu.Unlock()
+	globalLeaseManager = lm
 }
 
-// NewSessionManager creates a new session manager
-func NewSessionManager() *SessionManager {
+// GetGlobalLeaseManager returns the global lease manager instance.
+// Returns nil if the lease manager has not been initialized.
+func GetGlobalLeaseManager() lease.LeaseManager {
+	globalLeaseManagerMu.RLock()
+	defer globalLeaseManagerMu.RUnlock()
+	return globalLeaseManager
+}
+
+// SessionManager manages publishers for multiple sessions
+type SessionManager struct {
+	store        *session.Store
+	kvClient     *key_value.Client
+	leaseManager lease.LeaseManager
+	publishers   map[string]*publisherState // sessionID -> publisher state
+	mu           sync.RWMutex
+}
+
+// NewSessionManager creates a new session manager with the given lease manager.
+// The lease manager coordinates distributed polling across multiple API instances.
+func NewSessionManager(leaseManager lease.LeaseManager) *SessionManager {
 	return &SessionManager{
-		store:      session.NewStore(),
-		kvClient:   key_value.New(),
-		publishers: make(map[string]*publisherState),
+		store:        session.NewStore(),
+		kvClient:     key_value.New(),
+		leaseManager: leaseManager,
+		publishers:   make(map[string]*publisherState),
 	}
 }
 
@@ -118,7 +142,9 @@ func (sm *SessionManager) watchForNewSessions(ctx context.Context) {
 	}
 }
 
-// StartSession starts a publisher for the given session
+// StartSession starts a publisher for the given session if the lease can be acquired.
+// The lease manager coordinates distributed polling across multiple API instances,
+// ensuring each session is polled by exactly one instance at a time.
 func (sm *SessionManager) StartSession(parentCtx context.Context, sess *models.Session) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -126,6 +152,17 @@ func (sm *SessionManager) StartSession(parentCtx context.Context, sess *models.S
 	// Check if already running
 	if _, exists := sm.publishers[sess.ID]; exists {
 		log.Warnf("Publisher for session %s already running", sess.ID)
+		return
+	}
+
+	// Try to acquire the lease before spawning the publisher
+	acquired, err := sm.leaseManager.TryAcquire(parentCtx, sess.ID)
+	if err != nil {
+		log.Warnf("Failed to acquire lease for session %s: %v", sess.ID, err)
+		return
+	}
+	if !acquired {
+		log.Debugf("Lease for session %s held by another instance, skipping", sess.ID)
 		return
 	}
 
@@ -152,6 +189,26 @@ func (sm *SessionManager) StopSession(sessionID string) {
 	}
 }
 
+// Stop performs graceful shutdown of the session manager.
+// It stops the lease manager, releasing all owned leases and removing the heartbeat,
+// allowing other instances to take over polling immediately.
+func (sm *SessionManager) Stop() {
+	log.Infoln("Stopping session manager...")
+
+	if err := sm.leaseManager.Stop(); err != nil {
+		log.Warnf("Failed to stop lease manager: %v", err)
+	}
+
+	sm.mu.Lock()
+	for sessionID, state := range sm.publishers {
+		state.cancel()
+		delete(sm.publishers, sessionID)
+	}
+	sm.mu.Unlock()
+
+	log.Infoln("Session manager stopped gracefully")
+}
+
 // publishLoop runs the event publishing loop for a session
 func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session) {
 	channelKey := fmt.Sprintf("%s:%s", models.SatisfactoryEventKey, sess.ID)
@@ -173,6 +230,20 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session)
 	}
 
 	handler := func(event *models.SatisfactoryEvent) {
+		// Check lease ownership before processing each poll result
+		if !sm.leaseManager.IsOwned(sess.ID) {
+			// Lease is not owned. Check if it's uncertain or lost entirely.
+			if sm.leaseManager.IsUncertain(sess.ID) {
+				// Lease state is uncertain (renewal failed). Pause polling by
+				// skipping this event but keep the publisher running for recovery.
+				log.Debugf("Lease uncertain for session %s, pausing poll processing", sess.ID)
+				return
+			}
+			// Lease is not owned and not uncertain - it was taken by another instance
+			log.Infof("Lease lost for session %s, stopping publisher", sess.ID)
+			sm.StopSession(sess.ID)
+			return
+		}
 		toPublish := []models.SatisfactoryEvent{*event}
 
 		switch event.Type {
@@ -216,8 +287,24 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session)
 	// Start session info monitor in background
 	go sm.monitorSessionInfo(ctx, sess, apiClient, channelKey)
 
+	// Verify lease ownership strictly (query Redis) before starting to poll.
+	// This ensures we still own the lease after setup, preventing duplicate polling
+	// during the window between lease acquisition and poll start.
+	owned, err := sm.leaseManager.IsOwnedStrict(ctx, sess.ID)
+	if err != nil {
+		log.Warnf("Failed to verify lease ownership for session %s: %v", sess.ID, err)
+		sm.StopSession(sess.ID)
+		return
+	}
+	if !owned {
+		log.Infof("Lease lost before poll start for session %s, stopping publisher", sess.ID)
+		sm.StopSession(sess.ID)
+		return
+	}
+
+	log.Infof("Poll start: instance=%s session=%s", sm.leaseManager.InstanceID(), sess.ID)
+
 	// Choose polling mode based on disconnected state
-	var err error
 	if sess.IsDisconnected {
 		log.Infof("Starting in disconnected mode: %s (%s)", sess.Name, sess.ID)
 		err = apiClient.SetupLightPolling(ctx, handler)
@@ -368,6 +455,19 @@ func (sm *SessionManager) restartPublisherLocked(sessionID string, sess *models.
 
 // SessionManagerWorker is the worker function that starts the session manager
 func SessionManagerWorker(ctx context.Context) {
-	manager := NewSessionManager()
+	kvClient := key_value.New()
+	logger := log.GetBaseLogger()
+	leaseManager := lease.NewLeaseManager(kvClient, lease.DefaultLeaseConfig(), logger)
+
+	if err := leaseManager.Start(ctx); err != nil {
+		log.PrettyError(fmt.Errorf("failed to start lease manager: %w", err))
+		return
+	}
+
+	// Store globally for API handlers
+	SetGlobalLeaseManager(leaseManager)
+
+	manager := NewSessionManager(leaseManager)
 	manager.Start(ctx)
+	manager.Stop()
 }
