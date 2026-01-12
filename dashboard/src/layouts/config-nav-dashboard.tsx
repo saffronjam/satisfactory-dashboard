@@ -7,6 +7,7 @@ type NavItem = {
   path: string;
   icon: React.ReactNode;
   group: 'main' | 'sub' | 'debug';
+  children?: NavItem[];
 };
 
 const baseNavData: NavItem[] = [
@@ -65,6 +66,20 @@ const debugNavItem: NavItem = {
   path: '/debug',
   icon: <Iconify icon="mdi:bug" width={24} height={24} />,
   group: 'debug',
+  children: [
+    {
+      title: 'Endpoints',
+      path: '/debug',
+      icon: <Iconify icon="mdi:api" width={20} height={20} />,
+      group: 'debug',
+    },
+    {
+      title: 'Nodes',
+      path: '/debug/nodes',
+      icon: <Iconify icon="mdi:server-network" width={20} height={20} />,
+      group: 'debug',
+    },
+  ],
 };
 
 export function getNavData(isDebugMode: boolean): NavItem[] {
