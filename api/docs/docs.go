@@ -595,6 +595,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/nodes": {
+            "get": {
+                "description": "Get information about all live API instances and their lease ownership",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Get Nodes",
+                "responses": {
+                    "200": {
+                        "description": "Node information",
+                        "schema": {
+                            "$ref": "#/definitions/models.NodesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable - Lease manager not initialized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/pipes": {
             "get": {
                 "description": "List all pipes from cached session state",
@@ -1161,6 +1193,79 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Session not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/settings": {
+            "get": {
+                "description": "Get current global settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Get Settings",
+                "responses": {
+                    "200": {
+                        "description": "Current settings",
+                        "schema": {
+                            "$ref": "#/definitions/models.Settings"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update global settings. Changes apply immediately to all instances.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Update Settings",
+                "parameters": [
+                    {
+                        "description": "New settings",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Settings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated settings",
+                        "schema": {
+                            "$ref": "#/definitions/models.Settings"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -2002,19 +2107,19 @@ const docTemplate = `{
         "models.FaunaType": {
             "type": "string",
             "enum": [
-                "LizardDoggo",
-                "FluffyTailedHog",
+                "Lizard Doggo",
+                "Fluffy-Tailed Hog",
                 "Spitter",
                 "Stinger",
-                "FlyingCrab",
-                "NonFlyingBird",
-                "SpaceGiraffe",
-                "SporeFlower",
-                "LeafBug",
-                "GrassSprite",
-                "CaveBat",
-                "GiantFlyingManta",
-                "LakeShark",
+                "Flying Crab",
+                "Non-flying Bird",
+                "Space Giraffe-Tick-Penguin-Whale Thing",
+                "Spore Flower",
+                "Leaf Bug",
+                "Grass Sprite",
+                "Cave Bat",
+                "Giant Flying Manta",
+                "Lake Shark",
                 "Walker"
             ],
             "x-enum-varnames": [
@@ -2039,14 +2144,14 @@ const docTemplate = `{
             "enum": [
                 "Tree",
                 "Leaves",
-                "FlowerPetals",
-                "BaconAgaric",
+                "Flower Petals",
+                "Bacon Agaric",
                 "Paleberry",
-                "BerylNut",
+                "Beryl Nut",
                 "Mycelia",
-                "VineLadder",
-                "BlueCapMushroom",
-                "PinkJellyfish"
+                "Vines",
+                "Blue Cap Mushroom",
+                "Pink Jellyfish"
             ],
             "x-enum-varnames": [
                 "FloraTypeTree",
@@ -2091,6 +2196,32 @@ const docTemplate = `{
                     "additionalProperties": {
                         "$ref": "#/definitions/models.PowerSource"
                     }
+                }
+            }
+        },
+        "models.Hub": {
+            "type": "object",
+            "properties": {
+                "boundingBox": {
+                    "$ref": "#/definitions/models.BoundingBox"
+                },
+                "hubLevel": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "rotation": {
+                    "type": "number"
+                },
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
                 }
             }
         },
@@ -2222,6 +2353,23 @@ const docTemplate = `{
                     "type": "number"
                 }
             }
+        },
+        "models.LogLevel": {
+            "type": "string",
+            "enum": [
+                "Trace",
+                "Debug",
+                "Info",
+                "Warning",
+                "Error"
+            ],
+            "x-enum-varnames": [
+                "LogLevelTrace",
+                "LogLevelDebug",
+                "LogLevelInfo",
+                "LogLevelWarning",
+                "LogLevelError"
+            ]
         },
         "models.LoginRequest": {
             "type": "object",
@@ -2466,6 +2614,30 @@ const docTemplate = `{
                 "MachineTypeNuclearPowerPlant"
             ]
         },
+        "models.NodeInfo": {
+            "type": "object",
+            "properties": {
+                "instanceId": {
+                    "description": "This instance's unique ID",
+                    "type": "string"
+                },
+                "isThisInstance": {
+                    "description": "True if this is the current instance",
+                    "type": "boolean"
+                },
+                "ownedSessions": {
+                    "description": "Sessions owned by this instance",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SessionLease"
+                    }
+                },
+                "status": {
+                    "description": "Node status: \"online\", \"initializing\", or \"offline\"",
+                    "type": "string"
+                }
+            }
+        },
         "models.NodeType": {
             "type": "string",
             "enum": [
@@ -2480,6 +2652,26 @@ const docTemplate = `{
                 "NodeTypeFrackingCore",
                 "NodeTypeFrackingSatellite"
             ]
+        },
+        "models.NodesResponse": {
+            "type": "object",
+            "properties": {
+                "liveNodes": {
+                    "description": "All live instances with their owned sessions",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NodeInfo"
+                    }
+                },
+                "thisInstanceId": {
+                    "description": "ID of this instance",
+                    "type": "string"
+                },
+                "timestamp": {
+                    "description": "When this snapshot was taken",
+                    "type": "string"
+                }
+            }
         },
         "models.Pipe": {
             "type": "object",
@@ -2859,19 +3051,19 @@ const docTemplate = `{
         "models.ResourceType": {
             "type": "string",
             "enum": [
-                "IronOre",
-                "CopperOre",
+                "Iron Ore",
+                "Copper Ore",
                 "Limestone",
                 "Coal",
                 "SAM",
                 "Sulfur",
-                "CateriumOre",
+                "Caterium Ore",
                 "Bauxite",
-                "RawQuartz",
+                "Raw Quartz",
                 "Uranium",
-                "CrudeOil",
+                "Crude Oil",
                 "Geyser",
-                "NitrogenGas"
+                "Nitrogen Gas"
             ],
             "x-enum-varnames": [
                 "ResourceTypeIronOre",
@@ -3030,6 +3222,43 @@ const docTemplate = `{
                 }
             }
         },
+        "models.SessionLease": {
+            "type": "object",
+            "properties": {
+                "acquiredAt": {
+                    "description": "When lease was acquired (zero if not owned)",
+                    "type": "string"
+                },
+                "lastRenewedAt": {
+                    "description": "When lease was last renewed (zero if not owned)",
+                    "type": "string"
+                },
+                "ownerId": {
+                    "description": "Instance that owns this lease",
+                    "type": "string"
+                },
+                "preferredOwnerId": {
+                    "description": "Preferred owner per rendezvous hashing",
+                    "type": "string"
+                },
+                "sessionId": {
+                    "description": "Session ID",
+                    "type": "string"
+                },
+                "sessionName": {
+                    "description": "Human-readable session name",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "\"owned\", \"other\", \"uncertain\", \"unknown\"",
+                    "type": "string"
+                },
+                "uncertainSince": {
+                    "description": "When lease became uncertain (zero if not uncertain)",
+                    "type": "string"
+                }
+            }
+        },
         "models.SessionStage": {
             "type": "string",
             "enum": [
@@ -3040,6 +3269,19 @@ const docTemplate = `{
                 "SessionStageInit",
                 "SessionStageReady"
             ]
+        },
+        "models.Settings": {
+            "type": "object",
+            "properties": {
+                "logLevel": {
+                    "description": "Current log level",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.LogLevel"
+                        }
+                    ]
+                }
+            }
         },
         "models.SignalType": {
             "type": "string",
@@ -3254,6 +3496,9 @@ const docTemplate = `{
                 },
                 "generatorStats": {
                     "$ref": "#/definitions/models.GeneratorStats"
+                },
+                "hub": {
+                    "$ref": "#/definitions/models.Hub"
                 },
                 "hypertubeEntrances": {
                     "type": "array",

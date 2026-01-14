@@ -416,19 +416,19 @@ definitions:
     type: object
   models.FaunaType:
     enum:
-    - LizardDoggo
-    - FluffyTailedHog
+    - Lizard Doggo
+    - Fluffy-Tailed Hog
     - Spitter
     - Stinger
-    - FlyingCrab
-    - NonFlyingBird
-    - SpaceGiraffe
-    - SporeFlower
-    - LeafBug
-    - GrassSprite
-    - CaveBat
-    - GiantFlyingManta
-    - LakeShark
+    - Flying Crab
+    - Non-flying Bird
+    - Space Giraffe-Tick-Penguin-Whale Thing
+    - Spore Flower
+    - Leaf Bug
+    - Grass Sprite
+    - Cave Bat
+    - Giant Flying Manta
+    - Lake Shark
     - Walker
     type: string
     x-enum-varnames:
@@ -450,14 +450,14 @@ definitions:
     enum:
     - Tree
     - Leaves
-    - FlowerPetals
-    - BaconAgaric
+    - Flower Petals
+    - Bacon Agaric
     - Paleberry
-    - BerylNut
+    - Beryl Nut
     - Mycelia
-    - VineLadder
-    - BlueCapMushroom
-    - PinkJellyfish
+    - Vines
+    - Blue Cap Mushroom
+    - Pink Jellyfish
     type: string
     x-enum-varnames:
     - FloraTypeTree
@@ -490,6 +490,23 @@ definitions:
         additionalProperties:
           $ref: '#/definitions/models.PowerSource'
         type: object
+    type: object
+  models.Hub:
+    properties:
+      boundingBox:
+        $ref: '#/definitions/models.BoundingBox'
+      hubLevel:
+        type: integer
+      id:
+        type: string
+      rotation:
+        type: number
+      x:
+        type: number
+      "y":
+        type: number
+      z:
+        type: number
     type: object
   models.Hypertube:
     properties:
@@ -575,6 +592,20 @@ definitions:
       z:
         type: number
     type: object
+  models.LogLevel:
+    enum:
+    - Trace
+    - Debug
+    - Info
+    - Warning
+    - Error
+    type: string
+    x-enum-varnames:
+    - LogLevelTrace
+    - LogLevelDebug
+    - LogLevelInfo
+    - LogLevelWarning
+    - LogLevelError
   models.LoginRequest:
     properties:
       password:
@@ -750,6 +781,23 @@ definitions:
     - MachineTypeFuelGenerator
     - MachineTypeGeothermalGenerator
     - MachineTypeNuclearPowerPlant
+  models.NodeInfo:
+    properties:
+      instanceId:
+        description: This instance's unique ID
+        type: string
+      isThisInstance:
+        description: True if this is the current instance
+        type: boolean
+      ownedSessions:
+        description: Sessions owned by this instance
+        items:
+          $ref: '#/definitions/models.SessionLease'
+        type: array
+      status:
+        description: 'Node status: "online", "initializing", or "offline"'
+        type: string
+    type: object
   models.NodeType:
     enum:
     - Node
@@ -762,6 +810,20 @@ definitions:
     - NodeTypeGeyser
     - NodeTypeFrackingCore
     - NodeTypeFrackingSatellite
+  models.NodesResponse:
+    properties:
+      liveNodes:
+        description: All live instances with their owned sessions
+        items:
+          $ref: '#/definitions/models.NodeInfo'
+        type: array
+      thisInstanceId:
+        description: ID of this instance
+        type: string
+      timestamp:
+        description: When this snapshot was taken
+        type: string
+    type: object
   models.Pipe:
     properties:
       connected0:
@@ -1011,19 +1073,19 @@ definitions:
     - ResourceNodePurityPure
   models.ResourceType:
     enum:
-    - IronOre
-    - CopperOre
+    - Iron Ore
+    - Copper Ore
     - Limestone
     - Coal
     - SAM
     - Sulfur
-    - CateriumOre
+    - Caterium Ore
     - Bauxite
-    - RawQuartz
+    - Raw Quartz
     - Uranium
-    - CrudeOil
+    - Crude Oil
     - Geyser
-    - NitrogenGas
+    - Nitrogen Gas
     type: string
     x-enum-varnames:
     - ResourceTypeIronOre
@@ -1131,6 +1193,33 @@ definitions:
       totalPlayDurationText:
         type: string
     type: object
+  models.SessionLease:
+    properties:
+      acquiredAt:
+        description: When lease was acquired (zero if not owned)
+        type: string
+      lastRenewedAt:
+        description: When lease was last renewed (zero if not owned)
+        type: string
+      ownerId:
+        description: Instance that owns this lease
+        type: string
+      preferredOwnerId:
+        description: Preferred owner per rendezvous hashing
+        type: string
+      sessionId:
+        description: Session ID
+        type: string
+      sessionName:
+        description: Human-readable session name
+        type: string
+      state:
+        description: '"owned", "other", "uncertain", "unknown"'
+        type: string
+      uncertainSince:
+        description: When lease became uncertain (zero if not uncertain)
+        type: string
+    type: object
   models.SessionStage:
     enum:
     - init
@@ -1139,6 +1228,13 @@ definitions:
     x-enum-varnames:
     - SessionStageInit
     - SessionStageReady
+  models.Settings:
+    properties:
+      logLevel:
+        allOf:
+        - $ref: '#/definitions/models.LogLevel'
+        description: Current log level
+    type: object
   models.SignalType:
     enum:
     - Somersloop
@@ -1285,6 +1381,8 @@ definitions:
         $ref: '#/definitions/models.FactoryStats'
       generatorStats:
         $ref: '#/definitions/models.GeneratorStats'
+      hub:
+        $ref: '#/definitions/models.Hub'
       hypertubeEntrances:
         items:
           $ref: '#/definitions/models.HypertubeEntrance'
@@ -2125,6 +2223,27 @@ paths:
       summary: Get Machines
       tags:
       - Machines
+  /v1/nodes:
+    get:
+      description: Get information about all live API instances and their lease ownership
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Node information
+          schema:
+            $ref: '#/definitions/models.NodesResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "503":
+          description: Service Unavailable - Lease manager not initialized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get Nodes
+      tags:
+      - Nodes
   /v1/pipes:
     get:
       consumes:
@@ -2510,6 +2629,54 @@ paths:
       summary: Preview Session
       tags:
       - Sessions
+  /v1/settings:
+    get:
+      consumes:
+      - application/json
+      description: Get current global settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Current settings
+          schema:
+            $ref: '#/definitions/models.Settings'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get Settings
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: Update global settings. Changes apply immediately to all instances.
+      parameters:
+      - description: New settings
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Settings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated settings
+          schema:
+            $ref: '#/definitions/models.Settings'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update Settings
+      tags:
+      - Settings
   /v1/sinkStats:
     get:
       consumes:
