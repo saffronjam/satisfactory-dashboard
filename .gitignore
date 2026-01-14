@@ -141,3 +141,5 @@ dashboard/public/assets/images/satisfactory/256x256/
 
 # Ralph task runner signal file
 DONE
+
+tmpfiles/
