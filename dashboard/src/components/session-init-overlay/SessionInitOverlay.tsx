@@ -10,8 +10,8 @@ export const SessionInitOverlay = () => {
   const location = useLocation();
   const { selectedSession } = useSession();
 
-  // Don't show on debug page
-  if (location.pathname === '/debug') {
+  // Don't show on debug pages
+  if (location.pathname.startsWith('/debug')) {
     return null;
   }
 
