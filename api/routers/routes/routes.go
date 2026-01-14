@@ -24,6 +24,7 @@ func RoutingGroups() []RoutingGroup {
 	return []RoutingGroup{
 		AuthRoutes(),
 		SessionRoutes(),
+		SettingsRoutes(),
 		CircuitRoutes(),
 		PlayerRoutes(),
 		StatusRoutes(),

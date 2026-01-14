@@ -101,5 +101,15 @@ func GetFlags() FlagDefinitionList {
 				worker.SessionManagerWorker(ctx)
 			},
 		},
+		{
+			Name:         "settings-listener",
+			ValueType:    "bool",
+			FlagType:     FlagTypeWorker,
+			Description:  "Settings listener worker",
+			DefaultValue: true,
+			Run: func(ctx context.Context, cancel context.CancelFunc) {
+				worker.SettingsListenerWorker(ctx)
+			},
+		},
 	}
 }

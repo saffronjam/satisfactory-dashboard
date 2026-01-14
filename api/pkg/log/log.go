@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	Logger     *zap.SugaredLogger
-	baseLogger *zap.Logger
-	LoggerMap  = make(map[string]*zap.SugaredLogger)
+	Logger      *zap.SugaredLogger
+	baseLogger  *zap.Logger
+	LoggerMap   = make(map[string]*zap.SugaredLogger)
+	atomicLevel zap.AtomicLevel
 )
 
 var (
@@ -33,13 +34,29 @@ var (
 // SetupLogger initializes the logging system with the given run mode.
 func SetupLogger(m string) error {
 	runMode = m
-	Logger = Get(defaultLogger)
 
+	// Determine initial level based on mode
+	var initialLevel zapcore.Level
 	if runMode != mode.Prod {
-		baseLogger = zap.Must(zap.NewDevelopment(zap.WithCaller(false)))
+		initialLevel = zapcore.DebugLevel
 	} else {
-		baseLogger = zap.Must(zap.NewProduction(zap.WithCaller(false)))
+		initialLevel = zapcore.InfoLevel
 	}
+
+	// Create atomic level for runtime changes
+	atomicLevel = zap.NewAtomicLevelAt(initialLevel)
+
+	// Create logger with atomic level
+	var config zap.Config
+	if runMode != mode.Prod {
+		config = zap.NewDevelopmentConfig()
+	} else {
+		config = zap.NewProductionConfig()
+	}
+	config.Level = atomicLevel
+
+	baseLogger = zap.Must(config.Build(zap.WithCaller(false)))
+	Logger = Get(defaultLogger)
 
 	return nil
 }
@@ -48,9 +65,24 @@ func SetupLogger(m string) error {
 // that require structured logging with typed fields instead of sugared logging.
 func GetBaseLogger() *zap.Logger {
 	if baseLogger == nil {
-		baseLogger = zap.Must(zap.NewDevelopment(zap.WithCaller(false)))
+		// Fallback initialization
+		atomicLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+		config := zap.NewDevelopmentConfig()
+		config.Level = atomicLevel
+		baseLogger = zap.Must(config.Build(zap.WithCaller(false)))
 	}
 	return baseLogger
+}
+
+// SetLogLevel changes the log level at runtime
+func SetLogLevel(level zapcore.Level) {
+	atomicLevel.SetLevel(level)
+	Infof("Log level changed to: %s", level.String())
+}
+
+// GetLogLevel returns the current log level
+func GetLogLevel() zapcore.Level {
+	return atomicLevel.Level()
 }
 
 func Get(name string) *zap.SugaredLogger {
@@ -60,26 +92,35 @@ func Get(name string) *zap.SugaredLogger {
 
 	var sugaredLogger *zap.SugaredLogger
 
-	if runMode != mode.Prod {
-		logger := zap.Must(zap.NewDevelopment(zap.WithCaller(false)))
+	// Use the base logger with atomic level if available
+	if baseLogger != nil {
 		if name == defaultLogger {
-			// For default logger, we don't need to name it.
-			sugaredLogger = logger.Sugar()
+			sugaredLogger = baseLogger.Sugar()
 		} else {
-			sugaredLogger = logger.Sugar().Named(name)
+			sugaredLogger = baseLogger.Sugar().Named(name)
 		}
 	} else {
-		logger := zap.Must(zap.NewProduction(zap.WithCaller(false)))
-		sugaredLogger = logger.Sugar().Named(name)
+		// Fallback if SetupLogger hasn't been called
+		if runMode != mode.Prod {
+			logger := zap.Must(zap.NewDevelopment(zap.WithCaller(false)))
+			if name == defaultLogger {
+				sugaredLogger = logger.Sugar()
+			} else {
+				sugaredLogger = logger.Sugar().Named(name)
+			}
+		} else {
+			logger := zap.Must(zap.NewProduction(zap.WithCaller(false)))
+			sugaredLogger = logger.Sugar().Named(name)
 
-		Bold = ""
-		Reset = ""
-		Orange = ""
-		Grey = ""
-		LightGrey = ""
-		Red = ""
-		Green = ""
-		Cyan = ""
+			Bold = ""
+			Reset = ""
+			Orange = ""
+			Grey = ""
+			LightGrey = ""
+			Red = ""
+			Green = ""
+			Cyan = ""
+		}
 	}
 
 	LoggerMap[name] = sugaredLogger
