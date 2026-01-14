@@ -432,6 +432,17 @@ EXPOSE 80
 - Use React Context for shared state
 - Sessions stored in Redis on backend
 
+### No Backward Compatibility
+
+**NEVER maintain backward compatibility.** Always do the correct fix for a better system.
+
+When refactoring or improving code:
+- Remove old code completely instead of keeping it for compatibility
+- If a data format changes, migrate immediately - don't support both formats
+- Write migration scripts if needed, but don't maintain dual code paths
+- Trust that all instances will be updated together in a coordinated deployment
+- Simpler code is better than maintaining legacy compatibility layers
+
 ### Performance
 
 - Memoize expensive calculations with `useMemo`

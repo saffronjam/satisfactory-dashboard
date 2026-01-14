@@ -15,6 +15,7 @@ Follow idiomatic Go practices:
 - Keep the happy path left-aligned (return early)
 - Document all exported symbols
 - Use proper naming conventions (mixedCaps, avoid underscores)
+- **NEVER maintain backward compatibility** - Always do the correct fix for a better system. Clean breaks are preferred over legacy code paths.
 
 ## Architecture
 
@@ -74,9 +75,19 @@ api/
 
 ## Development Workflow
 
-### Running the Server
+**Note**: All development commands should be run from the **project root** using the unified Makefile:
+- `make backend` - Run backend server
+- `make backend-live` - Run with hot reload
+- `make lint` - Run linters
+- `make format` - Format code
+- `make test` - Run tests
+
+See the root `Makefile` for all available commands.
+
+### Running the Server Directly
 
 ```bash
+cd api
 go run main.go                # Run with default config
 go run main.go -mode=dev      # Specify mode
 go run main.go -config=config.local.yml  # Custom config
@@ -85,13 +96,17 @@ go run main.go -config=config.local.yml  # Custom config
 ### Building
 
 ```bash
-go build -o main .            # Build binary
-CGO_ENABLED=0 go build -o main .  # Static binary for containers
+cd api
+go build -o bin/api main.go            # Build binary
+CGO_ENABLED=0 go build -o bin/api main.go  # Static binary for containers
 ```
+
+Or from root: `make backend-build`
 
 ### Swagger Documentation
 
 ```bash
+cd api
 swag init                     # Regenerate Swagger docs
 ```
 
@@ -100,8 +115,11 @@ Swagger UI available at `/v2/docs/` when running.
 ### Type Generation
 
 ```bash
-tygo generate                 # Generate TypeScript types
+cd api
+tygo generate --config export/tygo.yml  # Generate TypeScript types
 ```
+
+Or from root: `make generate`
 
 Config: `export/tygo.yml`
 Output: `../dashboard/src/apiTypes.ts`

@@ -113,6 +113,8 @@ docker compose logs -f api          # Follow API logs
 
 ## Important Notes
 
+- **NEVER Start Services Without User Permission**: NEVER run backend or frontend services (make run, make backend, make frontend, etc.) without CLEAR and EXPLICIT instructions from the user. The user controls all service startup and will handle testing and verification themselves. Only start services when the user explicitly asks you to.
+- **Never Maintain Backward Compatibility**: Always implement the correct fix for a better system. Remove old code paths completely rather than maintaining dual behavior. Clean breaks are preferred over gradual migrations.
 - **State Management**: Backend is the source of truth, frontend receives updates via SSE
 - **Type Safety**: Run `make generate` after Go model changes
 - **Testing**: Set `mock: true` in config to use mock data
