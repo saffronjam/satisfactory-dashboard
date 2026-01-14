@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"sigs.k8s.io/yaml"
+	"strconv"
 )
 
 func SetupEnvironment(appMode string) error {

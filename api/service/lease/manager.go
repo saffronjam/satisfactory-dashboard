@@ -102,9 +102,9 @@ type leaseManager struct {
 	logger     *zap.Logger
 
 	// Self-reported status tracking
-	status      string        // Current status: "init" or "online"
-	startupTime time.Time     // When this instance started
-	statusMu    sync.RWMutex  // Protects status field
+	status      string       // Current status: "init" or "online"
+	startupTime time.Time    // When this instance started
+	statusMu    sync.RWMutex // Protects status field
 
 	// ownedLeases tracks leases currently held by this instance.
 	// Map key is sessionID, value is LeaseInfo.
