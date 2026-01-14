@@ -57,7 +57,7 @@ const baseNavData: NavItem[] = [
     title: 'Settings',
     path: '/settings',
     icon: <Iconify icon="mdi:cog" width={24} height={24} />,
-    group: 'sub',
+    group: 'main',
   },
 ];
 

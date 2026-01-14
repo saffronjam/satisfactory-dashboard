@@ -385,6 +385,7 @@ export interface Machine extends Location, CircuitIDs {
 export interface NodeInfo {
   instanceId: string; // This instance's unique ID
   isThisInstance: boolean; // True if this is the current instance
+  status: string; // Node status: "online", "initializing", or "offline"
   ownedSessions: SessionLease[]; // Sessions owned by this instance
 }
 /**
@@ -699,6 +700,43 @@ export interface SessionDTO {
   isDisconnected: boolean; // True if session is in disconnected state
   createdAt: string;
   stage: SessionStage;
+}
+
+//////////
+// source: settings.go
+/*
+Package models provides the data models for the Satisfactory Dashboard API.
+*/
+
+/**
+ * LogLevel represents valid log levels
+ */
+export type LogLevel = string;
+export const LogLevelTrace: LogLevel = 'Trace';
+export const LogLevelDebug: LogLevel = 'Debug';
+export const LogLevelInfo: LogLevel = 'Info';
+export const LogLevelWarning: LogLevel = 'Warning';
+export const LogLevelError: LogLevel = 'Error';
+/**
+ * Settings represents global application settings
+ */
+export interface Settings {
+  logLevel: LogLevel; // Current log level
+}
+/**
+ * SettingsChange represents a change to settings
+ */
+export interface SettingsChange {
+  field: string; // e.g., "logLevel"
+  oldValue: any; // Previous value
+  newValue: any; // New value
+}
+/**
+ * SettingsChangedEvent is published to Redis pub/sub when settings change
+ */
+export interface SettingsChangedEvent {
+  settings: Settings; // Full new settings
+  changes: SettingsChange[]; // List of what changed
 }
 
 //////////
