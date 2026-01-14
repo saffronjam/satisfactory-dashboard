@@ -116,8 +116,8 @@ func GetNodes(ginContext *gin.Context) {
 			OwnerID:          owner,
 			PreferredOwnerID: preferredOwner,
 			State:            state,
-			AcquiredAt:       leaseValue.AcquiredAt,     // Now available for all nodes!
-			LastRenewedAt:    leaseValue.LastRenewedAt,  // Now available for all nodes!
+			AcquiredAt:       leaseValue.AcquiredAt,    // Now available for all nodes!
+			LastRenewedAt:    leaseValue.LastRenewedAt, // Now available for all nodes!
 			UncertainSince:   uncertainSince,
 		}
 
