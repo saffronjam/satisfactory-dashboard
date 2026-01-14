@@ -10,7 +10,7 @@ CONTAINER_CMD ?= docker
 # Container image names
 ASSET_SERVER_IMAGE ?= ghcr.io/saffronjam/satisfactory-dashboard-asset-server
 
-.PHONY: help run frontend backend backend-live kill lint format build clean generate install tidy deps deps-down unpack-assets pack-assets prepare-for-commit asset-server asset-server-push
+.PHONY: help run frontend backend backend-live backend-api backend-poller backend-api-2 backend-poller-2 backend-2 kill lint format build clean generate install tidy deps deps-down unpack-assets pack-assets prepare-for-commit asset-server asset-server-push test test-verbose
 
 # Default target - show help
 help:
@@ -22,6 +22,13 @@ help:
 	@echo "  make backend          - Run backend server (port 8081)"
 	@echo "  make backend-live     - Run backend server with hot reload"
 	@echo "  make kill             - Kill all development processes"
+	@echo ""
+	@echo "Multi-Instance Backend (for testing distributed coordination):"
+	@echo "  make backend-api      - Run backend API only (instance 1)"
+	@echo "  make backend-poller   - Run backend poller only (instance 1)"
+	@echo "  make backend-api-2    - Run backend API only (instance 2, port 8082)"
+	@echo "  make backend-poller-2 - Run backend poller only (instance 2)"
+	@echo "  make backend-2        - Run full backend (instance 2, port 8082)"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint             - Run all linters (backend + frontend)"
@@ -43,6 +50,10 @@ help:
 	@echo "  make pack-assets      - Pack assets back to tar files (after updates)"
 	@echo "  make install          - Install all dependencies"
 	@echo ""
+	@echo "Testing:"
+	@echo "  make test             - Run backend tests"
+	@echo "  make test-verbose     - Run backend tests (verbose)"
+	@echo ""
 	@echo "Other:"
 	@echo "  make generate         - Generate TypeScript types from Go structs"
 	@echo "  make tidy             - Run go mod tidy"
@@ -63,7 +74,7 @@ run:
 	@echo "   Press Ctrl+C to stop both servers"
 	@echo ""
 	@trap 'kill 0' SIGINT; \
-		$(MAKE) -C api run-live & \
+		(cd api && $(shell go env GOPATH)/bin/air) & \
 		(cd dashboard && $(BUN) run dev) & \
 		wait
 
@@ -73,11 +84,32 @@ frontend:
 
 backend:
 	@echo "Starting backend server..."
-	$(MAKE) -C api run
+	cd api && SD_NODE_NAME=dev-backend go run main.go -api -publisher
 
 backend-live:
 	@echo "Starting backend server with hot reload..."
-	$(MAKE) -C api run-live
+	@echo "Watching for changes in api/ directory"
+	cd api && SD_NODE_NAME=dev-backend $(shell go env GOPATH)/bin/air
+
+backend-2:
+	@echo "Starting full backend (instance 2, port 8082)..."
+	cd api && SD_API_PORT=8082 SD_NODE_NAME=dev-backend-2 go run main.go -api -publisher
+
+backend-api:
+	@echo "Starting backend API (instance 1)..."
+	cd api && SD_NODE_NAME=dev-api-1 go run main.go -api
+
+backend-poller:
+	@echo "Starting backend poller (instance 1)..."
+	cd api && SD_NODE_NAME=dev-poller-1 go run main.go -publisher
+
+backend-api-2:
+	@echo "Starting backend API (instance 2, port 8082)..."
+	cd api && SD_API_PORT=8082 SD_NODE_NAME=dev-api-2 go run main.go -api
+
+backend-poller-2:
+	@echo "Starting backend poller (instance 2)..."
+	cd api && SD_NODE_NAME=dev-poller-2 go run main.go -publisher
 
 kill:
 	@echo "Killing all development servers..."
@@ -95,7 +127,9 @@ lint: lint-backend lint-frontend
 
 lint-backend:
 	@echo "Running backend linting..."
-	$(MAKE) -C api lint
+	cd api && go fmt ./...
+	cd api && go vet ./...
+	@echo "Backend linting complete"
 
 lint-frontend:
 	@echo "Running frontend linting (oxlint)..."
@@ -107,7 +141,8 @@ format: format-backend format-frontend
 
 format-backend:
 	@echo "Formatting backend Go code..."
-	$(MAKE) -C api format
+	cd api && find . -name "*.go" -exec gofmt -s -w {} \;
+	@echo "Backend formatting complete"
 
 format-frontend:
 	@echo "Formatting frontend TypeScript code..."
@@ -126,7 +161,8 @@ build: backend-build frontend-build
 
 backend-build:
 	@echo "Building backend binary..."
-	$(MAKE) -C api build
+	cd api && go build -o bin/api main.go
+	@echo "Backend binary: api/bin/api"
 
 frontend-build:
 	@echo "Building frontend for production..."
@@ -139,7 +175,8 @@ frontend-build:
 
 clean:
 	@echo "Cleaning build artifacts..."
-	$(MAKE) -C api clean
+	cd api && rm -rf bin/
+	cd api && go clean
 	cd dashboard && rm -rf dist build
 	@echo "Cleanup complete"
 
@@ -149,17 +186,27 @@ clean:
 
 generate:
 	@echo "Generating TypeScript types from Go structs..."
-	$(MAKE) -C api generate
+	cd api && tygo generate --config export/tygo.yml
+	@echo "TypeScript types generated"
 
 install:
 	@echo "Installing all dependencies..."
-	$(MAKE) -C api tidy
+	cd api && go mod tidy
 	cd dashboard && $(BUN) install
 	@echo "All dependencies installed"
 
 tidy:
 	@echo "Running go mod tidy..."
-	$(MAKE) -C api tidy
+	cd api && go mod tidy
+	@echo "Go mod tidy complete"
+
+test:
+	@echo "Running backend tests..."
+	cd api && go test ./...
+
+test-verbose:
+	@echo "Running backend tests (verbose)..."
+	cd api && go test -v ./...
 
 # ============================================================================
 # Asset management (unpack after clone, pack after updates)
