@@ -80,6 +80,15 @@ type LeaseManager interface {
 	// Returns empty string if the lease is not currently owned by any instance.
 	// Returns error if Redis query fails.
 	GetLeaseOwner(ctx context.Context, sessionID string) (string, error)
+
+	// CheckNodeReady checks if a specific node is in "online" status and ready.
+	// Returns true if the node's self-reported status is "online", false otherwise.
+	CheckNodeReady(ctx context.Context, instanceID string) (bool, error)
+
+	// GetLeaseValue queries Redis to get the full lease value including timestamps.
+	// Returns RedisLeaseValue with owner ID and timestamps, or error if not found.
+	// Expects JSON format as returned by RedisLeaseValue.Marshal().
+	GetLeaseValue(ctx context.Context, sessionID string) (RedisLeaseValue, error)
 }
 
 // leaseKeyPrefix is the Redis key prefix for session lease keys.
@@ -91,6 +100,11 @@ type leaseManager struct {
 	client     *key_value.Client
 	config     LeaseConfig
 	logger     *zap.Logger
+
+	// Self-reported status tracking
+	status      string        // Current status: "init" or "online"
+	startupTime time.Time     // When this instance started
+	statusMu    sync.RWMutex  // Protects status field
 
 	// ownedLeases tracks leases currently held by this instance.
 	// Map key is sessionID, value is LeaseInfo.
@@ -109,14 +123,17 @@ type leaseManager struct {
 }
 
 // NewLeaseManager creates a new LeaseManager with the given Redis client and configuration.
-// The instance ID is generated automatically to ensure uniqueness across process restarts.
+// If nodeName is provided (non-empty), it will be used as the instance ID.
+// Otherwise, the instance ID is generated automatically to ensure uniqueness across process restarts.
 // Call Start() to begin heartbeat and lease management loops.
-func NewLeaseManager(client *key_value.Client, config LeaseConfig, logger *zap.Logger) LeaseManager {
+func NewLeaseManager(client *key_value.Client, config LeaseConfig, logger *zap.Logger, nodeName string) LeaseManager {
 	return &leaseManager{
-		instanceID:  GenerateInstanceID(),
+		instanceID:  GenerateInstanceID(nodeName),
 		client:      client,
 		config:      config,
 		logger:      logger.Named("lease"),
+		status:      "init",
+		startupTime: time.Now(),
 		ownedLeases: make(map[string]LeaseInfo),
 	}
 }
@@ -129,6 +146,8 @@ func NewLeaseManagerWithID(instanceID string, client *key_value.Client, config L
 		client:      client,
 		config:      config,
 		logger:      logger.Named("lease"),
+		status:      "init",
+		startupTime: time.Now(),
 		ownedLeases: make(map[string]LeaseInfo),
 	}
 }
@@ -136,6 +155,14 @@ func NewLeaseManagerWithID(instanceID string, client *key_value.Client, config L
 // InstanceID returns this instance's unique identifier.
 func (m *leaseManager) InstanceID() string {
 	return m.instanceID
+}
+
+// IsReady returns true if this instance is in "online" status and ready
+// to accept new leases and participate in rebalancing.
+func (m *leaseManager) IsReady() bool {
+	m.statusMu.RLock()
+	defer m.statusMu.RUnlock()
+	return m.status == "online"
 }
 
 // GetLeaseInfo returns detailed information about a lease owned by this instance.
@@ -156,7 +183,7 @@ func (m *leaseManager) GetLeaseInfo(sessionID string) *LeaseInfo {
 // Returns error if Redis query fails.
 func (m *leaseManager) GetLeaseOwner(ctx context.Context, sessionID string) (string, error) {
 	key := leaseKey(sessionID)
-	owner, err := m.client.Get(key)
+	value, err := m.client.Get(key)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			// Key doesn't exist - no owner
@@ -164,7 +191,47 @@ func (m *leaseManager) GetLeaseOwner(ctx context.Context, sessionID string) (str
 		}
 		return "", fmt.Errorf("get lease owner: %w", err)
 	}
-	return owner, nil
+
+	// Parse lease value (handles both old and new format)
+	leaseValue, err := ParseRedisLeaseValue(value)
+	if err != nil {
+		return "", fmt.Errorf("parse lease value: %w", err)
+	}
+
+	return leaseValue.OwnerID, nil
+}
+
+// CheckNodeReady checks if a specific node is in "online" status and ready.
+// Returns true if the node's self-reported status is "online", false otherwise.
+func (m *leaseManager) CheckNodeReady(ctx context.Context, instanceID string) (bool, error) {
+	status, err := GetNodeStatus(ctx, m.client, instanceID)
+	if err != nil {
+		return false, err
+	}
+	return status == "online", nil
+}
+
+// GetLeaseValue queries Redis to get the full lease value including timestamps.
+// Returns RedisLeaseValue with owner ID and timestamps.
+// Backward compatible: handles both old format (plain instanceID) and new format (JSON).
+func (m *leaseManager) GetLeaseValue(ctx context.Context, sessionID string) (RedisLeaseValue, error) {
+	key := leaseKey(sessionID)
+	value, err := m.client.RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			// Key doesn't exist - return empty value
+			return RedisLeaseValue{}, nil
+		}
+		return RedisLeaseValue{}, fmt.Errorf("get lease value: %w", err)
+	}
+
+	// Parse lease value (handles both old and new format)
+	leaseValue, err := ParseRedisLeaseValue(value)
+	if err != nil {
+		return RedisLeaseValue{}, fmt.Errorf("parse lease value: %w", err)
+	}
+
+	return leaseValue, nil
 }
 
 // leaseKey returns the Redis key for a session's polling lease.
@@ -173,12 +240,14 @@ func leaseKey(sessionID string) string {
 }
 
 // Start begins the heartbeat and lease management background loops.
-// It registers the initial heartbeat, performs initial node discovery, and starts three background goroutines:
-// 1. Heartbeat loop: refreshes this instance's presence in Redis
-// 2. Renewal loop: renews all owned leases to prevent TTL expiry
-// 3. Node discovery loop: refreshes the cached list of live nodes for rendezvous hashing
+// It registers the initial heartbeat, performs initial node discovery, and starts four background goroutines:
+// 1. Status transition loop: transitions from "init" to "online" after 10 seconds
+// 2. Heartbeat loop: refreshes this instance's presence in Redis
+// 3. Renewal loop: renews all owned leases to prevent TTL expiry
+// 4. Node discovery loop: refreshes the cached list of live nodes for rendezvous hashing
 // Must be called before any lease operations. Returns error if initial heartbeat fails.
 func (m *leaseManager) Start(ctx context.Context) error {
+	// Register initial heartbeat with "init" status
 	if err := RegisterHeartbeat(ctx, m.client, m.instanceID, m.config.HeartbeatTTL); err != nil {
 		return fmt.Errorf("register initial heartbeat: %w", err)
 	}
@@ -199,6 +268,11 @@ func (m *leaseManager) Start(ctx context.Context) error {
 		zap.Duration("node_discovery_interval", m.config.NodeDiscoveryInterval),
 	)
 
+	// Start status transition loop first
+	m.wg.Add(1)
+	go m.statusTransitionLoop()
+
+	// Start other background loops
 	m.wg.Add(3)
 	go m.heartbeatLoop()
 	go m.renewalLoop()
@@ -207,7 +281,36 @@ func (m *leaseManager) Start(ctx context.Context) error {
 	return nil
 }
 
+// statusTransitionLoop waits for the grace period (10 seconds) then transitions
+// this instance from "init" to "online" status. During "init" phase, the node
+// keeps existing leases but cannot acquire new ones. After transition to "online",
+// the node can participate fully in lease acquisition and rebalancing.
+func (m *leaseManager) statusTransitionLoop() {
+	defer m.wg.Done()
+
+	// Wait for 10 seconds grace period
+	gracePeriod := 10 * time.Second
+	timer := time.NewTimer(gracePeriod)
+	defer timer.Stop()
+
+	select {
+	case <-m.ctx.Done():
+		return
+	case <-timer.C:
+		// Transition from "init" to "online"
+		m.statusMu.Lock()
+		m.status = "online"
+		m.statusMu.Unlock()
+
+		m.logger.Info("node status transitioned to online",
+			zap.String("instance_id", m.instanceID),
+			zap.Duration("grace_period", gracePeriod),
+		)
+	}
+}
+
 // heartbeatLoop periodically refreshes this instance's heartbeat in Redis.
+// Reports the current self-reported status ("init" or "online") to the cluster.
 func (m *leaseManager) heartbeatLoop() {
 	defer m.wg.Done()
 
@@ -219,7 +322,13 @@ func (m *leaseManager) heartbeatLoop() {
 		case <-m.ctx.Done():
 			return
 		case <-ticker.C:
-			if err := RefreshHeartbeat(m.ctx, m.client, m.instanceID, m.config.HeartbeatTTL); err != nil {
+			// Read current status
+			m.statusMu.RLock()
+			currentStatus := m.status
+			m.statusMu.RUnlock()
+
+			// Refresh heartbeat with current status
+			if err := RefreshHeartbeat(m.ctx, m.client, m.instanceID, currentStatus, m.startupTime, m.config.HeartbeatTTL); err != nil {
 				m.logger.Warn("heartbeat refresh failed",
 					zap.String("instance_id", m.instanceID),
 					zap.Error(err),
@@ -349,7 +458,7 @@ func (m *leaseManager) reacquireUncertainLeases() {
 func (m *leaseManager) tryReacquireLease(sessionID string) {
 	key := leaseKey(sessionID)
 
-	currentOwner, err := m.client.RedisClient.Get(m.ctx, key).Result()
+	value, err := m.client.RedisClient.Get(m.ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			m.removeLeaseLocked(sessionID)
@@ -363,9 +472,43 @@ func (m *leaseManager) tryReacquireLease(sessionID string) {
 		return
 	}
 
-	if currentOwner == m.instanceID {
+	// Parse lease value (handles both old and new format)
+	leaseValue, err := ParseRedisLeaseValue(value)
+	if err != nil {
+		m.logger.Warn("failed to parse lease value during re-acquisition",
+			zap.String("session_id", sessionID),
+			zap.String("instance_id", m.instanceID),
+			zap.Error(err),
+		)
+		m.removeLeaseLocked(sessionID)
+		return
+	}
+
+	if leaseValue.OwnerID == m.instanceID {
+		// Get current acquired time (preserve it across renewals)
+		m.mu.RLock()
+		acquiredAt := m.ownedLeases[sessionID].AcquiredAt
+		m.mu.RUnlock()
+
+		// Create JSON lease value with updated lastRenewedAt
+		now := time.Now()
+		newLeaseValue := RedisLeaseValue{
+			OwnerID:       m.instanceID,
+			AcquiredAt:    acquiredAt,
+			LastRenewedAt: now,
+		}
+		valueStr, err := newLeaseValue.Marshal()
+		if err != nil {
+			m.logger.Warn("failed to marshal lease value during re-acquisition",
+				zap.String("session_id", sessionID),
+				zap.String("instance_id", m.instanceID),
+				zap.Error(err),
+			)
+			return
+		}
+
 		ttlMs := m.config.LeaseTTL.Milliseconds()
-		result, err := renewScript.Run(m.ctx, m.client.RedisClient, []string{key}, m.instanceID, ttlMs).Int()
+		result, err := renewScript.Run(m.ctx, m.client.RedisClient, []string{key}, m.instanceID, ttlMs, valueStr).Int()
 		if err != nil {
 			m.logger.Warn("failed to renew lease during re-acquisition",
 				zap.String("session_id", sessionID),
@@ -429,6 +572,31 @@ func (m *leaseManager) releaseNonPreferredLeases() {
 		}
 
 		if !isPreferred {
+			// Check if preferred owner is online before releasing
+			// This prevents churning when new instances are still in "init" phase
+			preferredOwner, err := m.PreferredOwner(m.ctx, sessionID)
+			if err != nil {
+				m.logger.Warn("failed to get preferred owner during rebalance",
+					zap.String("session_id", sessionID),
+					zap.String("instance_id", m.instanceID),
+					zap.Error(err),
+				)
+				continue
+			}
+
+			// Check preferred owner's self-reported status
+			preferredStatus, err := GetNodeStatus(m.ctx, m.client, preferredOwner)
+			if err != nil || preferredStatus != "online" {
+				m.logger.Debug("preferred owner not online, keeping lease",
+					zap.String("session_id", sessionID),
+					zap.String("instance_id", m.instanceID),
+					zap.String("preferred_owner", preferredOwner),
+					zap.String("preferred_status", preferredStatus),
+				)
+				continue
+			}
+
+			// Preferred owner is online, release this lease
 			if err := m.Release(m.ctx, sessionID); err != nil {
 				m.logger.Warn("failed to voluntarily release non-preferred lease",
 					zap.String("session_id", sessionID),
@@ -441,6 +609,7 @@ func (m *leaseManager) releaseNonPreferredLeases() {
 			m.logger.Info("lease released for rebalancing",
 				zap.String("session_id", sessionID),
 				zap.String("instance_id", m.instanceID),
+				zap.String("preferred_owner", preferredOwner),
 				zap.String("reason", "not_preferred_owner"),
 			)
 		}
@@ -470,8 +639,25 @@ func (m *leaseManager) removeLeaseLocked(sessionID string) {
 func (m *leaseManager) renewLease(sessionID string) error {
 	key := leaseKey(sessionID)
 	ttlMs := m.config.LeaseTTL.Milliseconds()
+	now := time.Now()
 
-	result, err := renewScript.Run(m.ctx, m.client.RedisClient, []string{key}, m.instanceID, ttlMs).Int()
+	// Get current acquired time (preserve it across renewals)
+	m.mu.RLock()
+	acquiredAt := m.ownedLeases[sessionID].AcquiredAt
+	m.mu.RUnlock()
+
+	// Create JSON lease value with updated lastRenewedAt
+	leaseValue := RedisLeaseValue{
+		OwnerID:       m.instanceID,
+		AcquiredAt:    acquiredAt,
+		LastRenewedAt: now,
+	}
+	valueStr, err := leaseValue.Marshal()
+	if err != nil {
+		return fmt.Errorf("marshal lease value: %w", err)
+	}
+
+	result, err := renewScript.Run(m.ctx, m.client.RedisClient, []string{key}, m.instanceID, ttlMs, valueStr).Int()
 	if err != nil {
 		m.markLeaseUncertain(sessionID)
 		return fmt.Errorf("run renew script: %w", err)
@@ -604,6 +790,21 @@ func (m *leaseManager) TryAcquire(ctx context.Context, sessionID string) (bool, 
 	}
 	m.mu.RUnlock()
 
+	// Don't acquire new leases during "init" phase
+	// This prevents session churning when instances restart
+	if !m.IsReady() {
+		m.statusMu.RLock()
+		currentStatus := m.status
+		m.statusMu.RUnlock()
+
+		m.logger.Debug("not ready to acquire lease (init phase)",
+			zap.String("session_id", sessionID),
+			zap.String("instance_id", m.instanceID),
+			zap.String("status", currentStatus),
+		)
+		return false, nil
+	}
+
 	isPreferred, err := m.IsPreferredOwner(ctx, sessionID)
 	if err != nil {
 		m.logger.Warn("failed to check preferred owner status",
@@ -615,19 +816,36 @@ func (m *leaseManager) TryAcquire(ctx context.Context, sessionID string) (bool, 
 
 	if !isPreferred {
 		key := leaseKey(sessionID)
-		currentOwner, err := m.client.RedisClient.Get(ctx, key).Result()
-		if err == nil && currentOwner != "" {
-			m.logger.Debug("lease not acquired, non-preferred owner deferring to current holder",
-				zap.String("session_id", sessionID),
-				zap.String("instance_id", m.instanceID),
-				zap.String("current_owner", currentOwner),
-			)
-			return false, nil
+		currentValue, err := m.client.RedisClient.Get(ctx, key).Result()
+		if err == nil && currentValue != "" {
+			// Parse lease value to get owner (handles both old and new format)
+			leaseValue, parseErr := ParseRedisLeaseValue(currentValue)
+			if parseErr == nil && leaseValue.OwnerID != "" {
+				m.logger.Debug("lease not acquired, non-preferred owner deferring to current holder",
+					zap.String("session_id", sessionID),
+					zap.String("instance_id", m.instanceID),
+					zap.String("current_owner", leaseValue.OwnerID),
+				)
+				return false, nil
+			}
 		}
 	}
 
 	key := leaseKey(sessionID)
-	acquired, err := m.client.RedisClient.SetNX(ctx, key, m.instanceID, m.config.LeaseTTL).Result()
+	now := time.Now()
+
+	// Create JSON lease value with timestamps
+	leaseValue := RedisLeaseValue{
+		OwnerID:       m.instanceID,
+		AcquiredAt:    now,
+		LastRenewedAt: now,
+	}
+	valueStr, err := leaseValue.Marshal()
+	if err != nil {
+		return false, fmt.Errorf("marshal lease value: %w", err)
+	}
+
+	acquired, err := m.client.RedisClient.SetNX(ctx, key, valueStr, m.config.LeaseTTL).Result()
 	if err != nil {
 		m.logger.Warn("lease acquire failed",
 			zap.String("session_id", sessionID),
@@ -638,7 +856,6 @@ func (m *leaseManager) TryAcquire(ctx context.Context, sessionID string) (bool, 
 	}
 
 	if acquired {
-		now := time.Now()
 		m.mu.Lock()
 		m.ownedLeases[sessionID] = LeaseInfo{
 			SessionID:     sessionID,
@@ -757,7 +974,7 @@ func (m *leaseManager) UncertainLeases() []LeaseInfo {
 func (m *leaseManager) IsOwnedStrict(ctx context.Context, sessionID string) (bool, error) {
 	key := leaseKey(sessionID)
 
-	owner, err := m.client.RedisClient.Get(ctx, key).Result()
+	value, err := m.client.RedisClient.Get(ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return false, nil
@@ -765,7 +982,13 @@ func (m *leaseManager) IsOwnedStrict(ctx context.Context, sessionID string) (boo
 		return false, fmt.Errorf("check lease ownership: %w", err)
 	}
 
-	return owner == m.instanceID, nil
+	// Parse lease value (handles both old and new format)
+	leaseValue, err := ParseRedisLeaseValue(value)
+	if err != nil {
+		return false, fmt.Errorf("parse lease value: %w", err)
+	}
+
+	return leaseValue.OwnerID == m.instanceID, nil
 }
 
 // GetLiveNodes returns instance IDs of all instances with active heartbeats.

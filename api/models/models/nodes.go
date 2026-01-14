@@ -7,6 +7,7 @@ import "time"
 type NodeInfo struct {
 	InstanceID     string         `json:"instanceId"`     // This instance's unique ID
 	IsThisInstance bool           `json:"isThisInstance"` // True if this is the current instance
+	Status         string         `json:"status"`         // Node status: "online", "initializing", or "offline"
 	OwnedSessions  []SessionLease `json:"ownedSessions"`  // Sessions owned by this instance
 }
 

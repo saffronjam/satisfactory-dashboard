@@ -2,6 +2,7 @@ package worker
 
 import (
 	"api/models/models"
+	"api/pkg/config"
 	"api/pkg/db/key_value"
 	"api/pkg/log"
 	"api/service"
@@ -457,7 +458,14 @@ func (sm *SessionManager) restartPublisherLocked(sessionID string, sess *models.
 func SessionManagerWorker(ctx context.Context) {
 	kvClient := key_value.New()
 	logger := log.GetBaseLogger()
-	leaseManager := lease.NewLeaseManager(kvClient, lease.DefaultLeaseConfig(), logger)
+
+	// Create lease manager with optional custom node name from config
+	leaseManager := lease.NewLeaseManager(
+		kvClient,
+		lease.DefaultLeaseConfig(),
+		logger,
+		config.Config.NodeName, // Pass node name from config (may be empty)
+	)
 
 	if err := leaseManager.Start(ctx); err != nil {
 		log.PrettyError(fmt.Errorf("failed to start lease manager: %w", err))

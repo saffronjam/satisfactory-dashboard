@@ -10,6 +10,7 @@ type Type struct {
 	Mock        bool   `json:"mock"`
 	ExternalURL string `json:"externalUrl"`
 	Filepath    string `json:"filepath"`
+	NodeName    string `json:"nodeName"` // If set, uses this instead of GenerateInstanceID()
 
 	Redis struct {
 		URL      string `json:"url"`

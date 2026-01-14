@@ -1,7 +1,11 @@
 // Package lease provides distributed polling lease coordination across API instances.
 package lease
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
 
 // LeaseState represents the current state of a lease from this instance's perspective.
 type LeaseState int
@@ -128,4 +132,37 @@ type LeaseEvent struct {
 
 	// Error contains the error if this is a failure event (nil for successful events).
 	Error error
+}
+
+// RedisLeaseValue represents the JSON value stored in Redis lease keys.
+// This structure enables storing timestamps alongside owner information,
+// allowing all nodes to display lease metadata without being the owner.
+type RedisLeaseValue struct {
+	// OwnerID is the instance ID that owns this lease.
+	OwnerID string `json:"owner_id"`
+
+	// AcquiredAt is when the lease was first acquired.
+	AcquiredAt time.Time `json:"acquired_at"`
+
+	// LastRenewedAt is when the lease was last successfully renewed.
+	LastRenewedAt time.Time `json:"last_renewed_at"`
+}
+
+// Marshal converts the RedisLeaseValue to a JSON string for storage in Redis.
+func (v RedisLeaseValue) Marshal() (string, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// ParseRedisLeaseValue parses a Redis lease value string into a RedisLeaseValue struct.
+// Expects JSON format as returned by RedisLeaseValue.Marshal().
+func ParseRedisLeaseValue(value string) (RedisLeaseValue, error) {
+	var v RedisLeaseValue
+	if err := json.Unmarshal([]byte(value), &v); err != nil {
+		return RedisLeaseValue{}, fmt.Errorf("parse lease value: %w", err)
+	}
+	return v, nil
 }

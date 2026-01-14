@@ -66,15 +66,16 @@ func GetNodes(ginContext *gin.Context) {
 
 	// For each session, determine which node owns it
 	for _, sess := range allSessions {
-		// Get the actual owner from Redis
-		owner, err := leaseManager.GetLeaseOwner(ctx, sess.ID)
+		// Get the lease value from Redis (includes owner + timestamps)
+		leaseValue, err := leaseManager.GetLeaseValue(ctx, sess.ID)
 		if err != nil {
 			// Skip this session on error
 			continue
 		}
 
+		owner := leaseValue.OwnerID
 		if owner == "" {
-			// No owner (lease not acquired by anyone yet)
+			// No owner
 			continue
 		}
 
@@ -90,23 +91,22 @@ func GetNodes(ginContext *gin.Context) {
 			preferredOwner = "" // Unknown preferred owner
 		}
 
-		// Get lease details
+		// Get state and uncertain timestamp
+		// These are only available for "this instance" from the lease manager
 		var state string
-		var acquiredAt, lastRenewedAt, uncertainSince time.Time
+		var uncertainSince time.Time
 
 		if owner == thisInstanceID {
-			// For this instance, get detailed info from lease manager
+			// For this instance, get detailed state from lease manager
 			leaseInfo := leaseManager.GetLeaseInfo(sess.ID)
 			if leaseInfo != nil {
 				state = leaseInfo.State.String()
-				acquiredAt = leaseInfo.AcquiredAt
-				lastRenewedAt = leaseInfo.LastRenewedAt
 				uncertainSince = leaseInfo.UncertainSince
 			} else {
 				state = "unknown"
 			}
 		} else {
-			// For other instances, we only know they own it
+			// For other instances, we know they own it based on Redis
 			state = "owned"
 		}
 
@@ -116,8 +116,8 @@ func GetNodes(ginContext *gin.Context) {
 			OwnerID:          owner,
 			PreferredOwnerID: preferredOwner,
 			State:            state,
-			AcquiredAt:       acquiredAt,
-			LastRenewedAt:    lastRenewedAt,
+			AcquiredAt:       leaseValue.AcquiredAt,     // Now available for all nodes!
+			LastRenewedAt:    leaseValue.LastRenewedAt,  // Now available for all nodes!
 			UncertainSince:   uncertainSince,
 		}
 
@@ -127,9 +127,21 @@ func GetNodes(ginContext *gin.Context) {
 	// Build NodeInfo list
 	nodeInfos := make([]models.NodeInfo, 0, len(liveNodeIDs))
 	for _, nodeID := range liveNodeIDs {
+		// Get node's self-reported status from Redis
+		status, err := leaseManager.CheckNodeReady(ctx, nodeID)
+		var statusStr string
+		if err != nil {
+			statusStr = "offline"
+		} else if status {
+			statusStr = "online"
+		} else {
+			statusStr = "init"
+		}
+
 		nodeInfo := models.NodeInfo{
 			InstanceID:     nodeID,
 			IsThisInstance: nodeID == thisInstanceID,
+			Status:         statusStr,
 			OwnedSessions:  nodeSessionsMap[nodeID],
 		}
 		nodeInfos = append(nodeInfos, nodeInfo)
