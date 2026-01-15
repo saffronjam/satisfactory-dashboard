@@ -1,23 +1,16 @@
-import {
-  Box,
-  Card,
-  CardContent,
-  Container,
-  Divider,
-  Grid2 as Grid,
-  Skeleton,
-  Typography,
-  useTheme,
-} from '@mui/material';
 import { Circuit } from 'src/apiTypes';
 import { ApiContext } from 'src/contexts/api/useApi';
-import { DashboardContent } from 'src/layouts/dashboard';
 import { fShortenNumber, WattHoursUnits, WattUnits } from 'src/utils/format-number';
 import { useContextSelector } from 'use-context-selector';
 import { CircuitCard } from '../circuit-card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
+/**
+ * PowerView displays an overview of all power circuits in the factory
+ */
 export function PowerView() {
-  const theme = useTheme();
   const api = useContextSelector(ApiContext, (v) => {
     return { circuits: v.circuits, isLoading: v.isLoading, isOnline: v.isOnline };
   });
@@ -31,201 +24,121 @@ export function PowerView() {
   const anyFuseTriggered = api.circuits.some((circuit) => circuit.fuseTriggered);
 
   return (
-    <DashboardContent maxWidth="xl">
-      <Container sx={{ paddingTop: '50px' }}>
-        <Grid container spacing={2} sx={{ marginBottom: '30px' }}>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}>
-              <Typography variant="h3">
-                {api.isLoading ? (
-                  <Skeleton
-                    sx={{ marginBottom: '8px' }}
-                    variant="rounded"
-                    height={'30px'}
-                    width={'80px'}
-                  />
-                ) : (
-                  <>{fShortenNumber(allCapacity, WattUnits, { decimals: 2 })}</>
-                )}
-              </Typography>
-              <Typography>Total Power Capacity</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}>
-              <Typography variant="h3">
-                {api.isLoading ? (
-                  <Skeleton
-                    sx={{ marginBottom: '8px' }}
-                    variant="rounded"
-                    height={'30px'}
-                    width={'80px'}
-                  />
-                ) : (
-                  <>{fShortenNumber(allProduction, WattUnits, { decimals: 2 })}</>
-                )}
-              </Typography>
-              <Typography>Total Production</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}>
-              <Typography variant="h3">
-                {api.isLoading ? (
-                  <Skeleton
-                    sx={{ marginBottom: '8px' }}
-                    variant="rounded"
-                    height={'30px'}
-                    width={'80px'}
-                  />
-                ) : (
-                  <>{fShortenNumber(allBatteryCapacity, WattHoursUnits, { decimals: 2 })}</>
-                )}
-              </Typography>
-              <Typography>Battery Capacity</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
+    <div className="mx-auto max-w-7xl px-4 pt-12">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <Card className="p-4 h-full">
+          <div className="text-2xl font-bold">
             {api.isLoading ? (
-              <Skeleton
-                sx={{
-                  margin: 0,
-                  width: '100%',
-                  borderRadius: '10px',
-                  padding: theme.spacing(2),
-                }}
-                variant="rounded"
-                height={'100%'}
-              />
+              <Skeleton className="mb-2 h-8 w-20" />
             ) : (
-              <>
-                {!anyFuseTriggered ? (
-                  <Card
-                    sx={{
-                      backgroundColor: theme.palette.success.darker,
-                      padding: theme.spacing(2),
-                      margin: 0,
-                      height: '100%',
-                    }}
-                  >
-                    <Typography variant="h3">No Problems</Typography>
-                    <Typography>Current Status</Typography>
-                  </Card>
-                ) : (
-                  <Card
-                    sx={{
-                      backgroundColor: theme.palette.error.darker,
-                      padding: theme.spacing(2),
-                      margin: 0,
-                      height: '100%',
-                    }}
-                  >
-                    <Typography variant="h3">Fuse Triggered</Typography>
-                    <Typography>Status</Typography>
-                  </Card>
-                )}
-              </>
+              <>{fShortenNumber(allCapacity, WattUnits, { decimals: 2 })}</>
             )}
-          </Grid>
-        </Grid>
-        <Divider sx={{ marginBottom: '50px' }} />
-        <Typography variant="h4" sx={{ marginTop: '30px', marginBottom: '30px' }}>
-          All Power Circuits
-        </Typography>
-        {!api.isLoading && api.isOnline ? (
-          <>
-            {api.circuits.map((circuit: Circuit, index: number) => {
-              return (
-                <CircuitCard
-                  key={index}
-                  circuit={circuit}
-                  name={index == 0 ? 'Main' : `Power Circuit #${index}`}
-                />
-              );
-            })}
-          </>
-        ) : (
-          <>
-            <Card sx={{ marginBottom: '30px', padding: '20px', opacity: 0.5 }}>
-              <CardContent>
-                <Grid container sx={{ marginBottom: '20px' }}>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                      <Skeleton width={'80px'} />
-                    </Box>
-                  </Grid>
-                  <Grid>
-                    <Skeleton width={'120px'} />
-                  </Grid>
-                </Grid>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Card
-                      variant="outlined"
-                      sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}
-                    >
-                      <Typography variant="h6">
-                        <Skeleton width={'110px'} />
-                      </Typography>
-                      <Typography marginTop={'10px'} variant="body2">
-                        Power Capacity
-                      </Typography>
-                    </Card>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Card
-                      variant="outlined"
-                      sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}
-                    >
-                      <Typography variant="h6">
-                        <Skeleton width={'80px'} />
-                      </Typography>
-                      <Typography marginTop={'10px'} variant="body2">
-                        Power Production
-                      </Typography>
-                    </Card>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Card
-                      variant="outlined"
-                      sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}
-                    >
-                      <Typography variant="h6">
-                        <Skeleton width={'90px'} />
-                      </Typography>
-                      <Typography marginTop={'10px'} variant="body2">
-                        Current consumption
-                      </Typography>
-                    </Card>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Card
-                      variant="outlined"
-                      sx={{ padding: theme.spacing(2), margin: 0, height: '100%' }}
-                    >
-                      <Typography variant="h6">
-                        <Skeleton width={'80px'} />
-                      </Typography>
-                      <Typography marginTop={'10px'} variant="body2">
-                        Max. Consumed
-                      </Typography>
-                    </Card>
-                  </Grid>
-                </Grid>
+          </div>
+          <div className="text-muted-foreground">Total Power Capacity</div>
+        </Card>
+        <Card className="p-4 h-full">
+          <div className="text-2xl font-bold">
+            {api.isLoading ? (
+              <Skeleton className="mb-2 h-8 w-20" />
+            ) : (
+              <>{fShortenNumber(allProduction, WattUnits, { decimals: 2 })}</>
+            )}
+          </div>
+          <div className="text-muted-foreground">Total Production</div>
+        </Card>
+        <Card className="p-4 h-full">
+          <div className="text-2xl font-bold">
+            {api.isLoading ? (
+              <Skeleton className="mb-2 h-8 w-20" />
+            ) : (
+              <>{fShortenNumber(allBatteryCapacity, WattHoursUnits, { decimals: 2 })}</>
+            )}
+          </div>
+          <div className="text-muted-foreground">Battery Capacity</div>
+        </Card>
+        <div className="h-full">
+          {api.isLoading ? (
+            <Skeleton className="w-full h-full rounded-xl min-h-[80px]" />
+          ) : (
+            <>
+              {!anyFuseTriggered ? (
+                <Card className="bg-green-900 p-4 h-full">
+                  <div className="text-2xl font-bold">No Problems</div>
+                  <div className="text-muted-foreground">Current Status</div>
+                </Card>
+              ) : (
+                <Card className="bg-red-900 p-4 h-full">
+                  <div className="text-2xl font-bold">Fuse Triggered</div>
+                  <div className="text-muted-foreground">Status</div>
+                </Card>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      <Separator className="mb-12" />
+      <h4 className="text-xl font-semibold mt-8 mb-8">All Power Circuits</h4>
+      {!api.isLoading && api.isOnline ? (
+        <>
+          {api.circuits.map((circuit: Circuit, index: number) => {
+            return (
+              <CircuitCard
+                key={index}
+                circuit={circuit}
+                name={index == 0 ? 'Main' : `Power Circuit #${index}`}
+              />
+            );
+          })}
+        </>
+      ) : (
+        <>
+          <Card className="mb-8 p-5 opacity-50">
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-5">
+                <div className="flex flex-row items-center">
+                  <Skeleton className="w-20 h-4" />
+                </div>
+                <div>
+                  <Skeleton className="w-30 h-4" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <Card className="border p-4 h-full">
+                  <div className="text-lg font-semibold">
+                    <Skeleton className="w-28 h-5" />
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">Power Capacity</div>
+                </Card>
+                <Card className="border p-4 h-full">
+                  <div className="text-lg font-semibold">
+                    <Skeleton className="w-20 h-5" />
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">Power Production</div>
+                </Card>
+                <Card className="border p-4 h-full">
+                  <div className="text-lg font-semibold">
+                    <Skeleton className="w-24 h-5" />
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">Current consumption</div>
+                </Card>
+                <Card className="border p-4 h-full">
+                  <div className="text-lg font-semibold">
+                    <Skeleton className="w-20 h-5" />
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">Max. Consumed</div>
+                </Card>
+              </div>
 
-                <Grid container sx={{ marginTop: '30px' }}>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Typography variant="h6">Battery</Typography>
-                  </Grid>
-                  <Grid>
-                    <Skeleton width={'80px'} />
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </Container>
-    </DashboardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-8">
+                <div className="text-lg font-semibold">Battery</div>
+                <div>
+                  <Skeleton className="w-20 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
   );
 }

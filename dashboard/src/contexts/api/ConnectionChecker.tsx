@@ -1,79 +1,38 @@
-import CloseIcon from '@mui/icons-material/Close';
-import { Alert, IconButton, Snackbar } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { useContextSelector } from 'use-context-selector';
 import { ApiContext } from './useApi';
 
-export const ConnectionCheckerProvider: React.FC<any> = () => {
-  type AlertProps = {
-    severity: 'success' | 'error' | 'info' | 'warning' | undefined;
-    message: string;
-  };
+/**
+ * ConnectionCheckerProvider monitors the API connection status and displays
+ * toast notifications when the connection state changes.
+ */
+export const ConnectionCheckerProvider: React.FC = () => {
+  const upMessage = 'Satisfactory API is online';
+  const downMessage = 'Satisfactory API is offline';
 
-  const upMessage = 'Satifactory API is online';
-  const downMessage = 'Satifactory API is offline';
+  const isOnline = useContextSelector(ApiContext, (v) => v.isOnline);
+  const didFirstCheck = useRef(false);
+  const previousOnline = useRef<boolean | null>(null);
 
-  const isOnline = useContextSelector(ApiContext, (v) => {
-    return v.isOnline;
-  });
-  const [props, setProps] = useState<AlertProps>({ severity: 'success', message: upMessage });
-  const [open, setOpen] = useState<boolean>(false);
-  const [didFirstCheck, setDidFirstCheck] = useState<boolean>(false);
-
-  const checkApiConnection = async () => {
-    if (!didFirstCheck) {
-      setDidFirstCheck(true);
+  useEffect(() => {
+    if (!didFirstCheck.current) {
+      didFirstCheck.current = true;
+      previousOnline.current = isOnline;
       return;
     }
 
-    const up = isOnline;
-    let newMessage = '';
-    let newSeverity: 'success' | 'error' | 'info' | 'warning' | undefined;
+    if (previousOnline.current === isOnline) {
+      return;
+    }
+    previousOnline.current = isOnline;
 
-    if (up) {
-      newMessage = upMessage;
-      newSeverity = 'success';
+    if (isOnline) {
+      toast.success(upMessage, { duration: 5000 });
     } else {
-      newMessage = downMessage;
-      newSeverity = 'error';
+      toast.error(downMessage, { duration: Infinity });
     }
-
-    setProps({ severity: newSeverity, message: newMessage });
-    setOpen(true);
-    if (newSeverity !== 'error') {
-      setTimeout(() => {
-        setOpen(false);
-      }, 5000);
-    }
-  };
-
-  useEffect(() => {
-    checkApiConnection();
   }, [isOnline]);
 
-  const handleClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason !== 'clickaway') {
-      setOpen(false);
-    }
-  };
-
-  return (
-    <Snackbar
-      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      open={open}
-      autoHideDuration={props?.severity !== 'error' ? 2000 : null}
-      onClose={handleClose}
-    >
-      <Alert
-        severity={props?.severity}
-        action={
-          <IconButton aria-label="close" color="inherit" size="small" onClick={handleClose}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
-      >
-        {props?.message}
-      </Alert>
-    </Snackbar>
-  );
+  return null;
 };

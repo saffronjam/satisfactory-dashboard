@@ -1,12 +1,15 @@
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
-import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
+import { PauseCircle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 import { SessionStageReady } from 'src/apiTypes';
+import { Spinner } from '@/components/loading/spinner';
 import { useSession } from 'src/contexts/sessions';
 
+/**
+ * Displays an overlay when a session is initializing or paused.
+ * Shows a spinner during initialization and a pause icon when paused.
+ */
 export const SessionInitOverlay = () => {
-  const theme = useTheme();
   const location = useLocation();
   const { selectedSession } = useSession();
 
@@ -29,52 +32,26 @@ export const SessionInitOverlay = () => {
   }
 
   return (
-    <Box
-      sx={{
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-        // Offset by sidebar width on large screens
-        [theme.breakpoints.up('lg')]: {
-          left: 'var(--layout-nav-vertical-width, 230px)',
-        },
-        zIndex: theme.zIndex.drawer + 2,
-        color: '#fff',
-        backgroundColor: theme.palette.background.default,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 2,
-      }}
-    >
+    <div className="fixed inset-0 lg:left-[var(--sidebar-width,230px)] z-50 text-foreground bg-background flex flex-col items-center justify-center gap-4">
       {isPaused ? (
         <>
-          <PauseCircleOutlineIcon sx={{ fontSize: 64, opacity: 0.8 }} />
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              Session is paused
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              Enable this session to view its data
-            </Typography>
-          </Box>
+          <PauseCircle className="size-16 opacity-80" />
+          <div className="text-center">
+            <h2 className="text-lg font-semibold mb-2">Session is paused</h2>
+            <p className="text-sm text-muted-foreground">Enable this session to view its data</p>
+          </div>
         </>
       ) : (
         <>
-          <CircularProgress color="inherit" size={48} />
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              Session is being initialized
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
+          <Spinner size="xl" />
+          <div className="text-center">
+            <h2 className="text-lg font-semibold mb-2">Session is being initialized</h2>
+            <p className="text-sm text-muted-foreground">
               Please wait while we fetch data from the Satisfactory server...
-            </Typography>
-          </Box>
+            </p>
+          </div>
         </>
       )}
-    </Box>
+    </div>
   );
 };

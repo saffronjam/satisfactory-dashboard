@@ -11,11 +11,13 @@ React-based dashboard for monitoring Satisfactory factory operations. Features r
 - **Bun 1.3** for package management and runtime
 - **React 18** with TypeScript 5.6
 - **Vite 5** for build and dev server
-- **Material-UI 6** for UI components
+- **Tailwind CSS v4** for utility-first styling
+- **shadcn/ui** for UI components (Radix UI primitives)
 - **React Router 6** for client-side routing
-- **MUI X Charts + Recharts** for data visualization
+- **Recharts** for data visualization
 - **Leaflet + React Leaflet** for interactive maps
-- **styled-components** for custom styling
+- **Lucide React** for icons (shadcn default)
+- **@iconify/react** for additional icons
 - **Day.js** for date formatting
 - **oxlint** for linting
 - **oxfmt** for code formatting
@@ -28,24 +30,27 @@ React-based dashboard for monitoring Satisfactory factory operations. Features r
 dashboard/src/
 ├── pages/                    # Page components (home, map, production, power, trains, drones, players, settings)
 ├── components/               # Reusable components
-│   ├── color-utils/         # Color picker and preview
+│   ├── ui/                  # shadcn UI components (Button, Card, Dialog, etc.)
+│   ├── gauge/               # Gauge wrapper for react-gauge-component
 │   ├── iconify/             # Iconify icon integration
-│   ├── label/               # Label/badge components
+│   ├── label/               # Custom Label component with Tailwind variants
+│   ├── loading/             # Loading components (PageLoading, Spinner)
 │   ├── logo/                # App logo component
-│   ├── scrollbar/           # Custom scrollbar
 │   ├── session-dialog/      # Add session dialog
 │   ├── session-selector/    # Session dropdown selector
 │   ├── session-status-bar/  # Session status indicator
-│   ├── svg-color/           # SVG color utilities
-│   └── welcome/             # Welcome screen for new users
+│   ├── timeline/            # Custom Timeline component
+│   ├── welcome/             # Welcome screen for new users
+│   ├── theme-provider.tsx   # Dark/light theme context
+│   └── mode-toggle.tsx      # Theme toggle component
 ├── contexts/                 # React Context
 │   ├── api/                 # API data provider (SSE streaming)
 │   └── sessions/            # Session management context
 ├── layouts/                  # Layout components
-│   ├── components/          # Layout components
-│   ├── core/                # Core layout utilities
-│   ├── dashboard/           # Main dashboard layout
+│   ├── dashboard/           # Main dashboard layout (sidebar, header)
 │   └── simple/              # Simple layouts (no sidebar)
+├── lib/                      # Utility functions
+│   └── utils.ts             # cn() helper for Tailwind class merging
 ├── routes/                   # Routing configuration
 │   ├── components/          # Route-level components
 │   └── hooks/               # Routing hooks
@@ -60,9 +65,6 @@ dashboard/src/
 │   ├── settings/            # Settings views
 │   └── trains/              # Train views
 ├── services/                 # API services (session CRUD)
-├── theme/                    # Material-UI theme
-│   ├── core/                # Theme configuration (palette, typography, shadows)
-│   └── styles/              # Global and mixin styles
 ├── hooks/                    # Custom React hooks
 └── utils/                    # Utility functions (formatting, abbreviations)
 ```
@@ -148,8 +150,8 @@ const MyComponent = () => {
         isOnline: v.isOnline,
     }));
 
-    if (api.isLoading) return <CircularProgress />;
-    if (!api.isOnline) return <Alert severity="error">Offline</Alert>;
+    if (api.isLoading) return <Spinner />;
+    if (!api.isOnline) return <Alert variant="destructive">Offline</Alert>;
 
     return <DataDisplay data={api.circuits} />;
 };
@@ -164,43 +166,68 @@ Real-time updates via Server-Sent Events (session-scoped):
 // and updates context automatically
 ```
 
-### Material-UI Components
+### shadcn UI Components
 
-Use MUI components with theme customization:
+Use shadcn components with Tailwind styling:
 
 ```tsx
-import { Box, Card, Typography, useTheme } from '@mui/material';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const MyComponent = () => {
-    const theme = useTheme();
-
     return (
-        <Card sx={{ p: 3, bgcolor: theme.palette.background.paper }}>
-            <Typography variant="h6">Title</Typography>
-            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                {/* Content */}
-            </Box>
+        <Card className="bg-card">
+            <CardHeader>
+                <CardTitle>Title</CardTitle>
+            </CardHeader>
+            <CardContent className="flex gap-4">
+                <Button variant="default">Primary</Button>
+                <Button variant="outline">Secondary</Button>
+            </CardContent>
         </Card>
+    );
+};
+```
+
+### Tailwind Class Merging
+
+Use the `cn()` utility for conditional and merged classes:
+
+```tsx
+import { cn } from '@/lib/utils';
+
+const MyComponent = ({ active }: { active: boolean }) => {
+    return (
+        <div className={cn(
+            "p-4 rounded-lg border",
+            active && "border-primary bg-accent"
+        )}>
+            Content
+        </div>
     );
 };
 ```
 
 ### Chart Components
 
-Wrapper components for chart libraries:
+Use Recharts with dark theme styling:
 
 ```tsx
-import { Chart } from '../components/chart';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-<Chart
-    type="line"
-    series={[{ name: 'Power', data: powerData }]}
-    options={{
-        xaxis: { categories: timeLabels },
-        colors: [theme.palette.primary.main]
-    }}
-    height={300}
-/>
+<ResponsiveContainer width="100%" height={300}>
+    <BarChart data={data}>
+        <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+        <YAxis stroke="hsl(var(--muted-foreground))" />
+        <Tooltip
+            contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))'
+            }}
+        />
+        <Bar dataKey="value" fill="hsl(var(--primary))" />
+    </BarChart>
+</ResponsiveContainer>
 ```
 
 ### Page Components
@@ -209,7 +236,6 @@ Page structure pattern:
 
 ```tsx
 import { Helmet } from 'react-helmet-async';
-import { Container, Typography, Grid } from '@mui/material';
 
 export default function ProductionPage() {
     return (
@@ -218,15 +244,15 @@ export default function ProductionPage() {
                 <title>Production | Satisfactory Dashboard</title>
             </Helmet>
 
-            <Container maxWidth="xl">
-                <Typography variant="h4" sx={{ mb: 5 }}>
+            <div className="container mx-auto max-w-7xl p-6">
+                <h1 className="text-2xl font-bold mb-6">
                     Production Overview
-                </Typography>
+                </h1>
 
-                <Grid container spacing={3}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Page content */}
-                </Grid>
-            </Container>
+                </div>
+            </div>
         </>
     );
 }
@@ -234,54 +260,80 @@ export default function ProductionPage() {
 
 ### Map Integration
 
-Leaflet for interactive maps:
+Leaflet for interactive maps with dark theme styling:
 
 ```tsx
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import './leaflet-dark.css';
 
 const FactoryMap = () => (
-    <MapContainer center={[0, 0]} zoom={2} style={{ height: '100%' }}>
+    <MapContainer center={[0, 0]} zoom={2} className="h-full w-full">
         <TileLayer url="..." />
         {markers.map(marker => (
             <Marker key={marker.id} position={marker.position}>
-                <Popup>{marker.name}</Popup>
+                <Popup className="dark-popup">{marker.name}</Popup>
             </Marker>
         ))}
     </MapContainer>
 );
 ```
 
-## Theme Customization
+## Theme System
 
-### Colors
+### Dark/Light Mode
 
-Defined in `theme/colors.json` and applied via `theme/core/palette.ts`:
-
-```typescript
-// Access theme colors
-const theme = useTheme();
-theme.palette.primary.main
-theme.palette.background.paper
-theme.palette.text.primary
-```
-
-### Typography
-
-Configured in `theme/core/typography.ts`:
+The application uses CSS variables for theming with dark mode as default:
 
 ```tsx
-<Typography variant="h1">Heading</Typography>
-<Typography variant="body1">Body text</Typography>
-<Typography variant="caption">Caption</Typography>
+// Access theme in components
+import { useTheme } from '@/components/theme-provider';
+
+const MyComponent = () => {
+    const { theme, setTheme } = useTheme();
+
+    return (
+        <Button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+            Toggle Theme
+        </Button>
+    );
+};
 ```
 
-### Shadows
+### CSS Variables
 
-Defined in `theme/core/shadows.ts`:
+Defined in `src/index.css` using OKLCH color format:
+
+```css
+:root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    /* ... */
+}
+
+.dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    /* ... */
+}
+```
+
+### Tailwind Typography
+
+Use Tailwind utility classes for text styling:
 
 ```tsx
-<Card sx={{ boxShadow: theme.shadows[3] }}>
+<h1 className="text-3xl font-bold tracking-tight">Heading</h1>
+<p className="text-muted-foreground">Body text</p>
+<span className="text-sm text-muted-foreground">Caption</span>
 ```
 
 ## Adding New Pages
@@ -291,7 +343,6 @@ Defined in `theme/core/shadows.ts`:
    ```tsx
    // pages/new-feature.tsx
    import { Helmet } from 'react-helmet-async';
-   import { Container } from '@mui/material';
 
    export default function NewFeaturePage() {
        return (
@@ -299,9 +350,9 @@ Defined in `theme/core/shadows.ts`:
                <Helmet>
                    <title>New Feature | Satisfactory Dashboard</title>
                </Helmet>
-               <Container maxWidth="xl">
+               <div className="container mx-auto max-w-7xl p-6">
                    {/* Page content */}
-               </Container>
+               </div>
            </>
        );
    }
@@ -328,30 +379,41 @@ Defined in `theme/core/shadows.ts`:
 
 ## Adding New Components
 
-1. **Create component** in appropriate directory:
+1. **For shadcn components**, install via CLI:
+
+   ```bash
+   bunx shadcn@latest add [component-name]
+   ```
+
+2. **For custom components**, create in appropriate directory:
 
    ```tsx
    // components/feature/FeatureCard.tsx
-   import { Card, CardContent, Typography } from '@mui/material';
+   import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
    interface FeatureCardProps {
        title: string;
        value: number;
    }
 
+   /**
+    * FeatureCard displays a feature metric with title and value.
+    */
    export const FeatureCard = ({ title, value }: FeatureCardProps) => (
        <Card>
+           <CardHeader className="pb-2">
+               <CardTitle className="text-sm font-medium">{title}</CardTitle>
+           </CardHeader>
            <CardContent>
-               <Typography variant="subtitle2">{title}</Typography>
-               <Typography variant="h4">{value}</Typography>
+               <div className="text-2xl font-bold">{value}</div>
            </CardContent>
        </Card>
    );
    ```
 
-2. **Export** from component directory index if needed
+3. **Export** from component directory index if needed
 
-3. **Use** in pages or sections
+4. **Use** in pages or sections
 
 ## Utility Functions
 
@@ -452,7 +514,8 @@ When refactoring or improving code:
 ### Error Handling
 
 - Always handle loading and error states
-- Use MUI Alert components for error display
+- Use shadcn Alert components for error display
+- Use Sonner toast for notifications
 - Log errors for debugging
 
 ### Accessibility
@@ -466,7 +529,8 @@ When refactoring or improving code:
 
 - **Root CLAUDE.md**: Full-stack architecture overview
 - **api/CLAUDE.md**: Backend API architecture
-- **Material-UI docs**: https://mui.com/
+- **shadcn/ui docs**: https://ui.shadcn.com/
+- **Tailwind CSS v4 docs**: https://tailwindcss.com/
 - **Vite docs**: https://vitejs.dev/
 - **Bun docs**: https://bun.sh/docs
 - **oxlint docs**: https://oxc.rs/docs/guide/usage/linter.html

@@ -1,20 +1,12 @@
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Container,
-  IconButton,
-  InputAdornment,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Icon } from '@iconify/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Iconify } from 'src/components/iconify';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CONFIG } from 'src/config-global';
 import { ApiContext } from 'src/contexts/api/useApi';
 import { useSession } from 'src/contexts/sessions';
@@ -28,7 +20,9 @@ type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string
 
 type ChangedPaths = Set<string>;
 
-// Recursive JSON tree node component
+/**
+ * Recursive JSON tree node component for rendering nested data structures.
+ */
 function JsonNode({
   name,
   value,
@@ -51,11 +45,11 @@ function JsonNode({
   const isExpandable = isObject || isArray;
 
   const renderValue = () => {
-    if (value === null) return <span style={{ color: '#808080' }}>null</span>;
+    if (value === null) return <span className="text-muted-foreground">null</span>;
     if (typeof value === 'boolean')
-      return <span style={{ color: '#569cd6' }}>{value ? 'true' : 'false'}</span>;
-    if (typeof value === 'number') return <span style={{ color: '#b5cea8' }}>{value}</span>;
-    if (typeof value === 'string') return <span style={{ color: '#ce9178' }}>"{value}"</span>;
+      return <span className="text-blue-400">{value ? 'true' : 'false'}</span>;
+    if (typeof value === 'number') return <span className="text-green-400">{value}</span>;
+    if (typeof value === 'string') return <span className="text-orange-400">"{value}"</span>;
     return null;
   };
 
@@ -80,57 +74,31 @@ function JsonNode({
   const remainingItems = isArray ? arrayValue.length - visibleCount : 0;
 
   return (
-    <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          py: 0.25,
-          px: 0.5,
-          borderRadius: 0.5,
-          cursor: isExpandable ? 'pointer' : 'default',
-          transition: 'background-color 0.3s ease',
-          bgcolor: isChanged ? 'warning.dark' : 'transparent',
-          '&:hover': {
-            bgcolor: isExpandable ? 'action.hover' : isChanged ? 'warning.dark' : 'transparent',
-          },
-        }}
+    <div className="font-mono text-[0.85rem]">
+      <div
+        className={`flex items-center py-0.5 px-1 rounded transition-colors duration-300 ${
+          isChanged ? 'bg-yellow-600' : ''
+        } ${isExpandable ? 'cursor-pointer hover:bg-accent' : ''}`}
         onClick={() => isExpandable && setExpanded(!expanded)}
       >
         {isExpandable && (
-          <Iconify
+          <Icon
             icon={expanded ? 'mdi:chevron-down' : 'mdi:chevron-right'}
-            width={16}
-            sx={{ mr: 0.5, color: 'text.secondary' }}
+            className="size-4 mr-1 text-muted-foreground shrink-0"
           />
         )}
-        {!isExpandable && <Box sx={{ width: 20 }} />}
-        <Typography
-          component="span"
-          sx={{ color: 'primary.main', fontFamily: 'inherit', fontSize: 'inherit' }}
-        >
-          {name}
-        </Typography>
-        <Typography
-          component="span"
-          sx={{ color: 'text.secondary', mx: 0.5, fontFamily: 'inherit', fontSize: 'inherit' }}
-        >
-          :
-        </Typography>
+        {!isExpandable && <div className="w-5" />}
+        <span className="text-primary">{name}</span>
+        <span className="text-muted-foreground mx-1">:</span>
         {isExpandable ? (
-          <Typography
-            component="span"
-            sx={{ color: 'text.disabled', fontFamily: 'inherit', fontSize: 'inherit' }}
-          >
-            {getPreview()}
-          </Typography>
+          <span className="text-muted-foreground/60">{getPreview()}</span>
         ) : (
           renderValue()
         )}
-      </Box>
+      </div>
 
       {isExpandable && expanded && (
-        <Box sx={{ pl: 2, borderLeft: '1px solid', borderColor: 'divider', ml: 1 }}>
+        <div className="pl-4 border-l border-border ml-2">
           {isArray
             ? arrayValue
                 .slice(0, visibleCount)
@@ -154,29 +122,24 @@ function JsonNode({
               ))}
           {hasMoreItems && (
             <Button
-              size="small"
+              variant="ghost"
+              size="sm"
               onClick={handleShowMore}
-              sx={{
-                mt: 0.5,
-                py: 0.25,
-                px: 1,
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                color: 'text.secondary',
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-              startIcon={<Iconify icon="mdi:plus" width={14} />}
+              className="mt-1 py-0.5 px-2 h-auto text-xs text-muted-foreground"
             >
+              <Icon icon="mdi:plus" className="size-3.5" />
               Show {Math.min(ARRAY_PAGE_SIZE, remainingItems)} more ({remainingItems} remaining)
             </Button>
           )}
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }
 
-// Root data tree component
+/**
+ * Root data tree component that wraps JsonNode with change detection.
+ */
 function DataRoot({
   name,
   data,
@@ -191,38 +154,37 @@ function DataRoot({
   const [changedPaths, setChangedPaths] = useState<ChangedPaths>(new Set());
   const clearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Find changed paths between prev and current data
   const findChangedPaths = useCallback(
     (
       prev: JsonValue | undefined,
       curr: JsonValue,
-      path: string,
+      currentPath: string,
       changes: Set<string>
     ): Set<string> => {
       if (prev === undefined) return changes;
 
       if (typeof prev !== typeof curr) {
-        changes.add(path);
+        changes.add(currentPath);
         return changes;
       }
 
       if (prev === null || curr === null) {
-        if (prev !== curr) changes.add(path);
+        if (prev !== curr) changes.add(currentPath);
         return changes;
       }
 
       if (typeof curr !== 'object') {
-        if (prev !== curr) changes.add(path);
+        if (prev !== curr) changes.add(currentPath);
         return changes;
       }
 
       if (Array.isArray(curr)) {
         const prevArr = prev as JsonValue[];
         if (prevArr.length !== curr.length) {
-          changes.add(path);
+          changes.add(currentPath);
         }
         curr.forEach((item, idx) => {
-          findChangedPaths(prevArr[idx], item, `${path}[${idx}]`, changes);
+          findChangedPaths(prevArr[idx], item, `${currentPath}[${idx}]`, changes);
         });
         return changes;
       }
@@ -233,9 +195,9 @@ function DataRoot({
 
       allKeys.forEach((key) => {
         if (!(key in prevObj) || !(key in currObj)) {
-          changes.add(`${path}.${key}`);
+          changes.add(`${currentPath}.${key}`);
         } else {
-          findChangedPaths(prevObj[key], currObj[key], `${path}.${key}`, changes);
+          findChangedPaths(prevObj[key], currObj[key], `${currentPath}.${key}`, changes);
         }
       });
 
@@ -244,7 +206,6 @@ function DataRoot({
     []
   );
 
-  // Detect changes and set timeout to clear all highlights at once
   useEffect(() => {
     if (paused) return;
 
@@ -257,7 +218,6 @@ function DataRoot({
         return combined;
       });
 
-      // Clear existing timeout and set new one to clear all changes after 1 second
       if (clearTimeoutRef.current) {
         clearTimeout(clearTimeoutRef.current);
       }
@@ -276,53 +236,18 @@ function DataRoot({
   }, [data, prevData, paused, name, findChangedPaths]);
 
   return (
-    <Card sx={{ mb: 2 }}>
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            mb: 1,
-            pb: 1,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Iconify icon="mdi:database" width={20} sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="subtitle1" fontWeight="bold">
-            {name}
-          </Typography>
+    <Card className="py-0">
+      <CardContent className="p-4">
+        <div className="flex items-center mb-2 pb-2 border-b border-border">
+          <Icon icon="mdi:database" className="size-5 mr-2 text-primary" />
+          <span className="font-semibold">{name}</span>
           {changedPaths.size > 0 && (
-            <Chip
-              label={`${changedPaths.size} changes`}
-              size="small"
-              color="warning"
-              sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-            />
+            <Badge variant="secondary" className="ml-2 h-5 text-[0.7rem] bg-yellow-600 text-white">
+              {changedPaths.size} changes
+            </Badge>
           )}
-        </Box>
-        <Box
-          sx={{
-            maxHeight: 400,
-            overflowY: 'auto',
-            // Overlay scrollbar styling - doesn't take up layout space
-            scrollbarWidth: 'thin',
-            '&::-webkit-scrollbar': {
-              width: 6,
-              position: 'absolute',
-            },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: 'transparent',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              borderRadius: 3,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            },
-            '&::-webkit-scrollbar-thumb:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.3)',
-            },
-          }}
-        >
+        </div>
+        <ScrollArea className="h-[400px]">
           <JsonNode
             name={name}
             value={data}
@@ -330,20 +255,21 @@ function DataRoot({
             changedPaths={changedPaths}
             defaultExpanded
           />
-        </Box>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
 }
 
-// Main debug view
+/**
+ * Main debug view component for inspecting live API data with change highlighting.
+ */
 export function DebugView() {
   const [paused, setPaused] = useState(false);
   const [pausedData, setPausedData] = useState<Record<string, JsonValue> | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { selectedSession } = useSession();
 
-  // Get all API data
   const api = useContextSelector(ApiContext, (v) => ({
     circuits: v.circuits,
     factoryStats: v.factoryStats,
@@ -372,10 +298,8 @@ export function DebugView() {
     isLoading: v.isLoading,
   }));
 
-  // Store previous data for change detection
   const prevDataRef = useRef<Record<string, JsonValue>>({});
 
-  // Current data sources
   const currentData = useMemo(
     () => ({
       circuits: api.circuits as unknown as JsonValue,
@@ -406,22 +330,17 @@ export function DebugView() {
     [api]
   );
 
-  // Display data (paused or current)
   const displayData = paused && pausedData ? pausedData : currentData;
 
-  // Toggle pause
   const handlePauseToggle = useCallback(() => {
     if (!paused) {
-      // Pausing - store current data
       setPausedData(currentData);
     } else {
-      // Unpausing - clear stored data
       setPausedData(null);
     }
     setPaused(!paused);
   }, [paused, currentData]);
 
-  // Update prev data ref when not paused
   useEffect(() => {
     if (!paused) {
       const timer = setTimeout(() => {
@@ -458,7 +377,6 @@ export function DebugView() {
     { name: 'resourceNodes', icon: 'tabler:pick' },
   ];
 
-  // Filter data roots by search term
   const filteredDataRoots = useMemo(() => {
     if (!searchTerm.trim()) return dataRoots;
     const term = searchTerm.toLowerCase();
@@ -471,77 +389,69 @@ export function DebugView() {
         <title> {`Debug - ${CONFIG.appName}`}</title>
       </Helmet>
 
-      <Container maxWidth="xl">
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-          <Box>
-            <Typography variant="h4">Debug Data Viewer</Typography>
-            <Typography variant="body2" color="text.secondary">
+      <div className="container max-w-7xl mx-auto px-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Debug Data Viewer</h1>
+            <p className="text-sm text-muted-foreground">
               Inspect live API data with change highlighting
-            </Typography>
-          </Box>
+            </p>
+          </div>
 
-          <Stack direction="row" spacing={2} alignItems="center">
-            <TextField
-              size="small"
-              placeholder="Filter boxes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Iconify icon="mdi:magnify" width={20} sx={{ color: 'text.disabled' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: searchTerm && (
-                    <InputAdornment position="end">
-                      <IconButton size="small" onClick={() => setSearchTerm('')} edge="end">
-                        <Iconify icon="mdi:close" width={16} />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-              sx={{ width: 200 }}
-            />
-            <Chip
-              label={selectedSession?.isOnline ? 'Online' : 'Offline'}
-              color={selectedSession?.isOnline ? 'success' : 'error'}
-              size="small"
-            />
-            <Tooltip title={paused ? 'Resume updates' : 'Pause updates'}>
-              <IconButton
-                onClick={handlePauseToggle}
-                color={paused ? 'warning' : 'default'}
-                sx={{
-                  bgcolor: paused ? 'warning.dark' : 'action.hover',
-                  '&:hover': { bgcolor: paused ? 'warning.main' : 'action.selected' },
-                }}
-              >
-                <Iconify icon={paused ? 'mdi:play' : 'mdi:pause'} width={24} />
-              </IconButton>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Icon
+                icon="mdi:magnify"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+              />
+              <Input
+                placeholder="Filter boxes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 pr-8 w-48"
+              />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 size-6"
+                  onClick={() => setSearchTerm('')}
+                >
+                  <Icon icon="mdi:close" className="size-3.5" />
+                </Button>
+              )}
+            </div>
+            <Badge variant={selectedSession?.isOnline ? 'default' : 'destructive'}>
+              {selectedSession?.isOnline ? 'Online' : 'Offline'}
+            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={paused ? 'secondary' : 'outline'}
+                  size="icon"
+                  onClick={handlePauseToggle}
+                  className={paused ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : ''}
+                >
+                  <Icon icon={paused ? 'mdi:play' : 'mdi:pause'} className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{paused ? 'Resume updates' : 'Pause updates'}</TooltipContent>
             </Tooltip>
-          </Stack>
-        </Stack>
+          </div>
+        </div>
 
         {paused && (
-          <Card sx={{ mb: 2, bgcolor: 'warning.dark' }}>
-            <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Iconify icon="mdi:pause-circle" width={20} />
-                <Typography variant="body2">Updates paused - viewing frozen snapshot</Typography>
-              </Stack>
+          <Card className="mb-4 py-0 bg-yellow-600/20 border-yellow-600">
+            <CardContent className="py-2 px-4">
+              <div className="flex items-center gap-2">
+                <Icon icon="mdi:pause-circle" className="size-5 text-yellow-500" />
+                <span className="text-sm">Updates paused - viewing frozen snapshot</span>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: 2,
-          }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredDataRoots.map(({ name }) => (
             <DataRoot
               key={name}
@@ -551,14 +461,14 @@ export function DebugView() {
               paused={paused}
             />
           ))}
-        </Box>
+        </div>
         {filteredDataRoots.length === 0 && searchTerm && (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Iconify icon="mdi:database-off" width={48} sx={{ color: 'text.disabled', mb: 1 }} />
-            <Typography color="text.secondary">No data sources match "{searchTerm}"</Typography>
-          </Box>
+          <div className="text-center py-8">
+            <Icon icon="mdi:database-off" className="size-12 text-muted-foreground mb-2 mx-auto" />
+            <p className="text-muted-foreground">No data sources match "{searchTerm}"</p>
+          </div>
         )}
-      </Container>
+      </div>
     </>
   );
 }

@@ -1,62 +1,43 @@
-import Alert from '@mui/material/Alert';
-import type { Breakpoint, SxProps, Theme } from '@mui/material/styles';
-import { useTheme } from '@mui/material/styles';
+'use client';
+
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { LogoutButton } from 'src/components/logout-button';
-import { AddSessionDialog } from 'src/components/session-dialog';
-import { SessionSelector } from 'src/components/session-selector';
-import { SessionInitOverlay } from 'src/components/session-init-overlay';
-import { SessionStatusBar } from 'src/components/session-status-bar';
-import { VersionDisplay } from 'src/components/version-display/VersionDisplay';
-import { WelcomeScreen } from 'src/components/welcome';
-import { useDebug } from 'src/contexts/debug/DebugContext';
-import { useSession } from 'src/contexts/sessions';
-import { layoutClasses } from '../classes';
-import { MenuButton } from '../components/menu-button';
-import { getNavData } from '../config-nav-dashboard';
-import { HeaderSection } from '../core/header-section';
-import { LayoutSection } from '../core/layout-section';
-import { Main } from './main';
-import { NavDesktop, NavMobile } from './nav';
 
-// ----------------------------------------------------------------------
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { LogoutButton } from '@/components/logout-button';
+import { AddSessionDialog } from '@/components/session-dialog';
+import { SessionSelector } from '@/components/session-selector';
+import { SessionInitOverlay } from '@/components/session-init-overlay';
+import { SessionStatusBar } from '@/components/session-status-bar';
+import { VersionDisplay } from '@/components/version-display/VersionDisplay';
+import { WelcomeScreen } from '@/components/welcome';
+import { useDebug } from '@/contexts/debug/DebugContext';
+import { useSession } from '@/contexts/sessions';
+
+import { getNavData } from '../config-nav-dashboard';
+import { DashboardHeader } from './header';
+import { AppSidebar } from './sidebar';
 
 export type DashboardLayoutProps = {
-  sx?: SxProps<Theme>;
   children: React.ReactNode;
-  header?: {
-    sx?: SxProps<Theme>;
-  };
 };
 
-export type Notification = {
-  id: string;
-  title: string;
-  description: string;
-  type: string;
-  postedAt: string;
-  isUnRead: boolean;
-};
-
-export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) {
-  const theme = useTheme();
+/**
+ * Dashboard layout component that composes the sidebar, header, and content area.
+ * Uses shadcn SidebarProvider for collapsible sidebar functionality.
+ * Handles welcome screen display when no sessions exist.
+ */
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const { sessions, isLoading: sessionsLoading } = useSession();
   const { isDebugMode } = useDebug();
 
-  const [navOpen, setNavOpen] = useState(false);
   const [addSessionDialogOpen, setAddSessionDialogOpen] = useState(false);
 
-  const layoutQuery: Breakpoint = 'lg';
-
-  // Hide header on map page for full-screen experience
-  const hideHeader = location.pathname === '/map';
-
-  // Get nav data based on debug mode
   const navData = getNavData(isDebugMode);
 
-  // Show welcome screen when no sessions exist
+  const hideHeader = location.pathname === '/map';
+
   if (!sessionsLoading && sessions.length === 0) {
     return (
       <>
@@ -75,8 +56,8 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
 
   const bottomSlot = (
     <>
-      <LogoutButton />
       <VersionDisplay />
+      <LogoutButton />
     </>
   );
 
@@ -86,93 +67,16 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
         open={addSessionDialogOpen}
         onClose={() => setAddSessionDialogOpen(false)}
       />
-      <LayoutSection
-        /** **************************************
-         * Header
-         *************************************** */
-        headerSection={
-          hideHeader ? null : (
-            <HeaderSection
-              layoutQuery={layoutQuery}
-              slotProps={{
-                container: {
-                  maxWidth: false,
-                  sx: { px: { [layoutQuery]: 5 } },
-                },
-              }}
-              sx={header?.sx}
-              slots={{
-                topArea: (
-                  <Alert
-                    severity="warning"
-                    sx={{
-                      display: 'none',
-                      borderRadius: 4,
-                      m: 2,
-                      position: 'fixed',
-                      zIndex: 9999,
-                      width: 'calc(100% - 32px)',
-                      [theme.breakpoints.up(layoutQuery)]: { width: 'calc(100% - 230px - 32px)' },
-                    }}
-                  >
-                    This is an info Alert.
-                  </Alert>
-                ),
-                leftArea: (
-                  <>
-                    <MenuButton
-                      onClick={() => setNavOpen(true)}
-                      sx={{
-                        ml: -1,
-                        [theme.breakpoints.up(layoutQuery)]: { display: 'none' },
-                      }}
-                    />
-                    <NavMobile
-                      data={navData}
-                      open={navOpen}
-                      onClose={() => setNavOpen(false)}
-                      slots={{ topArea: sessionSelectorSlot, bottomArea: bottomSlot }}
-                    />
-                  </>
-                ),
-              }}
-            />
-          )
-        }
-        /** **************************************
-         * Sidebar
-         *************************************** */
-        sidebarSection={
-          <NavDesktop
-            data={navData}
-            layoutQuery={layoutQuery}
-            slots={{ topArea: sessionSelectorSlot, bottomArea: bottomSlot }}
-          />
-        }
-        /** **************************************
-         * Footer
-         *************************************** */
-        footerSection={null}
-        /** **************************************
-         * Style
-         *************************************** */
-        cssVars={{
-          '--layout-nav-vertical-width': '230px',
-          '--layout-dashboard-content-pt': theme.spacing(1),
-          '--layout-dashboard-content-pb': theme.spacing(8),
-          '--layout-dashboard-content-px': theme.spacing(5),
-        }}
-        sx={{
-          [`& .${layoutClasses.hasSidebar}`]: {
-            [theme.breakpoints.up(layoutQuery)]: {
-              pl: 'var(--layout-nav-vertical-width)',
-            },
-          },
-          ...sx,
-        }}
-      >
-        <Main>{children}</Main>
-      </LayoutSection>
+      <SidebarProvider>
+        <AppSidebar
+          data={navData}
+          slots={{ topArea: sessionSelectorSlot, bottomArea: bottomSlot }}
+        />
+        <SidebarInset>
+          {!hideHeader && <DashboardHeader />}
+          <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
       <SessionStatusBar />
       <SessionInitOverlay />
     </>

@@ -1,11 +1,17 @@
-import { Box, Chip, Typography } from '@mui/material';
+import { X } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { CONFIG } from 'src/config-global';
 import { useDebug } from 'src/contexts/debug/DebugContext';
 
-const CLICK_THRESHOLD = 5;
-const CLICK_TIMEOUT = 2000; // 2 seconds to complete 5 clicks
+import { Badge } from '@/components/ui/badge';
 
+const CLICK_THRESHOLD = 5;
+const CLICK_TIMEOUT = 2000;
+
+/**
+ * Displays the application version with a hidden debug mode toggle.
+ * Clicking the version 5 times within 2 seconds enables debug mode.
+ */
 export function VersionDisplay() {
   const { isDebugMode, enableDebugMode, disableDebugMode } = useDebug();
   const [clickCount, setClickCount] = useState(0);
@@ -13,13 +19,11 @@ export function VersionDisplay() {
 
   const handleVersionClick = useCallback(() => {
     if (isDebugMode) {
-      // If already in debug mode, clicking disables it
       disableDebugMode();
       setClickCount(0);
       return;
     }
 
-    // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -31,7 +35,6 @@ export function VersionDisplay() {
       enableDebugMode();
       setClickCount(0);
     } else {
-      // Reset count after timeout
       timeoutRef.current = setTimeout(() => {
         setClickCount(0);
       }, CLICK_TIMEOUT);
@@ -39,45 +42,28 @@ export function VersionDisplay() {
   }, [clickCount, isDebugMode, enableDebugMode, disableDebugMode]);
 
   return (
-    <Box sx={{ p: 2, pb: 6 }}>
+    <div className="p-2 pb-6">
       {isDebugMode && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
-          <Chip
-            label="Debug mode"
-            size="small"
-            onDelete={disableDebugMode}
-            sx={{
-              bgcolor: 'warning.main',
-              color: 'warning.contrastText',
-              fontWeight: 'bold',
-              fontSize: '0.7rem',
-              '& .MuiChip-deleteIcon': {
-                color: 'warning.contrastText',
-                '&:hover': {
-                  color: 'warning.contrastText',
-                  opacity: 0.7,
-                },
-              },
-            }}
-          />
-        </Box>
+        <div className="mb-1 flex justify-center">
+          <Badge className="gap-1 bg-amber-500 text-xs font-bold text-white hover:bg-amber-500">
+            Debug mode
+            <button
+              type="button"
+              onClick={disableDebugMode}
+              className="ml-0.5 rounded-full hover:opacity-70"
+              aria-label="Disable debug mode"
+            >
+              <X className="size-3" />
+            </button>
+          </Badge>
+        </div>
       )}
-      <Typography
-        variant="caption"
-        color="text.secondary"
+      <span
         onClick={handleVersionClick}
-        sx={{
-          display: 'block',
-          textAlign: 'center',
-          cursor: 'pointer',
-          userSelect: 'none',
-          '&:hover': {
-            opacity: 0.8,
-          },
-        }}
+        className="block cursor-pointer select-none text-center text-xs text-muted-foreground hover:opacity-80"
       >
         {CONFIG.appVersion}
-      </Typography>
-    </Box>
+      </span>
+    </div>
   );
 }

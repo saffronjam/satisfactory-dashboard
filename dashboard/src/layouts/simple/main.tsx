@@ -1,61 +1,36 @@
-import type { BoxProps } from '@mui/material/Box';
-import Box from '@mui/material/Box';
-import type { Breakpoint } from '@mui/material/styles';
-import { useTheme } from '@mui/material/styles';
+import { cn } from '@/lib/utils';
 
-import { layoutClasses } from '../classes';
+export type MainProps = {
+  children: React.ReactNode;
+  className?: string;
+};
 
-// ----------------------------------------------------------------------
-
-export function Main({ children, sx, ...other }: BoxProps) {
-  return (
-    <Box
-      component="main"
-      className={layoutClasses.main}
-      sx={{
-        display: 'flex',
-        flex: '1 1 auto',
-        flexDirection: 'column',
-        ...sx,
-      }}
-      {...other}
-    >
-      {children}
-    </Box>
-  );
+/**
+ * Main content wrapper for simple layout.
+ * Provides flex container for page content.
+ */
+export function Main({ children, className }: MainProps) {
+  return <main className={cn('flex flex-1 flex-col', className)}>{children}</main>;
 }
 
-// ----------------------------------------------------------------------
+export type CompactContentProps = {
+  children: React.ReactNode;
+  className?: string;
+};
 
-export function CompactContent({
-  sx,
-  layoutQuery,
-  children,
-  ...other
-}: BoxProps & { layoutQuery: Breakpoint }) {
-  const theme = useTheme();
-
+/**
+ * Compact content container for centered, narrow content.
+ * Used for login forms, error messages, and similar focused content.
+ */
+export function CompactContent({ children, className }: CompactContentProps) {
   return (
-    <Box
-      className={layoutClasses.content}
-      sx={{
-        width: 1,
-        mx: 'auto',
-        display: 'flex',
-        flex: '1 1 auto',
-        textAlign: 'center',
-        flexDirection: 'column',
-        p: theme.spacing(3, 2, 10, 2),
-        maxWidth: 'var(--layout-simple-content-compact-width)',
-        [theme.breakpoints.up(layoutQuery)]: {
-          justifyContent: 'center',
-          p: theme.spacing(10, 0, 10, 0),
-        },
-        ...sx,
-      }}
-      {...other}
+    <div
+      className={cn(
+        'mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-6 text-center md:px-0 md:py-10',
+        className
+      )}
     >
       {children}
-    </Box>
+    </div>
   );
 }

@@ -1,4 +1,3 @@
-import { Paper, Typography } from '@mui/material';
 import { LatLngExpression } from 'leaflet';
 import { memo, useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { Polyline, useMap, useMapEvents } from 'react-leaflet';
@@ -96,44 +95,21 @@ function PathLabel({ path, vertexIndex }: PathLabelProps) {
         />
       </svg>
       {/* Label chip */}
-      <Paper
+      <div
         ref={labelRef}
-        elevation={2}
-        sx={{
-          position: 'absolute',
+        className="absolute z-[1000] pointer-events-none px-2 py-1 rounded-md bg-gray-800/95 shadow-md"
+        style={{
           left: screenPos.x,
           top: screenPos.y,
           transform: 'translate(-50%, -100%)',
-          zIndex: 1000,
-          pointerEvents: 'none',
-          backgroundColor: 'rgba(31, 41, 55, 0.95)',
-          borderRadius: 2,
           border: `1px solid ${color}`,
-          px: 1,
-          py: 0.5,
         }}
       >
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: '0.7rem',
-            color: 'white',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {path.name}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: '0.6rem',
-            color: 'text.secondary',
-            display: 'block',
-          }}
-        >
+        <span className="text-[0.7rem] text-white whitespace-nowrap">{path.name}</span>
+        <span className="text-[0.6rem] text-muted-foreground block">
           {path.pathLength.toFixed(0)}m
-        </Typography>
-      </Paper>
+        </span>
+      </div>
     </>
   );
 }

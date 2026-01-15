@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Chip, Stack, Typography, useTheme } from '@mui/material';
+import { Icon } from '@iconify/react';
 import {
   Train,
   TrainStation,
@@ -8,173 +8,118 @@ import {
   TrainStatusParked,
   TrainStatusSelfDriving,
 } from 'src/apiTypes';
-import { Iconify } from 'src/components/iconify';
-import { varAlpha } from 'src/theme/styles';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { fNumber } from 'src/utils/format-number';
 import { abbreviations } from '../../utils/abbreviations';
 
-const TrainCard = ({ train }: { train: Train }) => {
-  const theme = useTheme();
-
-  const statusToStyle = (status: string) => {
-    switch (status) {
-      case TrainStatusSelfDriving:
-        return {
-          icon: <Iconify icon="mdi:train" />,
-          label: 'Self Driving',
-          backgroundColor: theme.palette.success.darkChannel,
-          color: theme.palette.primary.contrastTextChannel,
-          pulse: false,
-        };
-      case TrainStatusManualDriving:
-        return {
-          icon: <Iconify icon="ri:steering-2-fill" />,
-          label: 'Manual Driving',
-          backgroundColor: theme.palette.warning.darkChannel,
-          color: theme.palette.warning.contrastTextChannel,
-          pulse: false,
-        };
-      case TrainStatusDocking:
-        return {
-          icon: <Iconify icon="game-icons:cargo-crate" />,
-          label: 'Docking',
-          backgroundColor: theme.palette.info.darkChannel,
-          color: theme.palette.info.contrastTextChannel,
-          pulse: true,
-        };
-      case TrainStatusDerailed:
-        return {
-          icon: <Iconify icon="mdi:alert" />,
-          label: 'Derailed',
-          backgroundColor: theme.palette.error.darkChannel,
-          color: theme.palette.error.contrastTextChannel,
-          pulse: false,
-        };
-      case TrainStatusParked:
-        return {
-          icon: <Iconify icon="mdi:train-car" />,
-          label: 'Parked',
-          backgroundColor: theme.palette.info.darkChannel,
-          color: theme.palette.info.contrastTextChannel,
-          pulse: false,
-        };
-      default:
-        return {
-          icon: <Iconify icon="ri:question-line" />,
-          label: status,
-          backgroundColor: theme.palette.info.darkChannel,
-          color: theme.palette.info.contrastTextChannel,
-          pulse: false,
-        };
-    }
-  };
-
-  function parseTrainItems(trainName: string) {
-    // Extract the item codes within the brackets using regex
-    const match = trainName.match(/\[(.*?)\]/);
-    if (!match) return [];
-
-    // Split item codes by "/" and map each to its full item name using abbreviations
-    const items = match[1]
-      .replace(/,/g, '/')
-      .split('/')
-      .map((code) => abbreviations.get(code.trim().toLowerCase()))
-      .filter((item) => item);
-
-    return items as string[];
+/**
+ * Returns styling configuration for a train status including icon, label, and color classes.
+ */
+function getStatusStyle(status: string) {
+  switch (status) {
+    case TrainStatusSelfDriving:
+      return {
+        icon: 'mdi:train',
+        label: 'Self Driving',
+        className: 'bg-green-700/80 text-green-100',
+        pulse: false,
+      };
+    case TrainStatusManualDriving:
+      return {
+        icon: 'ri:steering-2-fill',
+        label: 'Manual Driving',
+        className: 'bg-yellow-700/80 text-yellow-100',
+        pulse: false,
+      };
+    case TrainStatusDocking:
+      return {
+        icon: 'game-icons:cargo-crate',
+        label: 'Docking',
+        className: 'bg-blue-700/80 text-blue-100',
+        pulse: true,
+      };
+    case TrainStatusDerailed:
+      return {
+        icon: 'mdi:alert',
+        label: 'Derailed',
+        className: 'bg-red-700/80 text-red-100',
+        pulse: false,
+      };
+    case TrainStatusParked:
+      return {
+        icon: 'mdi:train-car',
+        label: 'Parked',
+        className: 'bg-blue-700/80 text-blue-100',
+        pulse: false,
+      };
+    default:
+      return {
+        icon: 'ri:question-line',
+        label: status,
+        className: 'bg-blue-700/80 text-blue-100',
+        pulse: false,
+      };
   }
+}
 
-  const style = statusToStyle(train.status);
+/**
+ * Parses item codes from a train name and returns their full names.
+ */
+function parseTrainItems(trainName: string) {
+  const match = trainName.match(/\[(.*?)\]/);
+  if (!match) return [];
+
+  const items = match[1]
+    .replace(/,/g, '/')
+    .split('/')
+    .map((code) => abbreviations.get(code.trim().toLowerCase()))
+    .filter((item) => item);
+
+  return items as string[];
+}
+
+/**
+ * Displays a single train's status, timetable, and speed information.
+ */
+function TrainCard({ train }: { train: Train }) {
+  const style = getStatusStyle(train.status);
   const items = parseTrainItems(train.name);
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        marginBottom: '15px',
-        padding: '20px',
-        outline: style.label === 'Derailed' ? `2px solid ${theme.palette.error.dark}` : 'none',
-      }}
-    >
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
-              <Stack direction="row" spacing={3}>
-                <Typography variant="h4">{`${train.name}`}</Typography>
-                <Stack direction="row" spacing={1}>
-                  {items.map((item, index) => (
-                    <Chip
-                      key={index}
-                      label={item}
-                      sx={{ color: theme.palette.primary.contrastText }}
-                      icon={
-                        <img
-                          src={`assets/images/satisfactory/64x64/${item}.png`}
-                          alt={item}
-                          width={25}
-                        />
-                      }
+    <Card className={cn('mb-4 p-5', style.label === 'Derailed' && 'ring-2 ring-red-500')}>
+      <CardContent className="p-0">
+        <div className="flex justify-between">
+          <div className="flex items-center">
+            <div className="flex flex-row items-center gap-6">
+              <h4 className="text-xl font-bold">{train.name}</h4>
+              <div className="flex flex-row gap-2">
+                {items.map((item, index) => (
+                  <Badge key={index} variant="secondary" className="gap-1.5 px-2 py-1">
+                    <img
+                      src={`assets/images/satisfactory/64x64/${item}.png`}
+                      alt={item}
+                      className="h-5 w-5"
                     />
-                  ))}
-                </Stack>
-              </Stack>
-            </Stack>
-          </Box>
+                    {item}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
 
-          <Chip
-            label={style.label}
-            icon={style.icon}
-            sx={{
-              backgroundColor: varAlpha(style.backgroundColor),
-              color: varAlpha(style.color),
-              pl: 0.6,
-              ...(style.pulse && {
-                animation: 'pulse-animation 2s infinite ease-in-out',
-                '@keyframes pulse-animation': {
-                  '0%': {
-                    opacity: 1,
-                  },
-                  '50%': {
-                    opacity: 0.6,
-                  },
-                  '100%': {
-                    opacity: 1,
-                  },
-                },
-              }),
-            }}
-          />
-        </Box>
-
-        {/* Scrollable Timetable Node Graph with Rounded Scrollbar */}
-        <Box
-          sx={{
-            overflowX: 'auto', // Enables horizontal scrolling
-            marginY: 2,
-            paddingY: 1,
-            '&::-webkit-scrollbar': {
-              height: '8px', // Scrollbar height for horizontal scroll
-            },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: 'transparent',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: 'grey.500',
-              borderRadius: '4px', // Rounds the scrollbar
-            },
-            '&::-webkit-scrollbar-thumb:hover': {
-              backgroundColor: 'grey.700',
-            },
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              minWidth: '100%', // Ensures scrollable space is used
-            }}
+          <Badge
+            className={cn('gap-1.5 px-3 py-1', style.className, style.pulse && 'animate-pulse')}
           >
+            <Icon icon={style.icon} className="h-4 w-4" />
+            {style.label}
+          </Badge>
+        </div>
+
+        {/* Scrollable Timetable Node Graph */}
+        <div className="my-4 overflow-x-auto py-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-500 scrollbar-thumb-rounded">
+          <div className="flex min-w-full items-center">
             {train.timetable.map((stop, index) => {
               const isCurrentStop = index === train.timetableIndex;
               const isPreviousStop =
@@ -183,94 +128,82 @@ const TrainCard = ({ train }: { train: Train }) => {
               const isLastStop = index === train.timetable.length - 1;
               const isWrapping = train.timetableIndex === 0 && train.status !== TrainStatusDocking;
 
-              const baseLineProps = {
-                position: 'absolute',
-                top: '84%',
-                left: '-85px',
-                width: '170px',
-                height: '2px',
-                backgroundColor: 'grey.700',
-                backgroundSize: '50px 100%',
-                backgroundRepeat: 'repeat',
-                zIndex: -1,
-              } as any;
-
-              const activatedLineProps = {
-                animation: 'flow 1.5s linear infinite',
-                '@keyframes flow': {
-                  from: { backgroundPosition: '0 0' },
-                  to: { backgroundPosition: '50px 0' },
-                },
-                backgroundColor: 'transparent',
-                backgroundImage: `linear-gradient(to right, transparent 20%, ${theme.palette.primary.main} 20%)`,
-                transition: 'background-color 0.6s ease',
-              };
-
-              const baseCircleProps = {
-                width: '10px',
-                height: '10px',
-                backgroundColor: 'grey.700',
-                borderRadius: '50%',
-              } as any;
-
-              const activatedCircleProps = {
-                backgroundColor: theme.palette.primary.main,
-                transition: 'background-color 0.6s ease',
-              };
-
-              const lineProps =
-                isCurrentStop && train.status !== TrainStatusDocking
-                  ? { ...baseLineProps, ...activatedLineProps }
-                  : baseLineProps;
-              const circleProps =
-                isPreviousStop && train.status === TrainStatusDocking
-                  ? { ...baseCircleProps, ...activatedCircleProps }
-                  : baseCircleProps;
+              const isLineActive = isCurrentStop && train.status !== TrainStatusDocking;
+              const isCircleActive = isPreviousStop && train.status === TrainStatusDocking;
 
               return (
-                <Box
-                  key={index}
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    minWidth: '200px', // Space between nodes
-                    mb: 2,
-                    position: 'relative',
-                  }}
-                >
+                <div key={index} className="relative mb-2 flex min-w-[200px] flex-col items-center">
                   {/* Station name directly above each circle */}
-                  <Typography variant="body2" sx={{ marginBottom: 1 }}>
-                    {stop.station}
-                  </Typography>
+                  <span className="mb-2 text-sm text-muted-foreground">{stop.station}</span>
 
                   {/* Horizontal connecting line with animation */}
-                  {index > 0 && <Box sx={lineProps} />}
-                  {isWrapping && <Box sx={{ ...lineProps, width: '60px', left: '30px' }} />}
-                  {isWrapping && isLastStop && (
-                    <Box
-                      sx={{ ...baseLineProps, ...activatedLineProps, width: '60px', left: '110px' }}
+                  {index > 0 && (
+                    <div
+                      className={cn(
+                        'absolute -left-[85px] top-[84%] -z-10 h-0.5 w-[170px]',
+                        isLineActive
+                          ? 'animate-train-flow bg-transparent bg-[length:50px_100%] bg-repeat'
+                          : 'bg-gray-600'
+                      )}
+                      style={
+                        isLineActive
+                          ? {
+                              backgroundImage:
+                                'linear-gradient(to right, transparent 20%, hsl(var(--primary)) 20%)',
+                            }
+                          : undefined
+                      }
                     />
                   )}
+                  {isWrapping && (
+                    <div
+                      className={cn(
+                        'absolute left-[30px] top-[84%] -z-10 h-0.5 w-[60px]',
+                        'animate-train-flow bg-transparent bg-[length:50px_100%] bg-repeat'
+                      )}
+                      style={{
+                        backgroundImage:
+                          'linear-gradient(to right, transparent 20%, hsl(var(--primary)) 20%)',
+                      }}
+                    />
+                  )}
+                  {isWrapping && isLastStop && (
+                    <div
+                      className="animate-train-flow absolute left-[110px] top-[84%] -z-10 h-0.5 w-[60px] bg-transparent bg-[length:50px_100%] bg-repeat"
+                      style={{
+                        backgroundImage:
+                          'linear-gradient(to right, transparent 20%, hsl(var(--primary)) 20%)',
+                      }}
+                    />
+                  )}
+
                   {/* Circular node with conditional highlight */}
-                  <Box sx={circleProps} />
-                </Box>
+                  <div
+                    className={cn(
+                      'h-2.5 w-2.5 rounded-full transition-colors duration-500',
+                      isCircleActive ? 'bg-primary' : 'bg-gray-600'
+                    )}
+                  />
+                </div>
               );
             })}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 2 }}>
-          <Typography variant="body2">Speed:</Typography>
-          <Typography variant="h6" sx={{ pl: 0.5, fontWeight: 'bold' }}>
+        <div className="mt-4 flex items-center">
+          <span className="text-sm text-muted-foreground">Speed:</span>
+          <span className="ml-1 text-lg font-bold">
             {fNumber(train.speed, { decimals: 0 })} km/h
-          </Typography>
-        </Box>
+          </span>
+        </div>
       </CardContent>
     </Card>
   );
-};
+}
 
+/**
+ * Displays a list of train cards.
+ */
 export function TrainList({ trains }: { trains: Train[]; trainStations: TrainStation[] }) {
   return (
     <>

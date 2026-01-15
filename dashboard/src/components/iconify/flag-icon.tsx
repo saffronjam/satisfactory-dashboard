@@ -1,55 +1,38 @@
-import type { BoxProps } from '@mui/material/Box';
-import Box from '@mui/material/Box';
-import type { SxProps, Theme } from '@mui/material/styles';
 import { forwardRef } from 'react';
+import { cn } from '@/lib/utils';
 
-import { iconifyClasses } from './classes';
-
-// ----------------------------------------------------------------------
-
-export type FlagIconProps = BoxProps & {
+export type FlagIconProps = React.HTMLAttributes<HTMLSpanElement> & {
   code?: string;
 };
 
+/**
+ * Flag icon component that displays country flags using an external flag icon service.
+ */
 export const FlagIcon = forwardRef<HTMLSpanElement, FlagIconProps>(
-  ({ code, className, sx, ...other }, ref) => {
-    const baseStyles: SxProps<Theme> = {
-      width: 26,
-      height: 20,
-      flexShrink: 0,
-      overflow: 'hidden',
-      borderRadius: '5px',
-      alignItems: 'center',
-      display: 'inline-flex',
-      justifyContent: 'center',
-      bgcolor: 'background.neutral',
-    };
-
+  ({ code, className, ...other }, ref) => {
     if (!code) {
       return null;
     }
 
     return (
-      <Box
+      <span
         ref={ref}
-        component="span"
-        className={iconifyClasses.flag.concat(className ? ` ${className}` : '')}
-        sx={{ ...baseStyles, ...sx }}
+        className={cn(
+          'w-[26px] h-5 shrink-0 overflow-hidden rounded-[5px]',
+          'inline-flex items-center justify-center bg-muted',
+          className
+        )}
         {...other}
       >
-        <Box
-          component="img"
+        <img
           loading="lazy"
           alt={code}
           src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${code?.toUpperCase()}.svg`}
-          sx={{
-            width: 1,
-            height: 1,
-            maxWidth: 'unset',
-            objectFit: 'cover',
-          }}
+          className="w-full h-full max-w-none object-cover"
         />
-      </Box>
+      </span>
     );
   }
 );
+
+FlagIcon.displayName = 'FlagIcon';

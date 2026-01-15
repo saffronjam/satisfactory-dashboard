@@ -1,29 +1,25 @@
-import {
-  Alert,
-  Box,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Collapse,
-  Container,
-  Divider,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Icon } from '@iconify/react';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Iconify } from 'src/components/iconify';
-import { Scrollbar } from 'src/components/scrollbar';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CONFIG } from 'src/config-global';
 import { useSession } from 'src/contexts/sessions';
 import { nodesApi } from 'src/services/nodes';
 import type { NodesResponse, NodeInfo, SessionLease } from '../../../apiTypes';
 
-const POLL_INTERVAL = 5000; // 5 seconds
+const POLL_INTERVAL = 5000;
 
+/**
+ * Displays debug information about lease ownership nodes in the distributed polling system.
+ */
 export function DebugNodesView() {
   const { sessions } = useSession();
   const [nodesData, setNodesData] = useState<NodesResponse | null>(null);
@@ -31,7 +27,6 @@ export function DebugNodesView() {
   const [error, setError] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
-  // Fetch nodes data
   const fetchNodes = async () => {
     try {
       const data = await nodesApi.getNodes();
@@ -44,43 +39,41 @@ export function DebugNodesView() {
     }
   };
 
-  // Poll every 5 seconds
   useEffect(() => {
     fetchNodes();
     const interval = setInterval(fetchNodes, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, []);
 
-  const getStateColor = (state: string) => {
+  const getStateVariant = (state: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (state) {
       case 'owned':
-        return 'success';
-      case 'uncertain':
-        return 'warning';
-      case 'other':
         return 'default';
+      case 'uncertain':
+        return 'secondary';
+      case 'other':
+        return 'outline';
       default:
-        return 'error';
+        return 'destructive';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
-        return 'success.main';
+        return 'text-green-500';
       case 'init':
-        return 'warning.main';
+        return 'text-yellow-500';
       case 'offline':
-        return 'error.main';
+        return 'text-red-500';
       default:
-        return 'text.secondary';
+        return 'text-muted-foreground';
     }
   };
 
   const formatTimestamp = (timestamp: Date | string) => {
     if (!timestamp) return 'N/A';
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
-    // Check if it's a zero time value
     if (date.getFullYear() <= 1) return 'N/A';
     return date.toLocaleString();
   };
@@ -97,25 +90,29 @@ export function DebugNodesView() {
     const diffHour = Math.floor(diffMin / 60);
     const diffDay = Math.floor(diffHour / 24);
 
-    // Less than a week - show relative
-    if (diffDay < 7) {
-      let relative = '';
-      if (diffDay > 0) relative = `${diffDay}d ago`;
-      else if (diffHour > 0) relative = `${diffHour}h ago`;
-      else if (diffMin > 0) relative = `${diffMin}m ago`;
-      else relative = `${diffSec}s ago`;
+    let relative = '';
+    if (diffDay > 0) relative = `${diffDay}d ago`;
+    else if (diffHour > 0) relative = `${diffHour}h ago`;
+    else if (diffMin > 0) relative = `${diffMin}m ago`;
+    else relative = `${diffSec}s ago`;
 
+    if (diffDay < 7) {
       return (
-        <Tooltip title={date.toISOString()} placement="top">
-          <span>{relative}</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="cursor-default">{relative}</span>
+          </TooltipTrigger>
+          <TooltipContent>{date.toISOString()}</TooltipContent>
         </Tooltip>
       );
     }
 
-    // Older than a week - show full date with ISO tooltip
     return (
-      <Tooltip title={date.toISOString()} placement="top">
-        <span>{date.toLocaleString()}</span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-default">{date.toLocaleString()}</span>
+        </TooltipTrigger>
+        <TooltipContent>{date.toISOString()}</TooltipContent>
       </Tooltip>
     );
   };
@@ -150,19 +147,23 @@ export function DebugNodesView() {
 
   if (loading) {
     return (
-      <Container maxWidth="xl">
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
-        </Box>
-      </Container>
+      <div className="container max-w-7xl mx-auto px-4">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <Spinner className="size-8" />
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="xl">
-        <Alert severity="error">Error: {error}</Alert>
-      </Container>
+      <div className="container max-w-7xl mx-auto px-4">
+        <Alert variant="destructive">
+          <Icon icon="mdi:alert-circle" className="size-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
@@ -172,237 +173,172 @@ export function DebugNodesView() {
         <title>Nodes - {CONFIG.appName}</title>
       </Helmet>
 
-      <Container maxWidth="xl" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-          <Box>
-            <Typography variant="h4">Lease Ownership Nodes</Typography>
-            <Typography variant="body2" color="text.secondary">
+      <div className="container max-w-7xl mx-auto px-4 h-full flex flex-col">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Lease Ownership Nodes</h1>
+            <p className="text-sm text-muted-foreground">
               Real-time view of distributed polling coordination
-            </Typography>
-          </Box>
+            </p>
+          </div>
 
-          <Chip
-            label={`${nodesData?.liveNodes?.length || 0} Live`}
-            color="success"
-            icon={<Iconify icon="mdi:server-network" width={20} />}
-          />
-        </Stack>
+          <Badge variant="default" className="bg-green-600">
+            <Icon icon="mdi:server-network" className="size-4 mr-1" />
+            {nodesData?.liveNodes?.length || 0} Live
+          </Badge>
+        </div>
 
-        <Scrollbar sx={{ flexGrow: 1 }}>
-          {nodesData?.liveNodes?.map((node: NodeInfo) => (
-            <Card key={node.instanceId} sx={{ mb: 2 }}>
-              <CardContent>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={2}
-                  onClick={() => toggleNode(node.instanceId)}
-                  sx={{ cursor: 'pointer', userSelect: 'none' }}
-                >
-                  <IconButton size="small" sx={{ p: 0 }}>
-                    <Iconify
-                      icon={
-                        expandedNodes.has(node.instanceId)
-                          ? 'mdi:chevron-down'
-                          : 'mdi:chevron-right'
-                      }
-                      width={24}
-                    />
-                  </IconButton>
-                  <Iconify icon="mdi:server" width={32} color={getStatusColor(node.status)} />
-                  <Box flexGrow={1}>
-                    <Typography variant="h6">{node.instanceId}</Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography variant="body2" color="text.secondary">
-                        {node.ownedSessions.length} session
-                        {node.ownedSessions.length !== 1 ? 's' : ''}
-                      </Typography>
-                      <Chip
-                        label={node.status.charAt(0).toUpperCase() + node.status.slice(1)}
-                        color={
-                          node.status === 'online'
-                            ? 'success'
-                            : node.status === 'init'
-                              ? 'warning'
-                              : 'default'
-                        }
-                        size="small"
-                      />
-                    </Stack>
-                  </Box>
-                </Stack>
-
-                <Collapse in={expandedNodes.has(node.instanceId)} timeout="auto">
-                  <Divider sx={{ mt: 2, mb: 2 }} />
-
-                  {node.ownedSessions.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
-                      No sessions owned
-                    </Typography>
-                  ) : (
-                    <Stack spacing={1}>
-                      {node.ownedSessions.map((lease: SessionLease) => (
-                        <Card key={lease.sessionId} variant="outlined">
-                          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                            <Stack direction="row" alignItems="center" spacing={2}>
-                              <Box
-                                sx={{
-                                  width: 8,
-                                  height: 8,
-                                  borderRadius: '50%',
-                                  bgcolor: (() => {
-                                    const status = getSessionStatus(lease.sessionId);
-                                    if (!status) return 'text.disabled';
-                                    return status.isPaused
-                                      ? 'warning.main'
-                                      : status.isOnline
-                                        ? 'success.main'
-                                        : 'error.main';
-                                  })(),
-                                  flexShrink: 0,
-                                }}
-                              />
-                              <Box flexGrow={1}>
-                                <Typography variant="subtitle2">{lease.sessionName}</Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  ID {lease.sessionId}
-                                </Typography>
-                              </Box>
-
-                              <Chip
-                                label={lease.state.charAt(0).toUpperCase() + lease.state.slice(1)}
-                                color={getStateColor(lease.state)}
-                                size="small"
-                              />
-
-                              {lease.ownerId !== lease.preferredOwnerId && (
-                                <Chip
-                                  label="Non-Preferred"
-                                  color="warning"
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )}
-                            </Stack>
-
-                            <Box
-                              sx={{
-                                mt: 1,
-                                display: 'grid',
-                                gridTemplateColumns: 'auto 1fr',
-                                columnGap: 2,
-                                rowGap: 0.5,
-                                alignItems: 'baseline',
-                              }}
+        <ScrollArea className="flex-grow">
+          <div className="space-y-4 pr-4">
+            {nodesData?.liveNodes?.map((node: NodeInfo) => (
+              <Collapsible
+                key={node.instanceId}
+                open={expandedNodes.has(node.instanceId)}
+                onOpenChange={() => toggleNode(node.instanceId)}
+              >
+                <Card className="py-0">
+                  <CardContent className="p-4">
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center gap-3 cursor-pointer select-none">
+                        <Button variant="ghost" size="icon-sm" className="p-0 shrink-0">
+                          <Icon
+                            icon={
+                              expandedNodes.has(node.instanceId)
+                                ? 'mdi:chevron-down'
+                                : 'mdi:chevron-right'
+                            }
+                            className="size-6"
+                          />
+                        </Button>
+                        <Icon
+                          icon="mdi:server"
+                          className={`size-8 ${getStatusColor(node.status)}`}
+                        />
+                        <div className="flex-grow">
+                          <h3 className="text-lg font-semibold">{node.instanceId}</h3>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">
+                              {node.ownedSessions.length} session
+                              {node.ownedSessions.length !== 1 ? 's' : ''}
+                            </span>
+                            <Badge
+                              variant={
+                                node.status === 'online'
+                                  ? 'default'
+                                  : node.status === 'init'
+                                    ? 'secondary'
+                                    : 'outline'
+                              }
+                              className={node.status === 'online' ? 'bg-green-600' : ''}
                             >
-                              {/* Server Address */}
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ minWidth: 'max-content' }}
-                              >
-                                Server
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.primary"
-                                sx={{ fontWeight: 500 }}
-                              >
-                                {getSessionAddress(lease.sessionId)}
-                              </Typography>
+                              {node.status.charAt(0).toUpperCase() + node.status.slice(1)}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </CollapsibleTrigger>
 
-                              {/* Acquired At */}
-                              {lease.acquiredAt && (
-                                <>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{ minWidth: 'max-content' }}
-                                  >
-                                    Acquired
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.primary"
-                                    sx={{ fontWeight: 500 }}
-                                  >
-                                    {formatRelativeTime(lease.acquiredAt)}
-                                  </Typography>
-                                </>
-                              )}
+                    <CollapsibleContent>
+                      <Separator className="my-4" />
 
-                              {/* Last Renewed At */}
-                              {lease.lastRenewedAt && (
-                                <>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{ minWidth: 'max-content' }}
-                                  >
-                                    Last Renewed
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.primary"
-                                    sx={{ fontWeight: 500 }}
-                                  >
-                                    {formatRelativeTime(lease.lastRenewedAt)}
-                                  </Typography>
-                                </>
-                              )}
+                      {node.ownedSessions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No sessions owned</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {node.ownedSessions.map((lease: SessionLease) => (
+                            <Card key={lease.sessionId} className="py-0 border">
+                              <CardContent className="p-3">
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className={`size-2 rounded-full shrink-0 ${(() => {
+                                      const status = getSessionStatus(lease.sessionId);
+                                      if (!status) return 'bg-muted-foreground';
+                                      return status.isPaused
+                                        ? 'bg-yellow-500'
+                                        : status.isOnline
+                                          ? 'bg-green-500'
+                                          : 'bg-red-500';
+                                    })()}`}
+                                  />
+                                  <div className="flex-grow">
+                                    <p className="font-medium">{lease.sessionName}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      ID {lease.sessionId}
+                                    </p>
+                                  </div>
 
-                              {/* Uncertain Since */}
-                              {lease.uncertainSince &&
-                                formatTimestamp(lease.uncertainSince) !== 'N/A' && (
-                                  <>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ minWidth: 'max-content' }}
+                                  <Badge variant={getStateVariant(lease.state)}>
+                                    {lease.state.charAt(0).toUpperCase() + lease.state.slice(1)}
+                                  </Badge>
+
+                                  {lease.ownerId !== lease.preferredOwnerId && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-yellow-600 border-yellow-600"
                                     >
-                                      Uncertain Since
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="warning.main"
-                                      sx={{ fontWeight: 500 }}
-                                    >
-                                      {formatRelativeTime(lease.uncertainSince)}
-                                    </Typography>
-                                  </>
-                                )}
+                                      Non-Preferred
+                                    </Badge>
+                                  )}
+                                </div>
 
-                              {/* Preferred Owner */}
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ minWidth: 'max-content' }}
-                              >
-                                Preferred Owner
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.primary"
-                                sx={{ fontWeight: 500 }}
-                              >
-                                {lease.preferredOwnerId || 'Unknown'}
-                              </Typography>
-                            </Box>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </Stack>
-                  )}
-                </Collapse>
-              </CardContent>
-            </Card>
-          ))}
+                                <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+                                  <span className="text-muted-foreground">Server</span>
+                                  <span className="font-medium">
+                                    {getSessionAddress(lease.sessionId)}
+                                  </span>
 
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
+                                  {lease.acquiredAt && (
+                                    <>
+                                      <span className="text-muted-foreground">Acquired</span>
+                                      <span className="font-medium">
+                                        {formatRelativeTime(lease.acquiredAt)}
+                                      </span>
+                                    </>
+                                  )}
+
+                                  {lease.lastRenewedAt && (
+                                    <>
+                                      <span className="text-muted-foreground">Last Renewed</span>
+                                      <span className="font-medium">
+                                        {formatRelativeTime(lease.lastRenewedAt)}
+                                      </span>
+                                    </>
+                                  )}
+
+                                  {lease.uncertainSince &&
+                                    formatTimestamp(lease.uncertainSince) !== 'N/A' && (
+                                      <>
+                                        <span className="text-muted-foreground">
+                                          Uncertain Since
+                                        </span>
+                                        <span className="font-medium text-yellow-500">
+                                          {formatRelativeTime(lease.uncertainSince)}
+                                        </span>
+                                      </>
+                                    )}
+
+                                  <span className="text-muted-foreground">Preferred Owner</span>
+                                  <span className="font-medium">
+                                    {lease.preferredOwnerId || 'Unknown'}
+                                  </span>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </CardContent>
+                </Card>
+              </Collapsible>
+            ))}
+          </div>
+
+          <p className="text-xs text-muted-foreground mt-4">
             Last updated: {nodesData?.timestamp ? formatTimestamp(nodesData.timestamp) : 'N/A'}
-          </Typography>
-        </Scrollbar>
-      </Container>
+          </p>
+        </ScrollArea>
+      </div>
     </>
   );
 }

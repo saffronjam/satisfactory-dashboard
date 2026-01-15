@@ -8,11 +8,12 @@ import { AuthProvider } from './contexts/auth/AuthContext';
 import { SessionAwareApiProvider } from './contexts/api/SessionAwareApiProvider';
 import { DebugProvider } from './contexts/debug/DebugContext';
 import { SessionProvider } from './contexts/sessions';
+import { ThemeProvider } from './components/theme-provider';
+import { TooltipProvider } from './components/ui/tooltip';
+import { Toaster } from './components/ui/toaster';
 import '@fontsource/roboto-mono';
 import '@fontsource/dm-mono';
-import { NotificationsProvider } from '@toolpad/core';
-
-// ----------------------------------------------------------------------
+import './index.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
@@ -20,19 +21,22 @@ root.render(
   <StrictMode>
     <HelmetProvider>
       <BrowserRouter>
-        <Suspense>
-          <AuthProvider>
-            <DebugProvider>
-              <SessionProvider>
-                <SessionAwareApiProvider>
-                  <NotificationsProvider>
-                    <App />
-                  </NotificationsProvider>
-                </SessionAwareApiProvider>
-              </SessionProvider>
-            </DebugProvider>
-          </AuthProvider>
-        </Suspense>
+        <ThemeProvider defaultTheme="dark" storageKey="satisfactory-dashboard-theme">
+          <TooltipProvider>
+            <Suspense>
+              <AuthProvider>
+                <DebugProvider>
+                  <SessionProvider>
+                    <SessionAwareApiProvider>
+                      <App />
+                      <Toaster />
+                    </SessionAwareApiProvider>
+                  </SessionProvider>
+                </DebugProvider>
+              </AuthProvider>
+            </Suspense>
+          </TooltipProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </HelmetProvider>
   </StrictMode>

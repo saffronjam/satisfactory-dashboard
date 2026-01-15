@@ -1,56 +1,41 @@
-import type { BoxProps } from '@mui/material/Box';
-import Box from '@mui/material/Box';
 import { forwardRef } from 'react';
-import { logoClasses } from './classes';
+import { cn } from '@/lib/utils';
 
-// ----------------------------------------------------------------------
-
-export type LogoProps = BoxProps & {
+export type LogoProps = React.HTMLAttributes<HTMLDivElement> & {
   href?: string;
   isSingle?: boolean;
   disableLink?: boolean;
 };
 
+/**
+ * Logo component that displays the application logo.
+ * Supports both single and full logo variants with optional link wrapping.
+ */
 export const Logo = forwardRef<HTMLDivElement, LogoProps>(
-  ({ isSingle = false, disableLink = false, className, sx, ...other }, ref) => {
-    const singleLogo = (
-      <Box
-        alt="Single logo"
-        component="img"
+  ({ isSingle = false, disableLink = false, className, ...other }, ref) => {
+    const logoImage = (
+      <img
+        alt={isSingle ? 'Single logo' : 'Full logo'}
         src="/logo/vector/default.svg"
-        width="100%"
-        height="100%"
-        sx={{ objectFit: 'cover' }}
-      />
-    );
-    const fullLogo = (
-      <Box
-        alt="Full logo"
-        component="img"
-        src="/logo/vector/default.svg"
-        width="100%"
-        height="100%"
-        sx={{ objectFit: 'cover' }}
+        className="h-full w-full object-cover"
       />
     );
 
     return (
-      <Box
+      <div
         ref={ref}
-        className={logoClasses.root.concat(className ? ` ${className}` : '')}
         aria-label="Logo"
-        sx={{
-          flexShrink: 0,
-          width: 'auto',
-          display: 'inline-flex',
-          verticalAlign: 'middle',
-          ...(disableLink && { pointerEvents: 'none' }),
-          ...sx,
-        }}
+        className={cn(
+          'inline-flex shrink-0 w-auto align-middle',
+          disableLink && 'pointer-events-none',
+          className
+        )}
         {...other}
       >
-        {isSingle ? singleLogo : fullLogo}
-      </Box>
+        {logoImage}
+      </div>
     );
   }
 );
+
+Logo.displayName = 'Logo';

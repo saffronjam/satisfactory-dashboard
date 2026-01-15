@@ -1,33 +1,36 @@
+import * as React from 'react';
+import { Icon } from '@iconify/react';
+import { useContextSelector } from 'use-context-selector';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import {
-  Backdrop,
-  Box,
-  Checkbox,
-  CircularProgress,
-  ListItemText,
-  MenuItem,
-  Select,
-  Stack,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
-  TablePagination,
+  TableHeader,
   TableRow,
-  TextField,
-  Tooltip,
-  Typography,
-  useTheme,
-} from '@mui/material';
-import * as React from 'react';
-import { Iconify } from 'src/components/iconify';
+} from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { ApiContext, ApiContextType } from 'src/contexts/api/useApi';
 import { useSettings } from 'src/hooks/use-settings';
-import { DashboardContent } from 'src/layouts/dashboard';
-import { alpha } from '@mui/material/styles';
-import { varAlpha } from 'src/theme/styles';
 import { fShortenNumber, MetricUnits, PerMinuteMetricUnits } from 'src/utils/format-number';
-import { useContextSelector } from 'use-context-selector';
 
 type Column = {
   id:
@@ -45,7 +48,18 @@ type Column = {
   align?: 'left' | 'right' | 'center';
   format?: (value: number) => string;
   severity?: (value: number | string) => Severity;
-  trend?: (row: any, history: any) => number;
+  trend?: (row: RowData, history: ApiContextType['history']) => number;
+};
+
+type RowData = {
+  id: string;
+  name: string;
+  inventory: number;
+  cloudInventory: number;
+  production: number;
+  consumption: number;
+  'production efficiency': number;
+  'consumption efficiency': number;
 };
 
 enum Severity {
@@ -67,7 +81,6 @@ function calculateTrend(data: number[]): number {
   const xySum = data.reduce((sum, value, index) => sum + index * value, 0);
   const xSquaredSum = data.reduce((sum, _, index) => sum + index ** 2, 0);
 
-  // Calculate the slope (m) of the line y = mx + b
   const slope = (n * xySum - xSum * ySum) / (n * xSquaredSum - xSum ** 2);
 
   return slope;
@@ -84,13 +97,12 @@ const columns: readonly Column[] = [
     minWidth: 150,
     align: 'center',
     format: (value) => fShortenNumber(value, MetricUnits, { decimals: 2 }),
-    severity: (_value: number | string) => Severity.none,
-    trend: (row: any, history: ApiContextType['history']) => {
+    severity: () => Severity.none,
+    trend: (row: RowData, history: ApiContextType['history']) => {
       if (history.length < 10) {
         return 0;
       }
 
-      // Collect all values for the current item
       const itemProdHistory = history.map((dataPoint) =>
         dataPoint.prodStats.items.find((i) => i.name === row.name)
       );
@@ -99,7 +111,6 @@ const columns: readonly Column[] = [
         .filter((item) => item !== undefined)
         .map((item) => item.count);
 
-      // Calculate the trend
       return calculateTrend(itemProdHistoryCount) * itemProdHistory.length;
     },
   },
@@ -110,7 +121,7 @@ const columns: readonly Column[] = [
     minWidth: 120,
     align: 'center',
     format: (value) => fShortenNumber(value, MetricUnits, { decimals: 2 }),
-    severity: (_value: number | string) => Severity.none,
+    severity: () => Severity.none,
   },
   {
     id: 'production',
@@ -118,13 +129,12 @@ const columns: readonly Column[] = [
     minWidth: 150,
     align: 'center',
     format: (value: number) => `${fShortenNumber(value, PerMinuteMetricUnits, { decimals: 2 })}`,
-    severity: (_value: number | string) => Severity.none,
-    trend: (row: any, history: ApiContextType['history']) => {
+    severity: () => Severity.none,
+    trend: (row: RowData, history: ApiContextType['history']) => {
       if (history.length < 10) {
         return 0;
       }
 
-      // Collect all values for the current item
       const itemProdHistory = history.map((dataPoint) =>
         dataPoint.prodStats.items.find((i) => i.name === row.name)
       );
@@ -133,7 +143,6 @@ const columns: readonly Column[] = [
         .map((item) => item?.producedPerMinute)
         .filter((item) => item !== undefined);
 
-      // Calculate the trend
       return calculateTrend(itemValues) * itemProdHistory.length;
     },
   },
@@ -143,13 +152,12 @@ const columns: readonly Column[] = [
     minWidth: 150,
     align: 'center',
     format: (value: number) => `${fShortenNumber(value, PerMinuteMetricUnits, { decimals: 2 })}`,
-    severity: (_value: number | string) => Severity.none,
-    trend: (row: any, history: ApiContextType['history']) => {
+    severity: () => Severity.none,
+    trend: (row: RowData, history: ApiContextType['history']) => {
       if (history.length < 10) {
         return 0;
       }
 
-      // Collect all values for the current item
       const itemProdHistory = history.map((dataPoint) =>
         dataPoint.prodStats.items.find((i) => i.name === row.name)
       );
@@ -158,7 +166,6 @@ const columns: readonly Column[] = [
         .map((item) => item?.consumedPerMinute)
         .filter((item) => item !== undefined);
 
-      // Calculate the trend
       return calculateTrend(itemValues) * itemProdHistory.length;
     },
   },
@@ -215,18 +222,29 @@ const columns: readonly Column[] = [
 const severityToStyle = (severity: Severity) => {
   switch (severity) {
     case Severity.awesome:
-      return { label: 'Awesome', color: 'green' };
+      return { label: 'Awesome', color: 'bg-green-500' };
     case Severity.ok:
-      return { label: 'OK', color: 'yellow' };
+      return { label: 'OK', color: 'bg-yellow-500' };
     case Severity.unsatisfactory:
-      return { label: 'Unsatisfactory', color: 'orange' };
+      return { label: 'Unsatisfactory', color: 'bg-orange-500' };
     case Severity.poor:
-      return { label: 'Poor', color: 'red' };
+      return { label: 'Poor', color: 'bg-red-500' };
     default:
-      return { label: '', color: 'transparent' };
+      return { label: '', color: 'bg-transparent' };
   }
 };
 
+const alignmentClasses = {
+  left: 'text-left justify-start',
+  center: 'text-center justify-center',
+  right: 'text-right justify-end',
+};
+
+/**
+ * Production view component displaying a table of production statistics.
+ * Shows item inventory, cloud inventory, production/consumption rates, and efficiency metrics.
+ * Supports sorting, filtering, pagination, and trend indicators.
+ */
 export function ProductionView() {
   const api = useContextSelector(ApiContext, (v) => {
     return {
@@ -236,7 +254,6 @@ export function ProductionView() {
       history: v.history,
     };
   });
-  const theme = useTheme();
 
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -246,17 +263,17 @@ export function ProductionView() {
 
   const { settings, saveSettings } = useSettings();
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (newPage: number) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(+event.target.value);
+  const handleChangeRowsPerPage = (value: string) => {
+    setRowsPerPage(+value);
     setPage(0);
   };
 
   const handleSort = (columnId: Column['id']) => {
-    if (columnId === 'icon') return; // Skip sorting for the 'Icon' column
+    if (columnId === 'icon') return;
     if (sortColumn === columnId) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -270,7 +287,7 @@ export function ProductionView() {
       return [];
     }
 
-    const rows = api.prodStats.items
+    const rows: RowData[] = api.prodStats.items
       .filter((item) => settings.productionView.includeItems || item.minable)
       .filter((item) => settings.productionView.includeMinable || !item.minable)
       .map((item, idx) => ({
@@ -297,7 +314,6 @@ export function ProductionView() {
             ? aValue - bValue
             : String(aValue).localeCompare(String(bValue));
 
-        // If same, sort by name
         if (compareResult === 0) {
           return a.name.localeCompare(b.name);
         }
@@ -320,324 +336,270 @@ export function ProductionView() {
     );
   });
 
+  const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+  const paginatedRows = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const activeFiltersCount = [
+    settings.productionView.includeMinable,
+    settings.productionView.includeItems,
+    settings.productionView.showTrend,
+  ].filter(Boolean).length;
+
+  if (api.isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Spinner className="size-8 text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <>
-      <Backdrop
-        open={api.isLoading}
-        sx={{
-          position: 'absolute',
-          color: theme.palette.primary.main,
-          backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.5),
-          zIndex: (t) => t.zIndex.drawer + 1,
-        }}
-      >
-        <CircularProgress color="inherit" />
-      </Backdrop>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Search..."
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          className="flex-1"
+        />
 
-      {!api.isLoading && (
-        <DashboardContent maxWidth="xl">
-          {/* Search and Filters */}
-          <Box display="flex" alignItems="center" gap={2} sx={{ mb: 2 }}>
-            <TextField
-              label="Search"
-              size="small"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              sx={{ flex: 1, minWidth: 0 }}
-            />
-
-            <Select
-              multiple
-              size="small"
-              value={[
-                ...(settings.productionView.includeMinable ? ['minable'] : []),
-                ...(settings.productionView.includeItems ? ['items'] : []),
-                ...(settings.productionView.showTrend ? ['trends'] : []),
-              ]}
-              onChange={(event) => {
-                const value = event.target.value as string[];
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Icon icon="mdi:filter-variant" className="mr-1 size-4" />
+              {activeFiltersCount > 0
+                ? `${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''}`
+                : 'Filters'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuCheckboxItem
+              checked={settings.productionView.includeMinable}
+              onCheckedChange={(checked) =>
                 saveSettings({
                   ...settings,
                   productionView: {
                     ...settings.productionView,
-                    includeMinable: value.includes('minable'),
-                    includeItems: value.includes('items'),
-                    showTrend: value.includes('trends'),
+                    includeMinable: checked,
                   },
-                });
-              }}
-              displayEmpty
-              renderValue={(selected) => {
-                if (selected.length === 0) return 'Filters';
-                return `${selected.length} filter${selected.length > 1 ? 's' : ''}`;
-              }}
-              sx={{ minWidth: 120 }}
+                })
+              }
             >
-              <MenuItem value="minable">
-                <Checkbox checked={settings.productionView.includeMinable} />
-                <ListItemText primary="Minable" />
-              </MenuItem>
-              <MenuItem value="items">
-                <Checkbox checked={settings.productionView.includeItems} />
-                <ListItemText primary="Items" />
-              </MenuItem>
-              <MenuItem value="trends">
-                <Checkbox checked={settings.productionView.showTrend} />
-                <ListItemText primary="Show Trends" />
-              </MenuItem>
-            </Select>
-          </Box>
+              Minable
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={settings.productionView.includeItems}
+              onCheckedChange={(checked) =>
+                saveSettings({
+                  ...settings,
+                  productionView: {
+                    ...settings.productionView,
+                    includeItems: checked,
+                  },
+                })
+              }
+            >
+              Items
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={settings.productionView.showTrend}
+              onCheckedChange={(checked) =>
+                saveSettings({
+                  ...settings,
+                  productionView: {
+                    ...settings.productionView,
+                    showTrend: checked,
+                  },
+                })
+              }
+            >
+              Show Trends
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-          <TableContainer
-            sx={{
-              backgroundColor: theme.palette.background.neutral,
-              maxHeight: 'calc(100vh - 280px)',
-              borderTopLeftRadius: 15,
-              borderTopRightRadius: 15,
-              // Overlay scrollbar styling
-              overflow: 'overlay',
-              scrollbarGutter: 'stable',
-              '&::-webkit-scrollbar': {
-                width: 8,
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: alpha(theme.palette.grey[600], 0.5),
-                borderRadius: 4,
-              },
-              '&::-webkit-scrollbar-thumb:hover': {
-                backgroundColor: alpha(theme.palette.grey[600], 0.8),
-              },
-              '&::-webkit-scrollbar-track': {
-                backgroundColor: 'transparent',
-              },
-            }}
-          >
-            <Table
-              stickyHeader
-              aria-label="sticky table"
-              sx={{
-                '& .MuiTableCell-root': {
-                  paddingLeft: 1,
-                  paddingRight: 1,
-                  paddingBottom: 0.5,
-                  paddingTop: 0.5,
-                },
-              }}
-            >
-              <TableHead>
-                <TableRow>
-                  {columns.map((column) => (
-                    <TableCell
-                      key={column.id}
-                      align={column.align}
-                      style={{
-                        minWidth: column.minWidth,
-                        backgroundColor: theme.palette.background.default,
-                        color: theme.palette.text.primary,
-                        cursor: column.id !== 'icon' ? 'pointer' : 'default',
-                      }}
-                      onClick={() => {
-                        if (column.id !== 'icon') {
-                          handleSort(column.id);
-                        }
-                      }}
+      <div className="overflow-hidden rounded-lg border bg-card">
+        <div className="max-h-[calc(100vh-16rem)] overflow-auto">
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-background">
+              <TableRow>
+                {columns.map((column) => (
+                  <TableHead
+                    key={column.id}
+                    style={{ minWidth: column.minWidth }}
+                    className={cn(
+                      'select-none',
+                      column.id !== 'icon' && 'cursor-pointer hover:bg-muted/50',
+                      alignmentClasses[column.align || 'left']
+                    )}
+                    onClick={() => handleSort(column.id)}
+                  >
+                    <div
+                      className={cn(
+                        'flex items-center gap-1 text-xs font-medium uppercase tracking-wider',
+                        alignmentClasses[column.align || 'left']
+                      )}
                     >
-                      <Typography
-                        variant="overline"
-                        sx={{
-                          display: 'flex', // Set display to flex
-                          alignItems: 'center', // Center vertically
-                          justifyContent: column.align,
+                      {column.labelIcon && (
+                        <Icon icon={column.labelIcon} className="size-4 shrink-0" />
+                      )}
+                      {column.label}
+                      {column.id !== 'icon' && (
+                        <Icon
+                          icon={sortDirection === 'asc' ? 'bi:caret-up-fill' : 'bi:caret-down-fill'}
+                          className={cn(
+                            'size-3 shrink-0 transition-opacity',
+                            sortColumn === column.id ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                      )}
+                    </div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedRows.map((row, index) => (
+                <TableRow key={row.id} className={index % 2 === 0 ? 'bg-muted/30' : ''}>
+                  {columns.map((column) => {
+                    if (column.id === 'icon') {
+                      return (
+                        <TableCell key={column.id} className="text-center">
+                          <div className="flex size-9 items-center justify-center">
+                            <img
+                              src={`assets/images/satisfactory/64x64/${row.name}.png`}
+                              alt={row.name}
+                              className="size-9"
+                            />
+                          </div>
+                        </TableCell>
+                      );
+                    }
 
-                          userSelect: 'none', // Prevent text selection
-                          WebkitUserSelect: 'none', // For Safari
-                          MozUserSelect: 'none', // For Firefox
-                          msUserSelect: 'none', // For older IE versions
-                        }}
-                      >
-                        {column.labelIcon && (
-                          <Iconify icon={column.labelIcon} sx={{ mr: 0.5, fontSize: 16 }} />
-                        )}
-                        {column.label}
-                        {sortDirection === 'asc' ? (
-                          <Iconify
-                            icon="bi:caret-up-fill"
-                            fontSize="small"
-                            sx={{
-                              ml: 0.5,
-                              color: sortColumn === column.id ? 'text.primary' : 'transparent',
-                            }}
-                          />
-                        ) : (
-                          <Iconify
-                            icon="bi:caret-down-fill"
-                            fontSize="small"
-                            sx={{
-                              ml: 0.5,
-                              color: sortColumn === column.id ? 'text.primary' : 'transparent',
-                            }}
-                          />
-                        )}
-                      </Typography>
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredRows
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row, index) => {
-                    return (
-                      <TableRow
-                        hover
-                        role="checkbox"
-                        tabIndex={-1}
-                        key={row.id}
-                        sx={{
-                          backgroundColor:
-                            index % 2 === 0
-                              ? theme.palette.background.paper
-                              : varAlpha(theme.palette.background.defaultChannel, 0.5),
-                        }}
-                      >
-                        {columns.map((column) => {
-                          if (column.id === 'icon') {
-                            return (
-                              <TableCell key={column.id} align={column.align}>
-                                <div
-                                  style={{
-                                    width: '36px',
-                                    height: '36px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                  }}
-                                >
-                                  <img
-                                    src={`assets/images/satisfactory/64x64/${row.name}.png`}
-                                    alt={row.name}
-                                    style={{
-                                      width: '36px',
-                                      height: '36px',
-                                    }}
-                                  />
-                                </div>
-                              </TableCell>
-                            );
-                          }
+                    const value = row[column.id];
+                    const severity = column.severity ? column.severity(value) : Severity.none;
+                    const severityStyle = severityToStyle(severity);
 
-                          const value = row[column.id];
-
-                          const EndDecorator = () => {
-                            const severity = column.severity
-                              ? column.severity(value)
-                              : Severity.none;
-                            const severityStyle = severityToStyle(severity);
-
-                            if (severity !== Severity.none) {
-                              return (
-                                <Tooltip title={severityStyle.label} arrow>
-                                  <Box
-                                    sx={{
-                                      display: 'inline-block',
-                                      width: '10px',
-                                      height: '10px',
-                                      borderRadius: '50%',
-                                      backgroundColor: severityStyle.color,
-                                      marginLeft: '0.5rem',
-                                    }}
-                                  />
-                                </Tooltip>
-                              );
-                            }
-
-                            if (settings.productionView.showTrend && typeof value === 'number') {
-                              const trendValue = column.trend ? column.trend(row, api.history) : 0;
-
-                              const color =
-                                trendValue === 0 ? 'transparent' : trendValue > 0 ? 'green' : 'red';
-
-                              return (
-                                <Stack direction="row" spacing={0.3} sx={{ ml: 1 }}>
-                                  <Iconify
-                                    icon={
-                                      settings.productionView.showTrend
-                                        ? trendValue > 0
-                                          ? 'bi:caret-up-fill'
-                                          : 'bi:caret-down-fill'
-                                        : ''
-                                    }
-                                    fontSize="small"
-                                    sx={{ color: color }}
-                                  />
-                                  <Typography variant="caption" sx={{ color: color }}>
-                                    {fShortenNumber(trendValue, MetricUnits, { decimals: 0 })}
-                                  </Typography>
-                                </Stack>
-                              );
-                            }
-
-                            return (
-                              <Box
-                                sx={{
-                                  display: 'inline-block',
-                                  width: '10px',
-                                  height: '10px',
-                                  borderRadius: '50%',
-                                  backgroundColor: severityStyle.color,
-                                  marginLeft: '0.5rem',
-                                }}
+                    const EndDecorator = () => {
+                      if (severity !== Severity.none) {
+                        return (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className={cn(
+                                  'ml-2 inline-block size-2.5 shrink-0 rounded-full',
+                                  severityStyle.color
+                                )}
                               />
-                            );
-                          };
+                            </TooltipTrigger>
+                            <TooltipContent>{severityStyle.label}</TooltipContent>
+                          </Tooltip>
+                        );
+                      }
 
-                          return (
-                            <TableCell
-                              key={column.id}
-                              align={column.align}
-                              style={{ color: theme.palette.primary.contrastText }}
-                            >
-                              <Box
-                                display="flex"
-                                alignItems="center"
-                                justifyContent={column.align || 'flex-start'}
-                              >
-                                {column.format && typeof value === 'number'
-                                  ? column.format(value)
-                                  : value}
-                                <EndDecorator />
-                              </Box>
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
+                      if (settings.productionView.showTrend && typeof value === 'number') {
+                        const trendValue = column.trend ? column.trend(row, api.history) : 0;
+
+                        const colorClass =
+                          trendValue === 0
+                            ? 'text-transparent'
+                            : trendValue > 0
+                              ? 'text-green-500'
+                              : 'text-red-500';
+
+                        return (
+                          <div className={cn('ml-2 flex items-center gap-0.5', colorClass)}>
+                            <Icon
+                              icon={trendValue > 0 ? 'bi:caret-up-fill' : 'bi:caret-down-fill'}
+                              className="size-3"
+                            />
+                            <span className="text-xs">
+                              {fShortenNumber(trendValue, MetricUnits, { decimals: 0 })}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <span
+                          className={cn(
+                            'ml-2 inline-block size-2.5 shrink-0 rounded-full',
+                            severityStyle.color
+                          )}
+                        />
+                      );
+                    };
+
+                    return (
+                      <TableCell
+                        key={column.id}
+                        className={cn(alignmentClasses[column.align || 'left'])}
+                      >
+                        <div
+                          className={cn(
+                            'flex items-center',
+                            alignmentClasses[column.align || 'left']
+                          )}
+                        >
+                          <span className="text-foreground">
+                            {column.format && typeof value === 'number'
+                              ? column.format(value)
+                              : value}
+                          </span>
+                          <EndDecorator />
+                        </div>
+                      </TableCell>
                     );
                   })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <Box
-            display="flex"
-            justifyContent="flex-end"
-            alignItems="center"
-            sx={{
-              backgroundColor: theme.palette.background.neutral,
-              borderBottomLeftRadius: 20,
-              borderBottomRightRadius: 20,
-            }}
-          >
-            <TablePagination
-              rowsPerPageOptions={[10, 25, 100]}
-              component="div"
-              count={filteredRows.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-          </Box>
-        </DashboardContent>
-      )}
-    </>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">
+        <div className="text-sm text-muted-foreground">{filteredRows.length} total items</div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Rows per page:</span>
+            <Select value={rowsPerPage.toString()} onValueChange={handleChangeRowsPerPage}>
+              <SelectTrigger size="sm" className="w-16">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Page {page + 1} of {totalPages || 1}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => handleChangePage(page - 1)}
+                disabled={page === 0}
+              >
+                <Icon icon="mdi:chevron-left" className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => handleChangePage(page + 1)}
+                disabled={page >= totalPages - 1}
+              >
+                <Icon icon="mdi:chevron-right" className="size-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,8 +1,6 @@
-import Box from '@mui/material/Box';
-import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 import { Navigate } from 'react-router-dom';
+import { Progress } from '@/components/ui/progress';
 import { useAuth } from 'src/contexts/auth/useAuth';
-import { varAlpha } from 'src/theme/styles';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -18,22 +16,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        flex="1 1 auto"
-        minHeight="100vh"
-      >
-        <LinearProgress
-          sx={{
-            width: 1,
-            maxWidth: 320,
-            bgcolor: (theme) => varAlpha(theme.vars.palette.text.primaryChannel, 0.16),
-            [`& .${linearProgressClasses.bar}`]: { bgcolor: 'text.primary' },
-          }}
-        />
-      </Box>
+      <div className="flex items-center justify-center flex-1 min-h-screen">
+        <Progress className="w-full max-w-80" />
+      </div>
     );
   }
 

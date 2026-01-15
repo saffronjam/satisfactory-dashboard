@@ -1,57 +1,52 @@
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react';
+import { SessionDTO } from '@/apiTypes';
+import { Button } from '@/components/ui/button';
 import {
-  Box,
-  Button,
   Dialog,
-  DialogActions,
   DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  Divider,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  TextField,
-  Typography,
-  useTheme,
-} from '@mui/material';
-import React, { useState } from 'react';
-import { SessionDTO } from 'src/apiTypes';
-import { Iconify } from 'src/components/iconify';
-import { useSession } from 'src/contexts/sessions';
-import { varAlpha } from 'src/theme/styles';
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
+import { useSession } from '@/contexts/sessions';
 
 interface SessionSelectorProps {
   onAddSession: () => void;
 }
 
+/**
+ * SessionSelector provides a dropdown menu for selecting, editing, pausing, and deleting sessions.
+ * It displays the currently selected session with status indicator and provides session management actions.
+ */
 export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }) => {
-  const theme = useTheme();
   const { sessions, selectedSession, selectSession, updateSession, deleteSession } = useSession();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [open, setOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<SessionDTO | null>(null);
   const [editName, setEditName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [pausingSessionId, setPausingSessionId] = useState<string | null>(null);
 
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-    setDeleteConfirm(null);
-  };
-
   const handleSelectSession = (sessionId: string) => {
     selectSession(sessionId);
-    handleClose();
+    setOpen(false);
+    setDeleteConfirm(null);
   };
 
   const handleEditClick = (e: React.MouseEvent, session: SessionDTO) => {
     e.stopPropagation();
+    e.preventDefault();
     setEditingSession(session);
     setEditName(session.name);
   };
@@ -69,8 +64,6 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
     try {
       await updateSession(editingSession.id, { name: editName.trim() });
       handleEditClose();
-    } catch {
-      // Error handling could be added here
     } finally {
       setIsUpdating(false);
     }
@@ -78,6 +71,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
 
   const handleDeleteClick = (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
+    e.preventDefault();
     if (deleteConfirm === sessionId) {
       void deleteSession(sessionId);
       setDeleteConfirm(null);
@@ -88,6 +82,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
 
   const handlePauseClick = async (e: React.MouseEvent, session: SessionDTO) => {
     e.stopPropagation();
+    e.preventDefault();
     setPausingSessionId(session.id);
     try {
       await updateSession(session.id, { isPaused: !session.isPaused });
@@ -97,213 +92,138 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
   };
 
   const handleAddSession = () => {
-    handleClose();
+    setOpen(false);
     onAddSession();
   };
 
+  const getStatusColor = (session: SessionDTO | null | undefined) => {
+    if (!session) return 'bg-muted';
+    if (session.isPaused) return 'bg-yellow-500';
+    if (session.isOnline) return 'bg-green-500';
+    return 'bg-red-500';
+  };
+
   return (
-    <Box sx={{ width: '100%' }}>
-      <Button
-        fullWidth
-        onClick={handleClick}
-        sx={{
-          px: 2,
-          py: 1.5,
-          borderRadius: 2,
-          justifyContent: 'flex-start',
-          bgcolor: varAlpha(theme.palette.grey['500Channel'], 0.08),
-          '&:hover': {
-            bgcolor: varAlpha(theme.palette.grey['500Channel'], 0.16),
-          },
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
-          <Box
-            sx={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              bgcolor: selectedSession?.isPaused
-                ? 'warning.main'
-                : selectedSession?.isOnline
-                  ? 'success.main'
-                  : 'error.main',
-              flexShrink: 0,
-            }}
-          />
-          <Box sx={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-            <Typography
-              variant="subtitle2"
-              noWrap
-              sx={{
-                color: 'text.primary',
-                fontWeight: 600,
-              }}
-            >
-              {selectedSession?.name || 'Select Session'}
-            </Typography>
-            {selectedSession?.sessionName && (
-              <Typography
-                variant="caption"
-                noWrap
-                sx={{
-                  color: 'text.secondary',
-                  display: 'block',
-                }}
-              >
-                {selectedSession.sessionName}
-              </Typography>
-            )}
-          </Box>
-          <Iconify
-            icon={open ? 'mdi:chevron-up' : 'mdi:chevron-down'}
-            sx={{ color: 'text.secondary', flexShrink: 0 }}
-          />
-        </Box>
-      </Button>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        slotProps={{
-          paper: {
-            sx: {
-              width: Math.max(anchorEl?.offsetWidth ?? 0, 280),
-              mt: 0.5,
-            },
-          },
-        }}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-      >
-        {sessions.map((session) => (
-          <MenuItem
-            key={session.id}
-            onClick={() => handleSelectSession(session.id)}
-            selected={session.id === selectedSession?.id}
-            sx={{ py: 1 }}
-          >
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <Box
-                sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  bgcolor: session.isPaused
-                    ? 'warning.main'
-                    : session.isOnline
-                      ? 'success.main'
-                      : 'error.main',
-                }}
-              />
-            </ListItemIcon>
-            <ListItemText
-              primary={session.name}
-              secondary={session.sessionName}
-              primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-              secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
-              sx={{ flex: 1, minWidth: 0 }}
-            />
-            <Box
-              component="span"
-              onClick={(e) => handleEditClick(e, session)}
-              sx={{
-                ml: 1,
-                p: 0.5,
-                borderRadius: 1,
-                display: 'flex',
-                cursor: 'pointer',
-                color: 'text.secondary',
-                '&:hover': {
-                  bgcolor: varAlpha(theme.palette.primary.mainChannel, 0.08),
-                  color: 'primary.main',
-                },
-              }}
-            >
-              <Iconify icon="mdi:pencil-outline" width={18} />
-            </Box>
-            <Box
-              component="span"
-              onClick={(e) => handlePauseClick(e, session)}
-              sx={{
-                p: 0.5,
-                borderRadius: 1,
-                display: 'flex',
-                cursor: pausingSessionId === session.id ? 'wait' : 'pointer',
-                color: session.isPaused ? 'warning.main' : 'text.secondary',
-                '&:hover': {
-                  bgcolor: varAlpha(theme.palette.warning.mainChannel, 0.08),
-                  color: 'warning.main',
-                },
-              }}
-            >
-              <Iconify icon={session.isPaused ? 'mdi:play-outline' : 'mdi:pause'} width={18} />
-            </Box>
-            <Box
-              component="span"
-              onClick={(e) => handleDeleteClick(e, session.id)}
-              sx={{
-                p: 0.5,
-                borderRadius: 1,
-                display: 'flex',
-                cursor: 'pointer',
-                color: deleteConfirm === session.id ? 'error.main' : 'text.secondary',
-                '&:hover': {
-                  bgcolor: varAlpha(theme.palette.error.mainChannel, 0.08),
-                  color: 'error.main',
-                },
-              }}
-            >
-              <Iconify icon="mdi:delete-outline" width={18} />
-            </Box>
-          </MenuItem>
-        ))}
-
-        {sessions.length > 0 && <Divider sx={{ my: 1 }} />}
-
-        <MenuItem onClick={handleAddSession} sx={{ py: 1 }}>
-          <ListItemIcon sx={{ minWidth: 32 }}>
-            <Iconify icon="mdi:plus" width={20} />
-          </ListItemIcon>
-          <ListItemText primary="Add Session" primaryTypographyProps={{ variant: 'body2' }} />
-        </MenuItem>
-      </Menu>
-
-      <Dialog open={!!editingSession} onClose={handleEditClose} maxWidth="xs" fullWidth>
-        <DialogTitle>Edit Session</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            fullWidth
-            label="Session Name"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            sx={{ mt: 1 }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && editName.trim()) {
-                void handleEditSave();
-              }
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleEditClose}>Cancel</Button>
+    <div className="w-full">
+      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+        <DropdownMenuTrigger asChild>
           <Button
-            variant="contained"
-            onClick={handleEditSave}
-            disabled={isUpdating || !editName.trim()}
+            variant="ghost"
+            className="h-auto w-full justify-start bg-sidebar-accent/30 px-3 py-2.5 hover:bg-sidebar-accent"
           >
-            {isUpdating ? 'Saving...' : 'Save'}
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div
+                className={cn('size-2 shrink-0 rounded-full', getStatusColor(selectedSession))}
+              />
+              <div className="min-w-0 flex-1 text-left">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {selectedSession?.name || 'Select Session'}
+                </p>
+                {selectedSession?.sessionName && (
+                  <p className="truncate text-xs text-muted-foreground">
+                    {selectedSession.sessionName}
+                  </p>
+                )}
+              </div>
+              {open ? (
+                <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+              )}
+            </div>
           </Button>
-        </DialogActions>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="w-[--radix-dropdown-menu-trigger-width] min-w-[280px]"
+        >
+          {sessions.map((session) => (
+            <DropdownMenuItem
+              key={session.id}
+              className={cn(
+                'flex cursor-pointer items-center gap-2 py-2',
+                session.id === selectedSession?.id && 'bg-accent'
+              )}
+              onSelect={() => handleSelectSession(session.id)}
+            >
+              <div className={cn('size-2 shrink-0 rounded-full', getStatusColor(session))} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm">{session.name}</p>
+                {session.sessionName && (
+                  <p className="truncate text-xs text-muted-foreground">{session.sessionName}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={(e) => handleEditClick(e, session)}
+                className="rounded p-1 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+              >
+                <Pencil className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => handlePauseClick(e, session)}
+                className={cn(
+                  'rounded p-1 hover:bg-yellow-500/10 hover:text-yellow-500',
+                  session.isPaused ? 'text-yellow-500' : 'text-muted-foreground',
+                  pausingSessionId === session.id && 'cursor-wait'
+                )}
+              >
+                {session.isPaused ? <Play className="size-4" /> : <Pause className="size-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => handleDeleteClick(e, session.id)}
+                className={cn(
+                  'rounded p-1 hover:bg-red-500/10 hover:text-red-500',
+                  deleteConfirm === session.id ? 'text-red-500' : 'text-muted-foreground'
+                )}
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </DropdownMenuItem>
+          ))}
+
+          {sessions.length > 0 && <DropdownMenuSeparator />}
+
+          <DropdownMenuItem onSelect={handleAddSession} className="cursor-pointer py-2">
+            <Plus className="mr-2 size-4" />
+            <span>Add Session</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={!!editingSession} onOpenChange={(isOpen) => !isOpen && handleEditClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Session</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="session-name">Session Name</Label>
+              <Input
+                id="session-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && editName.trim()) {
+                    void handleEditSave();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleEditClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSave} disabled={isUpdating || !editName.trim()}>
+              {isUpdating ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
-    </Box>
+    </div>
   );
 };

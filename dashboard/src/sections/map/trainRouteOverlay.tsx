@@ -1,7 +1,5 @@
-import { Box, IconButton, Paper, Typography } from '@mui/material';
-import { Iconify } from 'src/components/iconify';
 import { LatLngExpression } from 'leaflet';
-import { memo, useEffect, useState, useCallback } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { Polyline, useMap, useMapEvents } from 'react-leaflet';
 import {
   Train,
@@ -10,6 +8,9 @@ import {
   TrainTypeLocomotive,
   TrainVehicle,
 } from 'src/apiTypes';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Iconify } from 'src/components/iconify';
 import { fShortenNumber } from 'src/utils/format-number';
 import { ConvertToMapCoords2 } from './bounds';
 import { LocationInfo } from './components/locationInfo';
@@ -156,213 +157,109 @@ function TrainRouteOverlayInner({
 
       {/* Popover follows train position */}
       {screenPos && showPopover && (
-        <Paper
-          elevation={8}
+        <Card
           onMouseMove={(e) => e.stopPropagation()}
           onMouseOver={(e) => e.stopPropagation()}
           onMouseEnter={(e) => e.stopPropagation()}
           onMouseLeave={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
-          sx={{
-            position: 'absolute',
+          className="absolute z-[1500] p-3 pr-12 min-w-[200px] max-w-[350px] rounded-md pointer-events-auto shadow-lg"
+          style={{
             left: screenPos.x + 20,
             top: screenPos.y + 10,
-            zIndex: 1500,
-            p: 2,
-            pr: 4.5,
-            minWidth: 200,
-            maxWidth: 350,
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-            pointerEvents: 'auto',
           }}
         >
-          <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
-            <IconButton size="small" onClick={onHide} title="Hide popover">
+          <div className="absolute top-2 right-2 flex gap-1">
+            <Button variant="ghost" size="icon-sm" onClick={onHide} title="Hide popover">
               <Iconify icon="mdi:eye-off" width={18} />
-            </IconButton>
-            <IconButton size="small" onClick={onClose} title="Deselect">
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={onClose} title="Deselect">
               <Iconify icon="mdi:close" width={18} />
-            </IconButton>
-          </Box>
-          <Box sx={{ mb: 0.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              Train
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {train.name}
-            </Typography>
-          </Box>
+            </Button>
+          </div>
+          <div className="mb-1">
+            <span className="text-xs text-muted-foreground">Train</span>
+            <p className="text-sm font-medium">{train.name}</p>
+          </div>
 
           {/* Docking status OR route info */}
-          <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <div className="mt-2 flex flex-col gap-1">
             {isDocking && dockingStationName ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box
-                  className="docking-indicator"
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    backgroundColor: '#3b82f6',
-                  }}
-                />
-                <Typography variant="caption" color="text.secondary">
+              <div className="flex items-center gap-2">
+                <div className="docking-indicator w-2 h-2 rounded-full bg-blue-500" />
+                <span className="text-xs text-muted-foreground">
                   Docking at: {dockingStationName}
-                </Typography>
-              </Box>
+                </span>
+              </div>
             ) : (
               <>
                 {prevStation && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: '#4b5563',
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      From: {prevStation.name}
-                    </Typography>
-                  </Box>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-600" />
+                    <span className="text-xs text-muted-foreground">From: {prevStation.name}</span>
+                  </div>
                 )}
                 {nextStation && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: '#15803d',
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      To: {nextStation.name}
-                    </Typography>
-                  </Box>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-700" />
+                    <span className="text-xs text-muted-foreground">To: {nextStation.name}</span>
+                  </div>
                 )}
               </>
             )}
-          </Box>
+          </div>
 
           {/* Train composition with inventory */}
           {vehiclesReversed.length > 0 && (
-            <Box
-              sx={{
-                mt: 1.5,
-                pt: 1,
-                borderTop: '1px solid',
-                borderColor: 'divider',
-                maxWidth: '100%',
-                overflowX: 'auto',
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 0,
-                  alignItems: 'flex-start',
-                  minWidth: 'min-content',
-                }}
-              >
+            <div className="mt-3 pt-2 border-t border-border max-w-full overflow-x-auto">
+              <div className="flex gap-0 items-start min-w-min">
                 {vehiclesReversed.map((vehicle, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      minWidth: 50,
-                      maxWidth: 90,
-                    }}
-                  >
+                  <div key={idx} className="flex flex-col items-center min-w-[50px] max-w-[90px]">
                     {/* Vehicle icon */}
                     <Iconify
                       icon={getVehicleIcon(vehicle)}
                       width={42}
-                      sx={{ color: getVehicleColor(vehicle), mx: -0.25 }}
+                      className="-mx-0.5"
+                      style={{ color: getVehicleColor(vehicle) }}
                     />
                     {/* Inventory items */}
                     {vehicle.inventory && vehicle.inventory.length > 0 && (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: 0.25,
-                          mt: 0.5,
-                          maxHeight: 70,
-                          overflowY: 'auto',
-                        }}
-                      >
+                      <div className="flex flex-col items-center gap-0.5 mt-1 max-h-[70px] overflow-y-auto">
                         {vehicle.inventory.map((item, itemIdx) => (
-                          <Box
-                            key={itemIdx}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.25,
-                            }}
-                          >
-                            <Box
-                              component="img"
+                          <div key={itemIdx} className="flex items-center gap-0.5">
+                            <img
                               src={`assets/images/satisfactory/64x64/${item.name}.png`}
                               alt={item.name}
-                              sx={{
-                                width: 14,
-                                height: 14,
-                                objectFit: 'contain',
-                              }}
+                              className="w-3.5 h-3.5 object-contain"
                               onError={(e) => {
-                                // Hide image if not found
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
                             />
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                fontSize: '0.6rem',
-                                lineHeight: 1,
-                                color: 'text.primary',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
+                            <span className="text-[0.6rem] leading-none text-foreground whitespace-nowrap">
                               {fShortenNumber(item.count, [], { decimals: 1 })}
-                            </Typography>
-                          </Box>
+                            </span>
+                          </div>
                         ))}
-                      </Box>
+                      </div>
                     )}
-                  </Box>
+                  </div>
                 ))}
                 {/* Front indicator */}
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontSize: '0.6rem',
-                    color: 'text.disabled',
-                    alignSelf: 'center',
-                    ml: 0.5,
-                  }}
-                >
-                  →
-                </Typography>
-              </Box>
-            </Box>
+                <span className="text-[0.6rem] text-muted-foreground/50 self-center ml-1">→</span>
+              </div>
+            </div>
           )}
 
           {/* Speed info */}
-          <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="caption" color="text.secondary">
+          <div className="mt-2 pt-2 border-t border-border">
+            <span className="text-xs text-muted-foreground">
               Speed: {train.speed.toFixed(0)} km/h
-            </Typography>
-          </Box>
+            </span>
+          </div>
 
           <LocationInfo x={train.x} y={train.y} z={train.z} />
-        </Paper>
+        </Card>
       )}
 
       {/* CSS for animated dashed line and docking indicator */}

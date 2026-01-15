@@ -1,4 +1,3 @@
-import { Box, Typography } from '@mui/material';
 import { memo } from 'react';
 import { fShortenNumber, LengthUnits } from 'src/utils/format-number';
 
@@ -18,25 +17,21 @@ interface LocationInfoProps {
  */
 function LocationInfoInner({ x, y, z }: LocationInfoProps) {
   return (
-    <Box sx={{ mt: 0.5, pt: 0.5, borderTop: '1px solid', borderColor: 'divider' }}>
-      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
-          Coordinates
-        </Typography>
-        <Typography variant="caption" color="text.primary" sx={{ fontSize: '0.6rem' }}>
+    <div className="mt-1 pt-1 border-t border-border">
+      <div className="flex gap-2 justify-between items-center">
+        <span className="text-[0.6rem] text-muted-foreground">Coordinates</span>
+        <span className="text-[0.6rem] text-foreground">
           {fShortenNumber(x / 100, [], { decimals: 0 })} /{' '}
           {fShortenNumber(y / 100, [], { decimals: 0 })}
-        </Typography>
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
-          Altitude
-        </Typography>
-        <Typography variant="caption" color="text.primary" sx={{ fontSize: '0.6rem' }}>
+        </span>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-[0.6rem] text-muted-foreground">Altitude</span>
+        <span className="text-[0.6rem] text-foreground">
           {fShortenNumber(z / 100, LengthUnits, { decimals: 0 })}
-        </Typography>
-      </Box>
-    </Box>
+        </span>
+      </div>
+    </div>
   );
 }
 

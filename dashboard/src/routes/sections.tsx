@@ -1,42 +1,39 @@
-import Box from '@mui/material/Box';
-import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, useRoutes } from 'react-router-dom';
-import { AuthGuard } from 'src/components/auth-guard/AuthGuard';
-import { GuestGuard } from 'src/components/auth-guard/GuestGuard';
-import { DashboardLayout } from 'src/layouts/dashboard';
-import DebugPage from 'src/pages/debug';
-import DebugNodesPage from 'src/pages/debug-nodes';
-import DronesPage from 'src/pages/drones';
-import LoginPage from 'src/pages/login';
-import MapPage from 'src/pages/map';
-import PlayersPage from 'src/pages/players';
-import PowerPage from 'src/pages/power';
-import PoductionPage from 'src/pages/production';
-import SettingsPage from 'src/pages/settings';
-import TrainsPage from 'src/pages/trains';
-import { varAlpha } from 'src/theme/styles';
 
-// ----------------------------------------------------------------------
+import { Spinner } from '@/components/ui/spinner';
+import { AuthGuard } from '@/components/auth-guard/AuthGuard';
+import { GuestGuard } from '@/components/auth-guard/GuestGuard';
+import { DashboardLayout } from '@/layouts/dashboard';
+import { SimpleLayout } from '@/layouts/simple';
+import DebugPage from '@/pages/debug';
+import DebugNodesPage from '@/pages/debug-nodes';
+import DronesPage from '@/pages/drones';
+import LoginPage from '@/pages/login';
+import MapPage from '@/pages/map';
+import PlayersPage from '@/pages/players';
+import PowerPage from '@/pages/power';
+import PoductionPage from '@/pages/production';
+import SettingsPage from '@/pages/settings';
+import TrainsPage from '@/pages/trains';
 
-export const HomePage = lazy(() => import('src/pages/home'));
-export const Page404 = lazy(() => import('src/pages/page-not-found'));
+export const HomePage = lazy(() => import('@/pages/home'));
+export const Page404 = lazy(() => import('@/pages/page-not-found'));
 
-// ----------------------------------------------------------------------
-
+/**
+ * Loading fallback component displayed while lazy-loaded pages are loading.
+ * Shows a centered spinner indicator.
+ */
 const renderFallback = (
-  <Box display="flex" alignItems="center" justifyContent="center" flex="1 1 auto">
-    <LinearProgress
-      sx={{
-        width: 1,
-        maxWidth: 320,
-        bgcolor: (theme) => varAlpha(theme.vars.palette.text.primaryChannel, 0.16),
-        [`& .${linearProgressClasses.bar}`]: { bgcolor: 'text.primary' },
-      }}
-    />
-  </Box>
+  <div className="flex flex-1 items-center justify-center">
+    <Spinner className="size-8 text-muted-foreground" />
+  </div>
 );
 
+/**
+ * Main router component that defines all application routes.
+ * Uses DashboardLayout for authenticated pages and SimpleLayout for standalone pages.
+ */
 export function Router() {
   return useRoutes([
     {
@@ -72,7 +69,11 @@ export function Router() {
     },
     {
       path: '404',
-      element: <Page404 />,
+      element: (
+        <Suspense fallback={renderFallback}>
+          <Page404 />
+        </Suspense>
+      ),
     },
     {
       path: '*',

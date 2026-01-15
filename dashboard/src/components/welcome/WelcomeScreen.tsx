@@ -1,15 +1,18 @@
-import { Box, Button, Card, CardContent, Typography, useTheme } from '@mui/material';
+import { Icon } from '@iconify/react';
 import React from 'react';
-import { Iconify } from 'src/components/iconify';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useSession } from 'src/contexts/sessions';
-import { varAlpha } from 'src/theme/styles';
 
 interface WelcomeScreenProps {
   onAddSession: () => void;
 }
 
+/**
+ * Welcome screen displayed when no sessions exist, prompting user to add their first session.
+ */
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
-  const theme = useTheme();
   const { createMockSession, mockExists, isLoading } = useSession();
 
   const handleTryDemo = async () => {
@@ -25,78 +28,41 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
   }
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        bgcolor: 'background.default',
-        p: 3,
-      }}
-    >
-      <Card
-        sx={{
-          maxWidth: 480,
-          width: '100%',
-          textAlign: 'center',
-          boxShadow: varAlpha(theme.palette.grey['500Channel'], 0.16),
-        }}
-      >
-        <CardContent sx={{ py: 5, px: 4 }}>
-          <Box
-            sx={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              bgcolor: varAlpha(theme.palette.primary.mainChannel, 0.12),
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mx: 'auto',
-              mb: 3,
-            }}
-          >
-            <Iconify icon="material-symbols:factory" width={40} sx={{ color: 'primary.main' }} />
-          </Box>
+    <div className="flex min-h-screen items-center justify-center bg-background p-3">
+      <Card className="w-full max-w-md text-center">
+        <CardContent className="px-8 py-10">
+          <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-primary/10">
+            <Icon icon="material-symbols:factory" className="size-10 text-primary" />
+          </div>
 
-          <Typography variant="h4" sx={{ mb: 1 }}>
-            Welcome to Satisfactory Dashboard
-          </Typography>
+          <h1 className="mb-2 text-2xl font-bold">Welcome to Satisfactory Dashboard</h1>
 
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          <p className="mb-8 text-muted-foreground">
             Connect to your Satisfactory server running the Ficsit Remote Monitoring mod to start
             monitoring your factory.
-          </Typography>
+          </p>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={onAddSession}
-              startIcon={<Iconify icon="mdi:plus" />}
-            >
+          <div className="flex flex-col gap-3">
+            <Button size="lg" onClick={onAddSession}>
+              <Icon icon="mdi:plus" className="size-5" />
               Add Your First Session
             </Button>
 
             {!mockExists && (
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={handleTryDemo}
-                startIcon={<Iconify icon="mdi:test-tube" />}
-              >
+              <Button variant="outline" size="lg" onClick={handleTryDemo}>
+                <Icon icon="mdi:test-tube" className="size-5" />
                 Try Demo Mode
               </Button>
             )}
-          </Box>
+          </div>
 
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 3 }}>
+          <p className="mt-6 text-xs text-muted-foreground">
             Sessions are shared across all users of this Satisfactory Dashboard instance
-          </Typography>
+          </p>
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 };
+
 export default WelcomeScreen;

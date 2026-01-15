@@ -1,196 +1,139 @@
-import Box from '@mui/material/Box';
-import type { CardProps } from '@mui/material/Card';
-import Card from '@mui/material/Card';
-import { useTheme } from '@mui/material/styles';
-import Typography from '@mui/material/Typography';
-import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
-import type { ColorType } from 'src/theme/core/palette';
-import { varAlpha } from 'src/theme/styles';
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { fNumber, fShortenNumber } from 'src/utils/format-number';
 
-// ----------------------------------------------------------------------
-
-type Props = CardProps & {
+type Props = {
   title: string;
   total: number | string | number[];
-  units?: string[] | [string[], string[]]; // Single unit array or [leftUnits, rightUnits] for dual values
-  color?: ColorType;
+  units?: string[] | [string[], string[]];
   icon: React.ReactNode;
   chart: {
     series: number[];
-    // If not provided, a [0, 1 ... n] will be used, where n is the length of the series
     categories?: string[];
   };
+  className?: string;
 };
 
-export function AnalyticsWidgetSummary({
-  icon,
-  title,
-  total,
-  chart,
-  units,
-  color = 'primary',
-  sx,
-  ...other
-}: Props) {
-  const theme = useTheme();
-
-  const chartColor = varAlpha(theme.palette[color].mainChannel, 0.48);
-
+/**
+ * Summary widget card with sparkline chart for displaying key metrics.
+ * Supports single values, dual values with separator, and string content.
+ */
+export function AnalyticsWidgetSummary({ icon, title, total, chart, units, className }: Props) {
   const formatNumber = (value: number, options?: { decimals?: number; index?: number }) => {
     if (units) {
-      // Check if units is a tuple of two unit arrays (for different units per value)
       if (Array.isArray(units[0]) && options?.index !== undefined) {
         const unitArray = (units as [string[], string[]])[options.index];
         return fShortenNumber(value, unitArray, options);
       }
-      // Single unit array for all values
       return fShortenNumber(value, units as string[], options);
     }
     return Math.round(value);
   };
 
+  const chartData = chart.series.map((value, index) => ({
+    name: chart.categories?.[index] ?? index.toString(),
+    value,
+  }));
+
   const genContent = (value: number | string | number[]) => {
     if (Array.isArray(value)) {
-      // Return a box that has a | in between the two values
       if (Array.isArray(value) && value.length === 2) {
-        // Format numbers with their respective unit arrays (index 0 for left, 1 for right)
         const leftNumber = formatNumber(value[0], { decimals: 1, index: 0 });
         const rightNumber = formatNumber(value[1], { decimals: 1, index: 1 });
 
         return (
-          <Box
-            sx={{
-              flexGrow: 1,
-              minWidth: 112,
-              display: 'flex',
-              position: 'relative',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            {/* Left number */}
-            <Box sx={{ flex: 1, textAlign: 'center' }}>
-              <Typography
-                sx={{ color: theme.palette.primary.contrastText, textAlign: 'right', mr: 2 }}
-                variant="h5"
-              >
+          <div className="relative flex min-w-28 grow items-center justify-between">
+            <div className="flex-1 text-center">
+              <span className="mr-2 text-right text-xl font-semibold text-primary-foreground">
                 {leftNumber}
-              </Typography>
-            </Box>
-
-            {/* Separator in the center */}
-            <Box
-              sx={{
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-              }}
-            >
-              <Typography variant="body2" sx={{ fontSize: 25 }}>
-                |
-              </Typography>
-            </Box>
-
-            {/* Right number */}
-            <Box sx={{ flex: 1, textAlign: 'center' }}>
-              <Typography
-                sx={{ color: theme.palette.primary.contrastText, textAlign: 'left', ml: 2 }}
-                variant="h5"
-              >
+              </span>
+            </div>
+            <div className="absolute left-1/2 -translate-x-1/2">
+              <span className="text-2xl text-muted-foreground">|</span>
+            </div>
+            <div className="flex-1 text-center">
+              <span className="ml-2 text-left text-xl font-semibold text-primary-foreground">
                 {rightNumber}
-              </Typography>
-            </Box>
-          </Box>
+              </span>
+            </div>
+          </div>
         );
       }
     }
 
     if (typeof value === 'number') {
       return (
-        <Box sx={{ flexGrow: 1, minWidth: 112, textAlign: 'center' }}>
-          <Typography sx={{ color: theme.palette.primary.contrastText }} variant="h4">
+        <div className="min-w-28 grow text-center">
+          <span className="text-2xl font-bold text-primary-foreground">
             {formatNumber(value, { decimals: 1 })}
-          </Typography>
-        </Box>
+          </span>
+        </div>
       );
     }
 
     if (typeof value === 'string') {
       const newLineSplit = value.split('\n');
       return (
-        <Box sx={{ flexGrow: 1, minWidth: 112, color: theme.palette.primary.contrastText }}>
+        <div className="min-w-28 grow text-primary-foreground">
           {newLineSplit.map((line, index) => (
-            <Box
-              key={index}
-              sx={{ typography: 'h4', fontFamily: "'DM Mono', 'Roboto Mono', monospace" }}
-            >
+            <div key={index} className="font-mono text-2xl font-bold">
               {line}
-            </Box>
+            </div>
           ))}
-        </Box>
+        </div>
       );
     }
 
-    return <></>;
+    return null;
   };
 
   return (
     <Card
-      sx={{
-        boxShadow: 0,
-        p: 3,
-        mt: 0,
-        mb: 0,
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        ...sx,
-      }}
-      {...other}
+      className={cn('relative flex flex-col justify-between border-0 p-6 shadow-none', className)}
     >
-      <Box sx={{ width: 38, height: 38, my: 2, mb: 5, mx: 'auto' }}>{icon}</Box>
+      <CardContent className="flex flex-col p-0">
+        <div className="mx-auto my-2 mb-5 h-[38px] w-[38px]">{icon}</div>
 
-      {/* Main content area */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          flexGrow: 1,
-          minHeight: 100,
-        }}
-      >
-        <Box sx={{ mb: 1, typography: 'overline' }}>{title}</Box>
+        <div className="flex min-h-[100px] grow flex-col items-center">
+          <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {title}
+          </div>
 
-        {/* Bigger numbers and centered */}
-        <Box
-          sx={{
-            typography: 'h2',
-            display: 'flex',
-            justifyContent: 'center',
-            width: '100%',
-          }}
-        >
-          {genContent(total)}
-        </Box>
-      </Box>
+          <div className="flex w-full justify-center text-3xl">{genContent(total)}</div>
+        </div>
 
-      {/* Wider chart at the bottom */}
-      <Box sx={{ mt: 0, width: '100%' }}>
-        <SparkLineChart
-          data={chart.series}
-          height={66}
-          curve="natural"
-          color={chartColor}
-          showTooltip
-          showHighlight
-          margin={{ top: 10, bottom: 10, left: 0, right: 0 }}
-          disableClipping
-          valueFormatter={(value) => (value !== null ? fNumber(value) : '')}
-        />
-      </Box>
+        <div className="mt-0 w-full">
+          <ResponsiveContainer width="100%" height={66}>
+            <AreaChart data={chartData} margin={{ top: 10, bottom: 10, left: 0, right: 0 }}>
+              <defs>
+                <linearGradient id="sparklineGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area
+                type="natural"
+                dataKey="value"
+                stroke="hsl(var(--chart-1))"
+                strokeWidth={2}
+                fill="url(#sparklineGradient)"
+                isAnimationActive={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--popover))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px',
+                  color: 'hsl(var(--popover-foreground))',
+                }}
+                formatter={(value: number) => [fNumber(value), '']}
+                labelStyle={{ display: 'none' }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
     </Card>
   );
 }

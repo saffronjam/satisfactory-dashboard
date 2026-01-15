@@ -1,78 +1,45 @@
-import Alert from '@mui/material/Alert';
-
-import Link from '@mui/material/Link';
-import type { Breakpoint, SxProps, Theme } from '@mui/material/styles';
-import { Logo } from 'src/components/logo';
-import { RouterLink } from 'src/routes/components';
-import { HeaderSection } from '../core/header-section';
-import { LayoutSection } from '../core/layout-section';
-import { CompactContent, Main } from './main';
-
-// ----------------------------------------------------------------------
+import { cn } from '@/lib/utils';
 
 export type SimpleLayoutProps = {
-  sx?: SxProps<Theme>;
   children: React.ReactNode;
-  header?: {
-    sx?: SxProps<Theme>;
-  };
+  className?: string;
+  hideHeader?: boolean;
   content?: {
     compact?: boolean;
   };
 };
 
-export function SimpleLayout({ sx, children, header, content }: SimpleLayoutProps) {
-  const layoutQuery: Breakpoint = 'md';
-
+/**
+ * Simple layout component for pages without sidebar navigation.
+ * Used for login page, error pages, and other standalone views.
+ * Provides a centered content area with optional compact mode.
+ */
+export function SimpleLayout({ children, className, hideHeader, content }: SimpleLayoutProps) {
   return (
-    <LayoutSection
-      /** **************************************
-       * Header
-       *************************************** */
-      headerSection={
-        <HeaderSection
-          layoutQuery={layoutQuery}
-          slotProps={{ container: { maxWidth: false } }}
-          sx={header?.sx}
-          slots={{
-            topArea: (
-              <Alert severity="info" sx={{ display: 'none', borderRadius: 0 }}>
-                This is an info Alert.
-              </Alert>
-            ),
-            leftArea: <Logo />,
-            rightArea: (
-              <Link
-                href="#"
-                component={RouterLink}
-                color="inherit"
-                sx={{ typography: 'subtitle2' }}
-              >
-                Need help?
-              </Link>
-            ),
-          }}
-        />
-      }
-      /** **************************************
-       * Footer
-       *************************************** */
-      footerSection={null}
-      /** **************************************
-       * Style
-       *************************************** */
-      cssVars={{
-        '--layout-simple-content-compact-width': '448px',
-      }}
-      sx={sx}
-    >
-      <Main>
+    <div className={cn('flex min-h-screen flex-col bg-background', className)}>
+      {!hideHeader && (
+        <header className="sticky top-0 z-50 flex h-14 items-center border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:h-16 md:px-6">
+          <div className="container mx-auto flex max-w-7xl items-center justify-between">
+            <a href="/" className="flex items-center" aria-label="Go to home">
+              <img
+                src="/logo/vector/default.svg"
+                alt="Satisfactory Dashboard Logo"
+                className="h-8 w-auto"
+              />
+            </a>
+          </div>
+        </header>
+      )}
+
+      <main className="flex flex-1 flex-col">
         {content?.compact ? (
-          <CompactContent layoutQuery={layoutQuery}>{children}</CompactContent>
+          <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-6 text-center md:px-0 md:py-10">
+            {children}
+          </div>
         ) : (
-          children
+          <div className="flex-1 p-4 md:p-6">{children}</div>
         )}
-      </Main>
-    </LayoutSection>
+      </main>
+    </div>
   );
 }

@@ -1,4 +1,3 @@
-import { Box, Chip, Divider, IconButton, Typography, useTheme } from '@mui/material';
 import { useMemo, useState } from 'react';
 import {
   Drone,
@@ -27,10 +26,14 @@ import {
 import { useContextSelector } from 'use-context-selector';
 import { MapSidebar } from './mapSidebar';
 import { getPurityLabel, PURITY_COLORS } from './utils/radarTowerUtils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 type SidebarView = 'items' | 'buildings' | 'power' | 'vehicles';
 
-// Format camelCase machine type to readable name (e.g., "coalGenerator" → "Coal Generator")
+/** Formats camelCase machine type to readable name (e.g., "coalGenerator" → "Coal Generator") */
 const formatMachineType = (type: string): string => {
   return type
     .replace(/([A-Z])/g, ' $1')
@@ -38,7 +41,7 @@ const formatMachineType = (type: string): string => {
     .replace(/^./, (str) => str.toUpperCase());
 };
 
-// Helper functions to determine docked trains/drones
+/** Returns trains that are docked at a given station */
 const getDockedTrains = (station: TrainStation, trains: Train[]): Train[] => {
   return trains.filter(
     (t) =>
@@ -46,6 +49,7 @@ const getDockedTrains = (station: TrainStation, trains: Train[]): Train[] => {
   );
 };
 
+/** Returns drones that are docked or idle at a given station */
 const getDockedDrones = (station: DroneStation, drones: Drone[]): Drone[] => {
   return drones.filter(
     (d) =>
@@ -54,7 +58,7 @@ const getDockedDrones = (station: DroneStation, drones: Drone[]): Drone[] => {
   );
 };
 
-// Scanned section component for fauna, flora, and signals (for radar tower)
+/** Scanned section component for fauna, flora, and signals (for radar tower) */
 function ScannedSection({
   title,
   items,
@@ -69,49 +73,38 @@ function ScannedSection({
   const totalCount = items.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-        <Iconify icon={icon} width={14} sx={{ color: 'text.secondary' }} />
-        <Typography variant="caption" color="text.secondary">
+    <div className="mt-2 pt-2 border-t border-border">
+      <div className="flex items-center gap-1 mb-1">
+        <Iconify icon={icon} width={14} className="text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">
           {title}: {totalCount}
-        </Typography>
-      </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1">
         {items.map((item, idx) => (
-          <Chip
+          <div
             key={idx}
-            label={`${item.amount}x ${item.name}`}
-            size="small"
-            onDelete={() => {}}
-            deleteIcon={
-              <Box
-                component="img"
-                src={`assets/images/satisfactory/64x64/${item.name}.png`}
-                alt={item.name}
-                sx={{ width: 16, height: 16, objectFit: 'contain' }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            }
-            sx={{
-              height: 20,
-              fontSize: '0.6rem',
-              '& .MuiChip-label': { px: 1 },
-              '& .MuiChip-icon': { ml: 0.5, mr: -0.5 },
-              '& .MuiChip-deleteIcon': {
-                cursor: 'default',
-                pointerEvents: 'none',
-              },
-            }}
-          />
+            className="flex items-center gap-1 h-5 px-2 text-[0.6rem] bg-secondary rounded-full"
+          >
+            <span>
+              {item.amount}x {item.name}
+            </span>
+            <img
+              src={`assets/images/satisfactory/64x64/${item.name}.png`}
+              alt={item.name}
+              className="w-4 h-4 object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </div>
         ))}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
-// Get tab icon and label for a selection type
+/** Gets tab icon and label for a selection type */
 const getTabInfo = (item: SelectedMapItem): { icon: string; label: string } => {
   switch (item.type) {
     case 'machineGroup':
@@ -152,21 +145,17 @@ export const SelectionSidebar = ({
   isMobile = false,
   onClose,
 }: SelectionSidebarProps) => {
-  const theme = useTheme();
   const [activeView, setActiveView] = useState<SidebarView>('items');
 
-  // Get the currently active selected item
   const selectedItem = useMemo(() => {
     if (selectedItems.length === 0) return null;
     const safeIndex = Math.min(activeTabIndex, selectedItems.length - 1);
     return selectedItems[safeIndex] ?? null;
   }, [selectedItems, activeTabIndex]);
 
-  // Get trains and drones from API context - MUST be before any conditional returns
   const trains = useContextSelector(ApiContext, (v) => v.trains) || [];
   const drones = useContextSelector(ApiContext, (v) => v.drones) || [];
 
-  // Get total vehicles (docked trains + drones) for a group
   const getTotalVehicles = (group: MachineGroup) => {
     let total = 0;
     (group.trainStations || []).forEach((station) => {
@@ -178,50 +167,64 @@ export const SelectionSidebar = ({
     return total;
   };
 
-  // Check if group has any stations
   const hasStations = (group: MachineGroup) => {
     return (group.trainStations?.length || 0) > 0 || (group.droneStations?.length || 0) > 0;
   };
 
-  // View tabs component for machine group selections
+  /** View tabs component for machine group selections */
   const renderViewTabs = (showVehicles: boolean) => (
-    <Box sx={{ display: 'flex', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
-      <Chip
-        label="Items"
-        size="small"
+    <div className="flex gap-1 mb-4 flex-wrap">
+      <button
         onClick={() => setActiveView('items')}
-        color={activeView === 'items' ? 'primary' : 'default'}
-        variant={activeView === 'items' ? 'filled' : 'outlined'}
-      />
-      <Chip
-        label="Buildings"
-        size="small"
+        className={cn(
+          'px-3 py-1 text-xs rounded-full border transition-colors',
+          activeView === 'items'
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-transparent border-border hover:bg-accent'
+        )}
+      >
+        Items
+      </button>
+      <button
         onClick={() => setActiveView('buildings')}
-        color={activeView === 'buildings' ? 'primary' : 'default'}
-        variant={activeView === 'buildings' ? 'filled' : 'outlined'}
-      />
-      <Chip
-        label="Power"
-        size="small"
+        className={cn(
+          'px-3 py-1 text-xs rounded-full border transition-colors',
+          activeView === 'buildings'
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-transparent border-border hover:bg-accent'
+        )}
+      >
+        Buildings
+      </button>
+      <button
         onClick={() => setActiveView('power')}
-        color={activeView === 'power' ? 'primary' : 'default'}
-        variant={activeView === 'power' ? 'filled' : 'outlined'}
-      />
+        className={cn(
+          'px-3 py-1 text-xs rounded-full border transition-colors',
+          activeView === 'power'
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-transparent border-border hover:bg-accent'
+        )}
+      >
+        Power
+      </button>
       {showVehicles && (
-        <Chip
-          label="Vehicles"
-          size="small"
+        <button
           onClick={() => setActiveView('vehicles')}
-          color={activeView === 'vehicles' ? 'primary' : 'default'}
-          variant={activeView === 'vehicles' ? 'filled' : 'outlined'}
-        />
+          className={cn(
+            'px-3 py-1 text-xs rounded-full border transition-colors',
+            activeView === 'vehicles'
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-transparent border-border hover:bg-accent'
+          )}
+        >
+          Vehicles
+        </button>
       )}
-    </Box>
+    </div>
   );
 
-  // Aggregate building types from machine groups
+  /** Aggregates building types from machine groups */
   const getBuildingCounts = (groups: MachineGroup[]) => {
-    // Use Object.create(null) to avoid prototype pollution (e.g., "constructor" key)
     const counts: Record<string, number> = Object.create(null);
     groups.forEach((g) => {
       g.machines.forEach((m) => {
@@ -231,15 +234,13 @@ export const SelectionSidebar = ({
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
   };
 
-  // Get power sources from machine groups (generators only)
+  /** Gets power sources from machine groups (generators only) */
   const getPowerSources = (groups: MachineGroup[]) => {
     const generators = groups.flatMap((g) =>
       g.machines.filter((m) => m.category === MachineCategoryGenerator)
     );
-    // Use Object.create(null) to avoid prototype pollution (e.g., "constructor" key)
     const powerByType: Record<string, { count: number; production: number }> = Object.create(null);
     generators.forEach((gen) => {
-      // Power is stored as an output item with name "Power"
       const production = gen.output.find((o) => o.name === 'Power')?.current || 0;
       if (!powerByType[gen.type]) {
         powerByType[gen.type] = { count: 0, production: 0 };
@@ -258,7 +259,6 @@ export const SelectionSidebar = ({
     const showVehicles = hasStations(machineGroup);
     const totalVehicles = getTotalVehicles(machineGroup);
 
-    // Get all docked trains and drones
     const dockedTrains = (machineGroup.trainStations || []).flatMap((station) =>
       getDockedTrains(station, trains)
     );
@@ -266,7 +266,6 @@ export const SelectionSidebar = ({
       getDockedDrones(station, drones)
     );
 
-    // Calculate total items in group
     const totalItems =
       machineGroup.machines.length +
       (machineGroup.trainStations?.length || 0) +
@@ -274,392 +273,227 @@ export const SelectionSidebar = ({
 
     return (
       <>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 1,
-          }}
-        >
-          <Box sx={{ fontWeight: 'bold' }}>Selected Group</Box>
-          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-bold">Selected Group</span>
+          <span className="text-muted-foreground text-xs">
             {totalItems} {totalItems === 1 ? 'item' : 'items'}
-          </Box>
-        </Box>
+          </span>
+        </div>
 
-        {/* Summary stats */}
         {totalItems === 1 && machineGroup.machines.length === 1 ? (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 1,
-            }}
-          >
-            <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Building</Box>
-            <Box sx={{ fontWeight: 'bold' }}>
-              {formatMachineType(machineGroup.machines[0].type)}
-            </Box>
-          </Box>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Building</span>
+            <span className="font-bold">{formatMachineType(machineGroup.machines[0].type)}</span>
+          </div>
         ) : (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 1,
-            }}
-          >
-            <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Machines</Box>
-            <Box sx={{ fontWeight: 'bold' }}>{machineGroup.machines.length}</Box>
-          </Box>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Machines</span>
+            <span className="font-bold">{machineGroup.machines.length}</span>
+          </div>
         )}
         {showVehicles && (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 2,
-            }}
-          >
-            <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Vehicles</Box>
-            <Box sx={{ fontWeight: 'bold' }}>{totalVehicles}</Box>
-          </Box>
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-muted-foreground text-xs">Total Vehicles</span>
+            <span className="font-bold">{totalVehicles}</span>
+          </div>
         )}
 
         {renderViewTabs(showVehicles)}
 
-        {/* Items View */}
         {activeView === 'items' && (
           <>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                Power Consumption
-              </Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Power Consumption</span>
+              <span className="font-bold">
                 {machineGroup.powerConsumption
                   ? fShortenNumber(machineGroup.powerConsumption, WattUnits)
                   : '-'}
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Power Production</Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+              </span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Power Production</span>
+              <span className="font-bold">
                 {machineGroup.powerProduction
                   ? fShortenNumber(machineGroup.powerProduction, WattUnits)
                   : '-'}
-              </Box>
-            </Box>
+              </span>
+            </div>
 
-            {/* produced items */}
             {Object.entries(machineGroup.itemProduction).length > 0 && (
               <>
-                <Divider sx={{ margin: '10px 0' }} />
-                <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Production</Box>
+                <Separator className="my-2" />
+                <div className="mt-4">
+                  <span className="font-bold block mb-2">Production</span>
                   {Object.entries(machineGroup.itemProduction).map(([name, value]) => (
-                    <Box
-                      key={name}
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 1,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <div key={name} className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
                         <img
                           src={`assets/images/satisfactory/64x64/${name}.png`}
                           alt={name}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                          }}
+                          className="w-6 h-6"
                         />
-                        <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{name}</Box>
-                      </Box>
-                      <Box sx={{ fontWeight: 'bold' }}>
+                        <span className="text-muted-foreground text-xs">{name}</span>
+                      </div>
+                      <span className="font-bold">
                         {fShortenNumber(value, MetricUnits, {
                           ensureConstantDecimals: true,
                           onlyDecimalsWhenDivisible: true,
                         })}
-                      </Box>
-                    </Box>
+                      </span>
+                    </div>
                   ))}
-                </Box>
+                </div>
               </>
             )}
 
-            {/* consumed items */}
             {Object.entries(machineGroup.itemConsumption).length > 0 && (
               <>
-                <Divider sx={{ margin: '10px 0' }} />
-                <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Consumption</Box>
+                <Separator className="my-2" />
+                <div className="mt-4">
+                  <span className="font-bold block mb-2">Consumption</span>
                   {Object.entries(machineGroup.itemConsumption).map(([name, value]) => (
-                    <Box
-                      key={name}
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 1,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <div key={name} className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
                         <img
                           src={`assets/images/satisfactory/64x64/${name}.png`}
                           alt={name}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                          }}
+                          className="w-6 h-6"
                         />
-                        <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{name}</Box>
-                      </Box>
-                      <Box sx={{ fontWeight: 'bold' }}>
+                        <span className="text-muted-foreground text-xs">{name}</span>
+                      </div>
+                      <span className="font-bold">
                         {fShortenNumber(value, MetricUnits, {
                           ensureConstantDecimals: true,
                           onlyDecimalsWhenDivisible: true,
                         })}
-                      </Box>
-                    </Box>
+                      </span>
+                    </div>
                   ))}
-                </Box>
+                </div>
               </>
             )}
           </>
         )}
 
-        {/* Buildings View */}
         {activeView === 'buildings' && (
           <>
             {buildingCounts.length > 0 ? (
               buildingCounts.map(([type, count]) => (
-                <Box
-                  key={type}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 1,
-                  }}
-                >
-                  <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                    {formatMachineType(type)}
-                  </Box>
-                  <Box sx={{ fontWeight: 'bold' }}>{count}</Box>
-                </Box>
+                <div key={type} className="flex justify-between items-center mb-2">
+                  <span className="text-muted-foreground text-xs">{formatMachineType(type)}</span>
+                  <span className="font-bold">{count}</span>
+                </div>
               ))
             ) : (
-              <Typography variant="body2" color="textSecondary">
-                No buildings in selection
-              </Typography>
+              <p className="text-sm text-muted-foreground">No buildings in selection</p>
             )}
           </>
         )}
 
-        {/* Power View */}
         {activeView === 'power' && (
           <>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Production</Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Total Production</span>
+              <span className="font-bold">
                 {machineGroup.powerProduction
                   ? fShortenNumber(machineGroup.powerProduction, WattUnits)
                   : '-'}
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                Total Consumption
-              </Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+              </span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Total Consumption</span>
+              <span className="font-bold">
                 {machineGroup.powerConsumption
                   ? fShortenNumber(machineGroup.powerConsumption, WattUnits)
                   : '-'}
-              </Box>
-            </Box>
+              </span>
+            </div>
 
             {powerSources.length > 0 && (
               <>
-                <Divider sx={{ margin: '10px 0' }} />
-                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Power Sources</Box>
+                <Separator className="my-2" />
+                <span className="font-bold block mb-2">Power Sources</span>
                 {powerSources.map(([type, data]) => (
-                  <Box
-                    key={type}
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 1,
-                    }}
-                  >
-                    <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
+                  <div key={type} className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">
                       {formatMachineType(type)} ({data.count})
-                    </Box>
-                    <Box sx={{ fontWeight: 'bold' }}>
-                      {fShortenNumber(data.production, WattUnits)}
-                    </Box>
-                  </Box>
+                    </span>
+                    <span className="font-bold">{fShortenNumber(data.production, WattUnits)}</span>
+                  </div>
                 ))}
               </>
             )}
 
             {powerSources.length === 0 && (
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                No power generators in selection
-              </Typography>
+              <p className="text-sm text-muted-foreground mt-2">No power generators in selection</p>
             )}
           </>
         )}
 
-        {/* Vehicles View */}
         {activeView === 'vehicles' && showVehicles && (
           <>
-            {/* Train Stations */}
             {(machineGroup.trainStations?.length || 0) > 0 && (
               <>
-                <Box sx={{ fontWeight: 'bold', mb: 1 }}>
+                <span className="font-bold block mb-2">
                   Train Stations ({machineGroup.trainStations.length})
-                </Box>
+                </span>
                 {machineGroup.trainStations.map((station, idx) => {
                   const stationDockedTrains = getDockedTrains(station, trains);
                   return (
-                    <Box
-                      key={idx}
-                      sx={{
-                        mb: 2,
-                        p: 1,
-                        borderRadius: 1,
-                        backgroundColor: theme.palette.background.paper,
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight="bold">
-                        {station.name}
-                      </Typography>
+                    <div key={idx} className="mb-4 p-2 rounded bg-card">
+                      <p className="text-sm font-bold">{station.name}</p>
                       {stationDockedTrains.length > 0 ? (
                         stationDockedTrains.map((train, tidx) => (
-                          <Box
-                            key={tidx}
-                            sx={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              mt: 0.5,
-                            }}
-                          >
-                            <Typography variant="caption">{train.name}</Typography>
-                            <Chip label="Docking" size="small" color="info" />
-                          </Box>
+                          <div key={tidx} className="flex justify-between items-center mt-1">
+                            <span className="text-xs">{train.name}</span>
+                            <Badge variant="secondary">Docking</Badge>
+                          </div>
                         ))
                       ) : (
-                        <Typography variant="caption" color="textSecondary">
-                          No trains docked
-                        </Typography>
+                        <span className="text-xs text-muted-foreground">No trains docked</span>
                       )}
-                    </Box>
+                    </div>
                   );
                 })}
               </>
             )}
 
-            {/* Drone Stations */}
             {(machineGroup.droneStations?.length || 0) > 0 && (
               <>
-                {(machineGroup.trainStations?.length || 0) > 0 && <Divider sx={{ my: 2 }} />}
-                <Box sx={{ fontWeight: 'bold', mb: 1 }}>
+                {(machineGroup.trainStations?.length || 0) > 0 && <Separator className="my-4" />}
+                <span className="font-bold block mb-2">
                   Drone Stations ({machineGroup.droneStations.length})
-                </Box>
+                </span>
                 {machineGroup.droneStations.map((station, idx) => {
                   const stationDockedDrones = getDockedDrones(station, drones);
                   return (
-                    <Box
-                      key={idx}
-                      sx={{
-                        mb: 2,
-                        p: 1,
-                        borderRadius: 1,
-                        backgroundColor: theme.palette.background.paper,
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight="bold">
-                        {station.name}
-                      </Typography>
+                    <div key={idx} className="mb-4 p-2 rounded bg-card">
+                      <p className="text-sm font-bold">{station.name}</p>
                       {station.fuel?.Name && (
-                        <Typography
-                          variant="caption"
-                          color="textSecondary"
-                          sx={{ display: 'block' }}
-                        >
+                        <span className="text-xs text-muted-foreground block">
                           Fuel: {station.fuel.Name}
-                        </Typography>
+                        </span>
                       )}
                       {stationDockedDrones.length > 0 ? (
                         stationDockedDrones.map((drone, didx) => (
-                          <Box
-                            key={didx}
-                            sx={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              mt: 0.5,
-                            }}
-                          >
-                            <Typography variant="caption">{drone.name}</Typography>
-                            <Chip
-                              label={formatMachineType(drone.status)}
-                              size="small"
-                              color="info"
-                            />
-                          </Box>
+                          <div key={didx} className="flex justify-between items-center mt-1">
+                            <span className="text-xs">{drone.name}</span>
+                            <Badge variant="secondary">{formatMachineType(drone.status)}</Badge>
+                          </div>
                         ))
                       ) : (
-                        <Typography variant="caption" color="textSecondary">
-                          No drones at station
-                        </Typography>
+                        <span className="text-xs text-muted-foreground">No drones at station</span>
                       )}
-                    </Box>
+                    </div>
                   );
                 })}
               </>
             )}
 
             {dockedTrains.length === 0 && dockedDrones.length === 0 && (
-              <Typography variant="body2" color="textSecondary">
+              <p className="text-sm text-muted-foreground">
                 No vehicles docked at stations in this group
-              </Typography>
+              </p>
             )}
           </>
         )}
@@ -667,40 +501,55 @@ export const SelectionSidebar = ({
     );
   };
 
-  // View tabs for multi-selection (includes Vehicles if any selected)
   const renderMultiViewTabs = (hasVehicles: boolean) => (
-    <Box sx={{ display: 'flex', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
-      <Chip
-        label="Items"
-        size="small"
+    <div className="flex gap-1 mb-4 flex-wrap">
+      <button
         onClick={() => setActiveView('items')}
-        color={activeView === 'items' ? 'primary' : 'default'}
-        variant={activeView === 'items' ? 'filled' : 'outlined'}
-      />
-      <Chip
-        label="Buildings"
-        size="small"
+        className={cn(
+          'px-3 py-1 text-xs rounded-full border transition-colors',
+          activeView === 'items'
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-transparent border-border hover:bg-accent'
+        )}
+      >
+        Items
+      </button>
+      <button
         onClick={() => setActiveView('buildings')}
-        color={activeView === 'buildings' ? 'primary' : 'default'}
-        variant={activeView === 'buildings' ? 'filled' : 'outlined'}
-      />
-      <Chip
-        label="Power"
-        size="small"
+        className={cn(
+          'px-3 py-1 text-xs rounded-full border transition-colors',
+          activeView === 'buildings'
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-transparent border-border hover:bg-accent'
+        )}
+      >
+        Buildings
+      </button>
+      <button
         onClick={() => setActiveView('power')}
-        color={activeView === 'power' ? 'primary' : 'default'}
-        variant={activeView === 'power' ? 'filled' : 'outlined'}
-      />
+        className={cn(
+          'px-3 py-1 text-xs rounded-full border transition-colors',
+          activeView === 'power'
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-transparent border-border hover:bg-accent'
+        )}
+      >
+        Power
+      </button>
       {hasVehicles && (
-        <Chip
-          label="Vehicles"
-          size="small"
+        <button
           onClick={() => setActiveView('vehicles')}
-          color={activeView === 'vehicles' ? 'primary' : 'default'}
-          variant={activeView === 'vehicles' ? 'filled' : 'outlined'}
-        />
+          className={cn(
+            'px-3 py-1 text-xs rounded-full border transition-colors',
+            activeView === 'vehicles'
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-transparent border-border hover:bg-accent'
+          )}
+        >
+          Vehicles
+        </button>
       )}
-    </Box>
+    </div>
   );
 
   const renderMultiSelection = () => {
@@ -710,7 +559,6 @@ export const SelectionSidebar = ({
     const totalItems = machineGroups.length + trainStations.length + droneStations.length;
     const hasVehicles = trainStations.length > 0 || droneStations.length > 0;
 
-    // Aggregate stats from machine groups
     const aggregateItems = (
       groups: MachineGroup[],
       key: 'itemProduction' | 'itemConsumption'
@@ -730,336 +578,192 @@ export const SelectionSidebar = ({
     const totalItemProduction = aggregateItems(machineGroups, 'itemProduction');
     const totalItemConsumption = aggregateItems(machineGroups, 'itemConsumption');
 
-    // Get all trains and drones
     const allTrains = trainStations.flatMap((ts) => ts.dockedTrains);
     const allDrones = droneStations.flatMap((ds) => ds.dockedDrones);
 
     return (
       <>
-        {/* Header */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 1,
-          }}
-        >
-          <Box sx={{ fontWeight: 'bold' }}>Multi-Selection</Box>
-          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{totalItems} items</Box>
-        </Box>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-bold">Multi-Selection</span>
+          <span className="text-muted-foreground text-xs">{totalItems} items</span>
+        </div>
 
-        {/* Summary counts */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 1,
-          }}
-        >
-          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Machine Groups</Box>
-          <Box sx={{ fontWeight: 'bold' }}>{machineGroups.length}</Box>
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 2,
-          }}
-        >
-          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Machines</Box>
-          <Box sx={{ fontWeight: 'bold' }}>{totalMachines}</Box>
-        </Box>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-muted-foreground text-xs">Machine Groups</span>
+          <span className="font-bold">{machineGroups.length}</span>
+        </div>
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-muted-foreground text-xs">Total Machines</span>
+          <span className="font-bold">{totalMachines}</span>
+        </div>
 
         {renderMultiViewTabs(hasVehicles)}
 
-        {/* Items View */}
         {activeView === 'items' && (
           <>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                Power Consumption
-              </Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Power Consumption</span>
+              <span className="font-bold">
                 {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Power Production</Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+              </span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Power Production</span>
+              <span className="font-bold">
                 {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
-              </Box>
-            </Box>
+              </span>
+            </div>
 
-            {/* Combined produced items */}
             {Object.entries(totalItemProduction).length > 0 && (
               <>
-                <Divider sx={{ margin: '10px 0' }} />
-                <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Production</Box>
+                <Separator className="my-2" />
+                <div className="mt-4">
+                  <span className="font-bold block mb-2">Production</span>
                   {Object.entries(totalItemProduction).map(([name, value]) => (
-                    <Box
-                      key={name}
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 1,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <div key={name} className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
                         <img
                           src={`assets/images/satisfactory/64x64/${name}.png`}
                           alt={name}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                          }}
+                          className="w-6 h-6"
                         />
-                        <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{name}</Box>
-                      </Box>
-                      <Box sx={{ fontWeight: 'bold' }}>
+                        <span className="text-muted-foreground text-xs">{name}</span>
+                      </div>
+                      <span className="font-bold">
                         {fShortenNumber(value, MetricUnits, {
                           ensureConstantDecimals: true,
                           onlyDecimalsWhenDivisible: true,
                         })}
-                      </Box>
-                    </Box>
+                      </span>
+                    </div>
                   ))}
-                </Box>
+                </div>
               </>
             )}
 
-            {/* Combined consumed items */}
             {Object.entries(totalItemConsumption).length > 0 && (
               <>
-                <Divider sx={{ margin: '10px 0' }} />
-                <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Consumption</Box>
+                <Separator className="my-2" />
+                <div className="mt-4">
+                  <span className="font-bold block mb-2">Consumption</span>
                   {Object.entries(totalItemConsumption).map(([name, value]) => (
-                    <Box
-                      key={name}
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 1,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <div key={name} className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
                         <img
                           src={`assets/images/satisfactory/64x64/${name}.png`}
                           alt={name}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                          }}
+                          className="w-6 h-6"
                         />
-                        <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>{name}</Box>
-                      </Box>
-                      <Box sx={{ fontWeight: 'bold' }}>
+                        <span className="text-muted-foreground text-xs">{name}</span>
+                      </div>
+                      <span className="font-bold">
                         {fShortenNumber(value, MetricUnits, {
                           ensureConstantDecimals: true,
                           onlyDecimalsWhenDivisible: true,
                         })}
-                      </Box>
-                    </Box>
+                      </span>
+                    </div>
                   ))}
-                </Box>
+                </div>
               </>
             )}
           </>
         )}
 
-        {/* Buildings View */}
         {activeView === 'buildings' && (
           <>
             {getBuildingCounts(machineGroups).length > 0 ? (
               getBuildingCounts(machineGroups).map(([type, count]) => (
-                <Box
-                  key={type}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 1,
-                  }}
-                >
-                  <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                    {formatMachineType(type)}
-                  </Box>
-                  <Box sx={{ fontWeight: 'bold' }}>{count}</Box>
-                </Box>
+                <div key={type} className="flex justify-between items-center mb-2">
+                  <span className="text-muted-foreground text-xs">{formatMachineType(type)}</span>
+                  <span className="font-bold">{count}</span>
+                </div>
               ))
             ) : (
-              <Typography variant="body2" color="textSecondary">
-                No buildings in selection
-              </Typography>
+              <p className="text-sm text-muted-foreground">No buildings in selection</p>
             )}
           </>
         )}
 
-        {/* Power View */}
         {activeView === 'power' && (
           <>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Production</Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Total Production</span>
+              <span className="font-bold">
                 {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                Total Consumption
-              </Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+              </span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Total Consumption</span>
+              <span className="font-bold">
                 {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
-              </Box>
-            </Box>
+              </span>
+            </div>
 
             {getPowerSources(machineGroups).length > 0 && (
               <>
-                <Divider sx={{ margin: '10px 0' }} />
-                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Power Sources</Box>
+                <Separator className="my-2" />
+                <span className="font-bold block mb-2">Power Sources</span>
                 {getPowerSources(machineGroups).map(([type, data]) => (
-                  <Box
-                    key={type}
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 1,
-                    }}
-                  >
-                    <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
+                  <div key={type} className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">
                       {formatMachineType(type)} ({data.count})
-                    </Box>
-                    <Box sx={{ fontWeight: 'bold' }}>
-                      {fShortenNumber(data.production, WattUnits)}
-                    </Box>
-                  </Box>
+                    </span>
+                    <span className="font-bold">{fShortenNumber(data.production, WattUnits)}</span>
+                  </div>
                 ))}
               </>
             )}
 
             {getPowerSources(machineGroups).length === 0 && (
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                No power generators in selection
-              </Typography>
+              <p className="text-sm text-muted-foreground mt-2">No power generators in selection</p>
             )}
           </>
         )}
 
-        {/* Vehicles View */}
         {activeView === 'vehicles' && hasVehicles && (
           <>
-            {/* Docked Trains */}
             {allTrains.length > 0 && (
               <>
-                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Docked Trains ({allTrains.length})</Box>
+                <span className="font-bold block mb-2">Docked Trains ({allTrains.length})</span>
                 {allTrains.map((train, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      p: 1,
-                      mb: 1,
-                      borderRadius: 1,
-                      backgroundColor: theme.palette.background.paper,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight="bold">
-                        {train.name}
-                      </Typography>
-                      <Chip
-                        label={train.status === TrainStatusDocking ? 'Docking' : train.status}
-                        size="small"
-                        color="info"
-                      />
-                    </Box>
-                    <Typography variant="caption" color="textSecondary">
+                  <div key={index} className="p-2 mb-2 rounded bg-card">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-bold">{train.name}</p>
+                      <Badge variant="secondary">
+                        {train.status === TrainStatusDocking ? 'Docking' : train.status}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
                       Speed: {train.speed.toFixed(0)} km/h
-                    </Typography>
-                  </Box>
+                    </span>
+                  </div>
                 ))}
               </>
             )}
 
-            {/* Docked Drones */}
             {allDrones.length > 0 && (
               <>
-                {allTrains.length > 0 && <Divider sx={{ my: 2 }} />}
-                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Docked Drones ({allDrones.length})</Box>
+                {allTrains.length > 0 && <Separator className="my-4" />}
+                <span className="font-bold block mb-2">Docked Drones ({allDrones.length})</span>
                 {allDrones.map((drone, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      p: 1,
-                      mb: 1,
-                      borderRadius: 1,
-                      backgroundColor: theme.palette.background.paper,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight="bold">
-                        {drone.name}
-                      </Typography>
-                      <Chip label={formatMachineType(drone.status)} size="small" color="info" />
-                    </Box>
-                    <Typography variant="caption" color="textSecondary">
+                  <div key={index} className="p-2 mb-2 rounded bg-card">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-bold">{drone.name}</p>
+                      <Badge variant="secondary">{formatMachineType(drone.status)}</Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
                       Speed: {drone.speed.toFixed(0)} km/h
-                    </Typography>
-                  </Box>
+                    </span>
+                  </div>
                 ))}
               </>
             )}
 
             {allTrains.length === 0 && allDrones.length === 0 && (
-              <Typography variant="body2" color="textSecondary">
+              <p className="text-sm text-muted-foreground">
                 No vehicles docked at selected stations
-              </Typography>
+              </p>
             )}
           </>
         )}
@@ -1073,51 +777,30 @@ export const SelectionSidebar = ({
 
     return (
       <>
-        <Box sx={{ fontWeight: 'bold', mb: 2 }}>Train Station</Box>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 1,
-          }}
-        >
-          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Name</Box>
-          <Box sx={{ fontWeight: 'bold' }}>{station.name}</Box>
-        </Box>
+        <span className="font-bold block mb-4">Train Station</span>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-muted-foreground text-xs">Name</span>
+          <span className="font-bold">{station.name}</span>
+        </div>
 
-        <Divider sx={{ margin: '10px 0' }} />
+        <Separator className="my-2" />
 
-        <Box sx={{ fontWeight: 'bold', mb: 1 }}>Docked Trains ({dockedTrains.length})</Box>
+        <span className="font-bold block mb-2">Docked Trains ({dockedTrains.length})</span>
         {dockedTrains.length === 0 ? (
-          <Typography variant="body2" color="textSecondary">
-            No trains currently docked
-          </Typography>
+          <p className="text-sm text-muted-foreground">No trains currently docked</p>
         ) : (
           dockedTrains.map((train, index) => (
-            <Box
-              key={index}
-              sx={{
-                p: 1,
-                mb: 1,
-                borderRadius: 1,
-                backgroundColor: theme.palette.background.paper,
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" fontWeight="bold">
-                  {train.name}
-                </Typography>
-                <Chip
-                  label={train.status === TrainStatusDocking ? 'Docking' : train.status}
-                  size="small"
-                  color="info"
-                />
-              </Box>
-              <Typography variant="caption" color="textSecondary">
+            <div key={index} className="p-2 mb-2 rounded bg-card">
+              <div className="flex justify-between items-center">
+                <p className="text-sm font-bold">{train.name}</p>
+                <Badge variant="secondary">
+                  {train.status === TrainStatusDocking ? 'Docking' : train.status}
+                </Badge>
+              </div>
+              <span className="text-xs text-muted-foreground">
                 Speed: {train.speed.toFixed(0)} km/h
-              </Typography>
-            </Box>
+              </span>
+            </div>
           ))
         )}
       </>
@@ -1130,89 +813,57 @@ export const SelectionSidebar = ({
 
     return (
       <>
-        <Box sx={{ fontWeight: 'bold', mb: 2 }}>Drone Station</Box>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 1,
-          }}
-        >
-          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Name</Box>
-          <Box sx={{ fontWeight: 'bold' }}>{station.name}</Box>
-        </Box>
+        <span className="font-bold block mb-4">Drone Station</span>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-muted-foreground text-xs">Name</span>
+          <span className="font-bold">{station.name}</span>
+        </div>
         {station.fuel?.Name && (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 1,
-            }}
-          >
-            <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Fuel</Box>
-            <Box sx={{ fontWeight: 'bold' }}>{station.fuel.Name}</Box>
-          </Box>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Fuel</span>
+            <span className="font-bold">{station.fuel.Name}</span>
+          </div>
         )}
 
-        <Divider sx={{ margin: '10px 0' }} />
+        <Separator className="my-2" />
 
-        <Box sx={{ fontWeight: 'bold', mb: 1 }}>Drones at Station ({dockedDrones.length})</Box>
+        <span className="font-bold block mb-2">Drones at Station ({dockedDrones.length})</span>
         {dockedDrones.length === 0 ? (
-          <Typography variant="body2" color="textSecondary">
-            No drones currently at this station
-          </Typography>
+          <p className="text-sm text-muted-foreground">No drones currently at this station</p>
         ) : (
           dockedDrones.map((drone, index) => (
-            <Box
-              key={index}
-              sx={{
-                p: 1,
-                mb: 1,
-                borderRadius: 1,
-                backgroundColor: theme.palette.background.paper,
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" fontWeight="bold">
-                  {drone.name}
-                </Typography>
-                <Chip
-                  label={formatMachineType(drone.status)}
-                  size="small"
-                  color={drone.status === 'flying' ? 'success' : 'info'}
-                />
-              </Box>
-              <Typography variant="caption" color="textSecondary">
+            <div key={index} className="p-2 mb-2 rounded bg-card">
+              <div className="flex justify-between items-center">
+                <p className="text-sm font-bold">{drone.name}</p>
+                <Badge variant={drone.status === 'flying' ? 'default' : 'secondary'}>
+                  {formatMachineType(drone.status)}
+                </Badge>
+              </div>
+              <span className="text-xs text-muted-foreground">
                 Speed: {drone.speed.toFixed(0)} km/h
-              </Typography>
-            </Box>
+              </span>
+            </div>
           ))
         )}
       </>
     );
   };
 
-  // Render multiple unified groups (CTRL+drag selection)
   const renderMachineGroups = () => {
     if (selectedItem?.type !== 'machineGroups') return null;
     const groups = selectedItem.data;
 
-    // Aggregate stats from all groups
     const totalMachines = groups.reduce((sum, g) => sum + g.machines.length, 0);
     const totalTrainStations = groups.reduce((sum, g) => sum + (g.trainStations?.length || 0), 0);
     const totalDroneStations = groups.reduce((sum, g) => sum + (g.droneStations?.length || 0), 0);
     const totalItems = totalMachines + totalTrainStations + totalDroneStations;
 
-    // Get total vehicles across all groups
     const totalVehicles = groups.reduce((sum, g) => sum + getTotalVehicles(g), 0);
     const showVehicles = totalTrainStations > 0 || totalDroneStations > 0;
 
     const totalPowerConsumption = groups.reduce((sum, g) => sum + g.powerConsumption, 0);
     const totalPowerProduction = groups.reduce((sum, g) => sum + g.powerProduction, 0);
 
-    // Aggregate item production/consumption
     const aggregateItems = (key: 'itemProduction' | 'itemConsumption'): Record<string, number> => {
       const result: Record<string, number> = {};
       groups.forEach((g) => {
@@ -1225,7 +876,6 @@ export const SelectionSidebar = ({
     const totalItemProduction = aggregateItems('itemProduction');
     const totalItemConsumption = aggregateItems('itemConsumption');
 
-    // Get all docked trains and drones from all groups
     const allDockedTrains = groups.flatMap((g) =>
       (g.trainStations || []).flatMap((station) => getDockedTrains(station, trains))
     );
@@ -1235,380 +885,220 @@ export const SelectionSidebar = ({
 
     return (
       <>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 1,
-          }}
-        >
-          <Box sx={{ fontWeight: 'bold' }}>Multi-Selection</Box>
-          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-            {groups.length} groups
-          </Box>
-        </Box>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-bold">Multi-Selection</span>
+          <span className="text-muted-foreground text-xs">{groups.length} groups</span>
+        </div>
 
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 1,
-          }}
-        >
-          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Items</Box>
-          <Box sx={{ fontWeight: 'bold' }}>{totalItems}</Box>
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 1,
-          }}
-        >
-          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Machines</Box>
-          <Box sx={{ fontWeight: 'bold' }}>{totalMachines}</Box>
-        </Box>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-muted-foreground text-xs">Total Items</span>
+          <span className="font-bold">{totalItems}</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-muted-foreground text-xs">Machines</span>
+          <span className="font-bold">{totalMachines}</span>
+        </div>
         {showVehicles && (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 2,
-            }}
-          >
-            <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Vehicles</Box>
-            <Box sx={{ fontWeight: 'bold' }}>{totalVehicles}</Box>
-          </Box>
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-muted-foreground text-xs">Total Vehicles</span>
+            <span className="font-bold">{totalVehicles}</span>
+          </div>
         )}
 
         {renderViewTabs(showVehicles)}
 
-        {/* Items View */}
         {activeView === 'items' && (
           <>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                Power Consumption
-              </Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Power Consumption</span>
+              <span className="font-bold">
                 {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Power Production</Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+              </span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Power Production</span>
+              <span className="font-bold">
                 {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
-              </Box>
-            </Box>
+              </span>
+            </div>
 
-            {/* Combined produced items */}
             {Object.entries(totalItemProduction).length > 0 && (
               <>
-                <Divider sx={{ margin: '10px 0' }} />
-                <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Production</Box>
+                <Separator className="my-2" />
+                <div className="mt-4">
+                  <span className="font-bold block mb-2">Production</span>
                   {Object.entries(totalItemProduction)
                     .sort((a, b) => b[1] - a[1])
                     .map(([name, value]) => (
-                      <Box
-                        key={name}
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: 1,
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <div key={name} className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-2">
                           <img
                             src={`assets/images/satisfactory/64x64/${name}.png`}
                             alt={name}
-                            style={{ width: '24px', height: '24px' }}
+                            className="w-6 h-6"
                           />
-                          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                            {name}
-                          </Box>
-                        </Box>
-                        <Box sx={{ fontWeight: 'bold' }}>
+                          <span className="text-muted-foreground text-xs">{name}</span>
+                        </div>
+                        <span className="font-bold">
                           {fShortenNumber(value, MetricUnits, {
                             ensureConstantDecimals: true,
                             onlyDecimalsWhenDivisible: true,
                           })}
-                        </Box>
-                      </Box>
+                        </span>
+                      </div>
                     ))}
-                </Box>
+                </div>
               </>
             )}
 
-            {/* Combined consumed items */}
             {Object.entries(totalItemConsumption).length > 0 && (
               <>
-                <Divider sx={{ margin: '10px 0' }} />
-                <Box sx={{ marginTop: 2 }}>
-                  <Box sx={{ fontWeight: 'bold', mb: 1 }}>Consumption</Box>
+                <Separator className="my-2" />
+                <div className="mt-4">
+                  <span className="font-bold block mb-2">Consumption</span>
                   {Object.entries(totalItemConsumption)
                     .sort((a, b) => b[1] - a[1])
                     .map(([name, value]) => (
-                      <Box
-                        key={name}
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: 1,
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <div key={name} className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-2">
                           <img
                             src={`assets/images/satisfactory/64x64/${name}.png`}
                             alt={name}
-                            style={{ width: '24px', height: '24px' }}
+                            className="w-6 h-6"
                           />
-                          <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                            {name}
-                          </Box>
-                        </Box>
-                        <Box sx={{ fontWeight: 'bold' }}>
+                          <span className="text-muted-foreground text-xs">{name}</span>
+                        </div>
+                        <span className="font-bold">
                           {fShortenNumber(value, MetricUnits, {
                             ensureConstantDecimals: true,
                             onlyDecimalsWhenDivisible: true,
                           })}
-                        </Box>
-                      </Box>
+                        </span>
+                      </div>
                     ))}
-                </Box>
+                </div>
               </>
             )}
           </>
         )}
 
-        {/* Buildings View */}
         {activeView === 'buildings' && (
           <>
             {getBuildingCounts(groups).length > 0 ? (
               getBuildingCounts(groups).map(([type, count]) => (
-                <Box
-                  key={type}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 1,
-                  }}
-                >
-                  <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                    {formatMachineType(type)}
-                  </Box>
-                  <Box sx={{ fontWeight: 'bold' }}>{count}</Box>
-                </Box>
+                <div key={type} className="flex justify-between items-center mb-2">
+                  <span className="text-muted-foreground text-xs">{formatMachineType(type)}</span>
+                  <span className="font-bold">{count}</span>
+                </div>
               ))
             ) : (
-              <Typography variant="body2" color="textSecondary">
-                No buildings in selection
-              </Typography>
+              <p className="text-sm text-muted-foreground">No buildings in selection</p>
             )}
           </>
         )}
 
-        {/* Power View */}
         {activeView === 'power' && (
           <>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>Total Production</Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Total Production</span>
+              <span className="font-bold">
                 {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 1,
-              }}
-            >
-              <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
-                Total Consumption
-              </Box>
-              <Box sx={{ fontWeight: 'bold' }}>
+              </span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-muted-foreground text-xs">Total Consumption</span>
+              <span className="font-bold">
                 {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
-              </Box>
-            </Box>
+              </span>
+            </div>
 
             {getPowerSources(groups).length > 0 && (
               <>
-                <Divider sx={{ margin: '10px 0' }} />
-                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Power Sources</Box>
+                <Separator className="my-2" />
+                <span className="font-bold block mb-2">Power Sources</span>
                 {getPowerSources(groups).map(([type, data]) => (
-                  <Box
-                    key={type}
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 1,
-                    }}
-                  >
-                    <Box sx={{ color: theme.palette.text.secondary, fontSize: 12 }}>
+                  <div key={type} className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">
                       {formatMachineType(type)} ({data.count})
-                    </Box>
-                    <Box sx={{ fontWeight: 'bold' }}>
-                      {fShortenNumber(data.production, WattUnits)}
-                    </Box>
-                  </Box>
+                    </span>
+                    <span className="font-bold">{fShortenNumber(data.production, WattUnits)}</span>
+                  </div>
                 ))}
               </>
             )}
 
             {getPowerSources(groups).length === 0 && (
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                No power generators in selection
-              </Typography>
+              <p className="text-sm text-muted-foreground mt-2">No power generators in selection</p>
             )}
           </>
         )}
 
-        {/* Vehicles View */}
         {activeView === 'vehicles' && showVehicles && (
           <>
-            {/* Train Stations */}
             {totalTrainStations > 0 && (
               <>
-                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Train Stations ({totalTrainStations})</Box>
+                <span className="font-bold block mb-2">Train Stations ({totalTrainStations})</span>
                 {groups
                   .flatMap((g) => g.trainStations || [])
                   .map((station, idx) => {
                     const stationDockedTrains = getDockedTrains(station, trains);
                     return (
-                      <Box
-                        key={idx}
-                        sx={{
-                          mb: 2,
-                          p: 1,
-                          borderRadius: 1,
-                          backgroundColor: theme.palette.background.paper,
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight="bold">
-                          {station.name}
-                        </Typography>
+                      <div key={idx} className="mb-4 p-2 rounded bg-card">
+                        <p className="text-sm font-bold">{station.name}</p>
                         {stationDockedTrains.length > 0 ? (
                           stationDockedTrains.map((train, tidx) => (
-                            <Box
-                              key={tidx}
-                              sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mt: 0.5,
-                              }}
-                            >
-                              <Typography variant="caption">{train.name}</Typography>
-                              <Chip label="Docking" size="small" color="info" />
-                            </Box>
+                            <div key={tidx} className="flex justify-between items-center mt-1">
+                              <span className="text-xs">{train.name}</span>
+                              <Badge variant="secondary">Docking</Badge>
+                            </div>
                           ))
                         ) : (
-                          <Typography variant="caption" color="textSecondary">
-                            No trains docked
-                          </Typography>
+                          <span className="text-xs text-muted-foreground">No trains docked</span>
                         )}
-                      </Box>
+                      </div>
                     );
                   })}
               </>
             )}
 
-            {/* Drone Stations */}
             {totalDroneStations > 0 && (
               <>
-                {totalTrainStations > 0 && <Divider sx={{ my: 2 }} />}
-                <Box sx={{ fontWeight: 'bold', mb: 1 }}>Drone Stations ({totalDroneStations})</Box>
+                {totalTrainStations > 0 && <Separator className="my-4" />}
+                <span className="font-bold block mb-2">Drone Stations ({totalDroneStations})</span>
                 {groups
                   .flatMap((g) => g.droneStations || [])
                   .map((station, idx) => {
                     const stationDockedDrones = getDockedDrones(station, drones);
                     return (
-                      <Box
-                        key={idx}
-                        sx={{
-                          mb: 2,
-                          p: 1,
-                          borderRadius: 1,
-                          backgroundColor: theme.palette.background.paper,
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight="bold">
-                          {station.name}
-                        </Typography>
+                      <div key={idx} className="mb-4 p-2 rounded bg-card">
+                        <p className="text-sm font-bold">{station.name}</p>
                         {station.fuel?.Name && (
-                          <Typography
-                            variant="caption"
-                            color="textSecondary"
-                            sx={{ display: 'block' }}
-                          >
+                          <span className="text-xs text-muted-foreground block">
                             Fuel: {station.fuel.Name}
-                          </Typography>
+                          </span>
                         )}
                         {stationDockedDrones.length > 0 ? (
                           stationDockedDrones.map((drone, didx) => (
-                            <Box
-                              key={didx}
-                              sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mt: 0.5,
-                              }}
-                            >
-                              <Typography variant="caption">{drone.name}</Typography>
-                              <Chip
-                                label={formatMachineType(drone.status)}
-                                size="small"
-                                color="info"
-                              />
-                            </Box>
+                            <div key={didx} className="flex justify-between items-center mt-1">
+                              <span className="text-xs">{drone.name}</span>
+                              <Badge variant="secondary">{formatMachineType(drone.status)}</Badge>
+                            </div>
                           ))
                         ) : (
-                          <Typography variant="caption" color="textSecondary">
+                          <span className="text-xs text-muted-foreground">
                             No drones at station
-                          </Typography>
+                          </span>
                         )}
-                      </Box>
+                      </div>
                     );
                   })}
               </>
             )}
 
             {allDockedTrains.length === 0 && allDockedDrones.length === 0 && (
-              <Typography variant="body2" color="textSecondary">
+              <p className="text-sm text-muted-foreground">
                 No vehicles docked at stations in selection
-              </Typography>
+              </p>
             )}
           </>
         )}
@@ -1625,7 +1115,6 @@ export const SelectionSidebar = ({
     const hasFlora = tower.flora && tower.flora.length > 0;
     const hasSignals = tower.signal && tower.signal.length > 0;
 
-    // Group nodes by purity
     const nodesByPurity = tower.nodes?.reduce(
       (acc, node) => {
         const purity = node.purity || 'unknown';
@@ -1638,31 +1127,26 @@ export const SelectionSidebar = ({
 
     return (
       <>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-          <Iconify icon="mdi:radar" width={18} sx={{ color: '#3B82F6' }} />
-          <Box>
-            <Typography variant="body2" fontWeight="medium">
-              Radar Tower
-            </Typography>
-          </Box>
-        </Box>
+        <div className="flex items-center gap-2 mb-1">
+          <Iconify icon="mdi:radar" width={18} className="text-blue-500" />
+          <div>
+            <p className="text-sm font-medium">Radar Tower</p>
+          </div>
+        </div>
 
-        {/* Reveal radius */}
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+        <span className="text-xs text-muted-foreground block mb-2">
           Reveal Radius: {fShortenNumber(tower.revealRadius, LengthUnits)}
-        </Typography>
+        </span>
 
-        {/* Resource Nodes */}
         {hasNodes && (
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-              <Iconify icon={'tabler:pick'} width={14} sx={{ color: 'text.secondary' }} />
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              <Iconify icon="tabler:pick" width={14} className="text-muted-foreground" />
+              <span className="text-xs text-muted-foreground block">
                 Resource Nodes: {tower.nodes.length}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
               {Object.entries(nodesByPurity || {}).map(([purity, nodes]) => {
                 const exploitedCount = nodes.filter((n) => n.exploited).length;
                 const totalCount = nodes.length;
@@ -1671,72 +1155,45 @@ export const SelectionSidebar = ({
                 const purityLabel = getPurityLabel(purity);
 
                 return (
-                  <Box
+                  <div
                     key={purity}
-                    sx={{
-                      height: 'auto',
-                      px: 1,
-                      py: 0.5,
-                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                      border: '2px solid',
-                      borderColor: purityColor,
-                      borderRadius: '16px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                    }}
+                    className="h-auto px-2 py-1 bg-black/60 rounded-2xl flex flex-col items-center"
+                    style={{ border: `2px solid ${purityColor}` }}
                   >
-                    <Typography sx={{ fontSize: '0.7rem', color: 'text.primary', lineHeight: 1.2 }}>
+                    <span className="text-[0.7rem] text-foreground leading-tight">
                       {totalCount}x {purityLabel}
-                    </Typography>
-                    <Typography
-                      sx={{ fontSize: '0.6rem', color: 'text.secondary', lineHeight: 1.2 }}
-                    >
+                    </span>
+                    <span className="text-[0.6rem] text-muted-foreground leading-tight">
                       {exploitedCount} exploited
-                    </Typography>
-                  </Box>
+                    </span>
+                  </div>
                 );
               })}
-            </Box>
-          </Box>
+            </div>
+          </div>
         )}
 
-        {/* Fauna */}
         <ScannedSection title="Fauna" items={tower.fauna || []} icon="mdi:paw" />
-
-        {/* Flora */}
         <ScannedSection title="Flora" items={tower.flora || []} icon="mdi:flower" />
-
-        {/* Signals */}
         <ScannedSection title="Signals" items={tower.signal || []} icon="mdi:signal-variant" />
 
-        {/* Empty state */}
         {!hasNodes && !hasFauna && !hasFlora && !hasSignals && (
-          <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-            No items scanned
-          </Typography>
+          <span className="text-xs text-muted-foreground italic">No items scanned</span>
         )}
 
-        {/* Location */}
-        <Box sx={{ pt: 1, mt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-            Location
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Coordinates
-            </Typography>
-            <Typography variant="caption">
+        <div className="pt-2 mt-2 border-t border-border">
+          <span className="text-xs text-muted-foreground block mb-1">Location</span>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Coordinates</span>
+            <span className="text-xs">
               {fNumber(tower.x / 100, { decimals: 0 })} / {fNumber(tower.y / 100, { decimals: 0 })}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Altitude
-            </Typography>
-            <Typography variant="caption">{fNumber(tower.z / 100, { decimals: 0 })}</Typography>
-          </Box>
-        </Box>
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Altitude</span>
+            <span className="text-xs">{fNumber(tower.z / 100, { decimals: 0 })}</span>
+          </div>
+        </div>
       </>
     );
   };
@@ -1747,47 +1204,32 @@ export const SelectionSidebar = ({
 
     return (
       <>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Iconify icon="material-symbols:house-rounded" width={20} sx={{ color: '#F59E0B' }} />
-          <Typography variant="body1" fontWeight="medium">
-            HUB
-          </Typography>
-        </Box>
+        <div className="flex items-center gap-2 mb-2">
+          <Iconify icon="material-symbols:house-rounded" width={20} className="text-amber-500" />
+          <p className="text-base font-medium">HUB</p>
+        </div>
 
-        {/* Level info */}
-        <Box sx={{ mb: 1.5 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Level
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {hubData.hubLevel}
-            </Typography>
-          </Box>
-        </Box>
+        <div className="mb-3">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Level</span>
+            <p className="text-sm font-medium">{hubData.hubLevel}</p>
+          </div>
+        </div>
 
-        {/* Location */}
-        <Box sx={{ pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-            Location
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Coordinates
-            </Typography>
-            <Typography variant="caption">
+        <div className="pt-2 border-t border-border">
+          <span className="text-xs text-muted-foreground block mb-1">Location</span>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Coordinates</span>
+            <span className="text-xs">
               {fNumber(hubData.x / 100, { decimals: 0 })} /{' '}
               {fNumber(hubData.y / 100, { decimals: 0 })}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Altitude
-            </Typography>
-            <Typography variant="caption">{fNumber(hubData.z / 100, { decimals: 0 })}</Typography>
-          </Box>
-        </Box>
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Altitude</span>
+            <span className="text-xs">{fNumber(hubData.z / 100, { decimals: 0 })}</span>
+          </div>
+        </div>
       </>
     );
   };
@@ -1801,249 +1243,139 @@ export const SelectionSidebar = ({
 
     return (
       <>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Iconify icon="tdesign:tower-filled" width={20} sx={{ color: '#9333EA' }} />
-          <Typography variant="body1" fontWeight="medium">
-            {elevatorData.name || 'Space Elevator'}
-          </Typography>
-        </Box>
+        <div className="flex items-center gap-2 mb-2">
+          <Iconify icon="tdesign:tower-filled" width={20} className="text-purple-500" />
+          <p className="text-base font-medium">{elevatorData.name || 'Space Elevator'}</p>
+        </div>
 
-        {/* Status */}
-        <Box sx={{ mb: 1.5 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Status
-            </Typography>
+        <div className="mb-3">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Status</span>
             {isFullyUpgraded ? (
-              <Chip
-                label="Fully Upgraded"
-                size="small"
-                sx={{
-                  height: 20,
-                  fontSize: '0.65rem',
-                  bgcolor: 'rgba(34, 197, 94, 0.15)',
-                  color: '#22c55e',
-                }}
-              />
+              <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-500">
+                Fully Upgraded
+              </span>
             ) : isUpgradeReady ? (
-              <Chip
-                label="Upgrade Ready"
-                size="small"
-                sx={{
-                  height: 20,
-                  fontSize: '0.65rem',
-                  bgcolor: 'rgba(245, 158, 11, 0.15)',
-                  color: '#f59e0b',
-                }}
-              />
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+                Upgrade Ready
+              </span>
             ) : (
-              <Chip
-                label="In Progress"
-                size="small"
-                sx={{
-                  height: 20,
-                  fontSize: '0.65rem',
-                  bgcolor: 'rgba(147, 51, 234, 0.15)',
-                  color: '#9333EA',
-                }}
-              />
+              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-500">
+                In Progress
+              </span>
             )}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
-        {/* Phase Requirements */}
         {phases.length > 0 && !isFullyUpgraded && (
-          <Box sx={{ pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-              Phase Requirements
-            </Typography>
+          <div className="pt-2 border-t border-border">
+            <span className="text-xs text-muted-foreground block mb-2">Phase Requirements</span>
             {phases.map((obj, idx) => {
               const progress = obj.totalCost > 0 ? (obj.amount / obj.totalCost) * 100 : 0;
               const isComplete = progress >= 100;
               return (
-                <Box key={idx} sx={{ mb: idx < phases.length - 1 ? 1.5 : 0 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 1,
-                      mb: 0.5,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        minWidth: 0,
-                        flex: 1,
-                      }}
-                    >
-                      <Box
-                        component="img"
+                <div key={idx} className={cn(idx < phases.length - 1 ? 'mb-3' : '')}>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <img
                         src={`assets/images/satisfactory/32x32/${obj.name}.png`}
                         alt={obj.name}
-                        sx={{ width: 20, height: 20, objectFit: 'contain', flexShrink: 0 }}
+                        className="w-5 h-5 object-contain flex-shrink-0"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
                       />
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
+                      <p className="text-sm overflow-hidden text-ellipsis whitespace-nowrap">
                         {obj.name}
-                      </Typography>
-                    </Box>
-                    <Typography
-                      variant="body2"
-                      sx={{ flexShrink: 0, color: isComplete ? '#22c55e' : 'text.primary' }}
+                      </p>
+                    </div>
+                    <p
+                      className={cn(
+                        'text-sm flex-shrink-0',
+                        isComplete ? 'text-green-500' : 'text-foreground'
+                      )}
                     >
                       {fShortenNumber(obj.amount, MetricUnits, { decimals: 0 })} /{' '}
                       {fShortenNumber(obj.totalCost, MetricUnits, { decimals: 0 })}
-                    </Typography>
-                  </Box>
-                  {/* Progress bar */}
-                  <Box
-                    sx={{
-                      height: 6,
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      borderRadius: 1,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        height: '100%',
-                        width: `${Math.min(progress, 100)}%`,
-                        backgroundColor: isComplete ? '#22c55e' : '#9333EA',
-                        transition: 'width 0.3s ease',
-                      }}
+                    </p>
+                  </div>
+                  <div className="h-1.5 bg-white/10 rounded overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full transition-all duration-300',
+                        isComplete ? 'bg-green-500' : 'bg-purple-500'
+                      )}
+                      style={{ width: `${Math.min(progress, 100)}%` }}
                     />
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               );
             })}
-          </Box>
+          </div>
         )}
 
-        {/* Location */}
-        <Box sx={{ pt: 1, mt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-            Location
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Coordinates
-            </Typography>
-            <Typography variant="caption">
+        <div className="pt-2 mt-2 border-t border-border">
+          <span className="text-xs text-muted-foreground block mb-1">Location</span>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Coordinates</span>
+            <span className="text-xs">
               {fNumber(elevatorData.x / 100, { decimals: 0 })} /{' '}
               {fNumber(elevatorData.y / 100, { decimals: 0 })}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Altitude
-            </Typography>
-            <Typography variant="caption">
-              {fNumber(elevatorData.z / 100, { decimals: 0 })}
-            </Typography>
-          </Box>
-        </Box>
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Altitude</span>
+            <span className="text-xs">{fNumber(elevatorData.z / 100, { decimals: 0 })}</span>
+          </div>
+        </div>
       </>
     );
   };
 
   const renderEmpty = () => (
-    <Box>
-      <Typography variant="h3" color="textSecondary">
-        No selection
-      </Typography>
-      <Typography variant="body2" color="textSecondary">
-        Click on a marker to see details
-      </Typography>
-    </Box>
+    <div>
+      <h3 className="text-2xl text-muted-foreground">No selection</h3>
+      <p className="text-sm text-muted-foreground">Click on a marker to see details</p>
+    </div>
   );
 
-  // Tab bar when multiple items are selected
   const renderTabBar = () => {
     if (selectedItems.length <= 1) return null;
 
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 0.5,
-          mb: 2,
-          pb: 1.5,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          overflowX: 'auto',
-          flexWrap: 'nowrap',
-          '&::-webkit-scrollbar': { height: 4 },
-          '&::-webkit-scrollbar-thumb': { backgroundColor: 'action.hover', borderRadius: 2 },
-        }}
-      >
+      <div className="flex gap-1 mb-4 pb-3 border-b border-border overflow-x-auto flex-nowrap scrollbar-thin scrollbar-thumb-accent">
         {selectedItems.map((item, index) => {
           const { icon, label } = getTabInfo(item);
           const isActive = index === activeTabIndex;
 
           return (
-            <Box
+            <div
               key={index}
               onClick={() => onTabChange(index)}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                px: 1,
-                py: 0.5,
-                borderRadius: 1,
-                cursor: 'pointer',
-                backgroundColor: isActive
-                  ? theme.palette.action.selected
-                  : theme.palette.action.hover,
-                border: isActive
-                  ? `1px solid ${theme.palette.primary.main}`
-                  : '1px solid transparent',
-                flexShrink: 0,
-                '&:hover': {
-                  backgroundColor: theme.palette.action.selected,
-                },
-              }}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded cursor-pointer flex-shrink-0',
+                isActive
+                  ? 'bg-accent border border-primary'
+                  : 'bg-muted/50 border border-transparent hover:bg-accent'
+              )}
             >
               <Iconify icon={icon} width={14} />
-              <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
-                {label}
-              </Typography>
-              <IconButton
-                size="small"
+              <span className="text-xs whitespace-nowrap">{label}</span>
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   onTabClose(index);
                 }}
-                sx={{
-                  p: 0,
-                  ml: 0.5,
-                  width: 14,
-                  height: 14,
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
-                  },
-                }}
+                className="ml-1 p-0 w-3.5 h-3.5 hover:bg-muted"
               >
                 <Iconify icon="mdi:close" width={12} />
-              </IconButton>
-            </Box>
+              </Button>
+            </div>
           );
         })}
-      </Box>
+      </div>
     );
   };
 

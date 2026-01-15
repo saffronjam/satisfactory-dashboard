@@ -1,16 +1,21 @@
 import { Helmet } from 'react-helmet-async';
 
-import { CONFIG } from 'src/config-global';
+import { CONFIG } from '@/config-global';
 
-import { MapView } from 'src/sections/map/view';
+import { MapView } from '@/sections/map/view';
 
-// ----------------------------------------------------------------------
-
+/**
+ * Map page component displaying the interactive factory map with Leaflet integration.
+ */
 export default function Page() {
   return (
     <>
       <Helmet>
-        <title> {`Power - ${CONFIG.appName}`}</title>
+        <title>{`Map - ${CONFIG.appName}`}</title>
+        <meta
+          name="description"
+          content="Interactive map view of your Satisfactory factory with drone routes, train routes, and markers"
+        />
       </Helmet>
 
       <MapView />
