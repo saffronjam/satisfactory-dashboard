@@ -1,26 +1,6 @@
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import {
-  Backdrop,
-  Box,
-  Checkbox,
-  Chip,
-  CircularProgress,
-  Collapse,
-  Divider,
-  FormControl,
-  FormControlLabel,
-  IconButton,
-  MenuItem,
-  Popover,
-  Select,
-  Slider,
-  Switch,
-  Tooltip,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import '../leaflet-dark.css';
 import { CRS } from 'leaflet';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -49,8 +29,6 @@ import {
 } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
 import { ApiContext } from 'src/contexts/api/useApi';
-import { DashboardContent } from 'src/layouts/dashboard';
-import { varAlpha } from 'src/theme/styles';
 import { MachineGroup, SelectedMapItem } from 'src/types';
 import { BuildingColorMode } from 'src/utils/gridColors';
 import { useContextSelector } from 'use-context-selector';
@@ -60,10 +38,29 @@ import { SelectionSidebar } from '../selectionSidebar';
 import { computeUnifiedGroups, zoomToGroupDistance } from '../utils';
 import { computeTowerVisibilityData } from '../utils/resourceNodeUtils';
 
-// localStorage key for persisting map state
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
+import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
+
 const MAP_STATE_KEY = 'satisfactory-dashboard-map-state';
 
-// Type for persisted map state
 type PersistedMapState = {
   enabledLayers: string[];
   buildingSubLayers: string[];
@@ -82,7 +79,6 @@ type PersistedMapState = {
   };
 };
 
-// Load map state from localStorage
 const loadMapState = (): PersistedMapState | null => {
   try {
     const stored = localStorage.getItem(MAP_STATE_KEY);
@@ -94,7 +90,6 @@ const loadMapState = (): PersistedMapState | null => {
   }
 };
 
-// Save map state to localStorage
 const saveMapState = (state: PersistedMapState) => {
   try {
     localStorage.setItem(MAP_STATE_KEY, JSON.stringify(state));
@@ -103,25 +98,21 @@ const saveMapState = (state: PersistedMapState) => {
   }
 };
 
-// Grouping distance values (doubling/halving from 1000)
 const groupingValues = [
   0, 1, 2, 4, 8, 16, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000,
 ];
 
-// Linear slider marks (evenly spaced) that map to groupingValues
 const groupingMarks = groupingValues.map((val, idx) => ({
   value: idx,
   label: val === 0 ? 'None' : val >= 1000 ? `${val / 1000}K` : `${val}`,
 }));
 
-// Only show labels for some marks to avoid clutter (indices: None, 8, 62, 500, 2K, 16K, 32K)
 const visibleLabelIndices = [0, 4, 7, 10, 12, 15, 16];
 const groupingMarksWithLabels = groupingMarks.map((mark, idx) => ({
   ...mark,
   label: visibleLabelIndices.includes(idx) ? mark.label : undefined,
 }));
 
-// Filter categories
 const filterCategories: { key: FilterCategory; label: string }[] = [
   { key: 'production', label: 'Production' },
   { key: 'power', label: 'Power' },
@@ -130,7 +121,6 @@ const filterCategories: { key: FilterCategory; label: string }[] = [
   { key: 'drone', label: 'Drones' },
 ];
 
-// Map layer types
 export type MapLayer =
   | 'machineGroups'
   | 'buildings'
@@ -139,14 +129,12 @@ export type MapLayer =
   | 'power'
   | 'resources';
 
-// Resource node filter state
 export type ResourceNodeFilter = {
-  enabledCells: Set<string>; // Keys: "${resourceType}:${purity}"
+  enabledCells: Set<string>;
   exploitedFilter: 'all' | 'exploited' | 'notExploited';
   radarVisibilityFilter: 'all' | 'visible' | 'notVisible';
 };
 
-// All resource types for the filter UI
 const allResourceTypes: { key: ResourceType; label: string; color: string }[] = [
   { key: ResourceTypeIronOre, label: 'Iron Ore', color: '#8B4513' },
   { key: ResourceTypeCopperOre, label: 'Copper Ore', color: '#B87333' },
@@ -163,19 +151,16 @@ const allResourceTypes: { key: ResourceType; label: string; color: string }[] = 
   { key: ResourceTypeGeyser, label: 'Geyser', color: '#FF6347' },
 ];
 
-// All purity levels
 const allPurities: { key: ResourceNodePurity; label: string; color: string }[] = [
   { key: ResourceNodePurityImpure, label: 'Impure', color: '#EF4444' },
   { key: ResourceNodePurityNormal, label: 'Normal', color: '#F59E0B' },
   { key: ResourceNodePurityPure, label: 'Pure', color: '#22C55E' },
 ];
 
-// Default resource filter cells (all enabled)
 const defaultResourceCells = allResourceTypes.flatMap((rt) =>
   allPurities.map((p) => `${rt.key}:${p.key}`)
 );
 
-// Building sub-layers
 export type BuildingSubLayer =
   | 'factory'
   | 'generator'
@@ -188,10 +173,8 @@ export type BuildingSubLayer =
   | 'hub'
   | 'radarTowers';
 
-// Infrastructure sub-layers
 export type InfrastructureSubLayer = 'belts' | 'pipes' | 'railway' | 'hypertubes';
 
-// Vehicle sub-layers
 export type VehicleSubLayer =
   | 'trains'
   | 'drones'
@@ -244,9 +227,14 @@ const vehicleSubLayerOptions: { key: VehicleSubLayer; label: string; color: stri
   { key: 'paths', label: 'Vehicle Paths', color: '#9CA3AF' },
 ];
 
+/**
+ * Interactive map view component displaying the Satisfactory game world.
+ * Renders a Leaflet map with customizable overlays for buildings, vehicles,
+ * infrastructure, and resource nodes. Supports layer filtering, multi-selection,
+ * and persistent state.
+ */
 export function MapView() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useIsMobile();
   const api = useContextSelector(ApiContext, (v) => {
     return {
       factoryStats: v.factoryStats,
@@ -291,12 +279,12 @@ export function MapView() {
     return saved?.center ?? [-80, 80];
   });
   const [autoGroup, setAutoGroup] = useState(false);
-  const [manualGroupIndex, setManualGroupIndex] = useState(15); // Index 15 = 16000
+  const [manualGroupIndex, setManualGroupIndex] = useState(15);
   const [visibleCategories, setVisibleCategories] = useState<Set<FilterCategory>>(
     new Set(['production', 'power', 'resource', 'train', 'drone'])
   );
-  const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null);
-  const [layersAnchor, setLayersAnchor] = useState<HTMLElement | null>(null);
+  const [helpPopoverOpen, setHelpPopoverOpen] = useState(false);
+  const [layersPopoverOpen, setLayersPopoverOpen] = useState(false);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [enabledLayers, setEnabledLayers] = useState<Set<MapLayer>>(() => {
     const saved = loadMapState();
@@ -345,7 +333,7 @@ export function MapView() {
     const saved = loadMapState();
     return saved?.buildingOpacity ?? 0.5;
   });
-  const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
+  const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
   const [expandedLayers, setExpandedLayers] = useState<Set<MapLayer>>(new Set());
   const [useGameMapStyle, setUseGameMapStyle] = useState(() => {
     const saved = loadMapState();
@@ -372,7 +360,6 @@ export function MapView() {
 
   const groupDistance = autoGroup ? zoomToGroupDistance(zoom) : groupingValues[manualGroupIndex];
 
-  // Save map state to localStorage when relevant state changes
   useEffect(() => {
     saveMapState({
       enabledLayers: [...enabledLayers],
@@ -405,7 +392,6 @@ export function MapView() {
     resourceNodeFilter,
   ]);
 
-  // Reset map state to defaults
   const resetMapState = useCallback(() => {
     localStorage.removeItem(MAP_STATE_KEY);
     setEnabledLayers(new Set());
@@ -423,11 +409,9 @@ export function MapView() {
       exploitedFilter: 'all',
       radarVisibilityFilter: 'all',
     });
-    // Force map to remount with new center/zoom
     setMapKey((k) => k + 1);
   }, []);
 
-  // Helper to check if two selections are the same
   const isSameSelection = (a: SelectedMapItem, b: SelectedMapItem): boolean => {
     if (a.type !== b.type) return false;
     switch (a.type) {
@@ -449,33 +433,27 @@ export function MapView() {
       case 'spaceElevator':
         return a.data.name === (b as typeof a).data.name;
       case 'multiSelection':
-        return false; // Multi-selections are always unique
+        return false;
       default:
         return false;
     }
   };
 
-  // Add a selection to the list
   const addSelection = useCallback((item: SelectedMapItem) => {
     setSelectedItems((prev) => {
-      // Check if already selected
       const existingIndex = prev.findIndex((s) => isSameSelection(s, item));
       if (existingIndex >= 0) {
-        // Already selected - just switch to that tab
         setActiveTabIndex(existingIndex);
         return prev;
       }
-      // Add new selection
       setActiveTabIndex(prev.length);
       return [...prev, item];
     });
   }, []);
 
-  // Remove a selection by index
   const removeSelection = useCallback((index: number) => {
     setSelectedItems((prev) => {
       const newItems = prev.filter((_, i) => i !== index);
-      // Adjust active tab if needed
       setActiveTabIndex((prevIndex) => {
         if (newItems.length === 0) return 0;
         if (prevIndex >= newItems.length) return newItems.length - 1;
@@ -486,7 +464,6 @@ export function MapView() {
     });
   }, []);
 
-  // Clear all selections
   const clearSelections = useCallback(() => {
     setSelectedItems([]);
     setActiveTabIndex(0);
@@ -504,16 +481,13 @@ export function MapView() {
     });
   };
 
-  // Toggle layer visibility
   const toggleLayer = (layer: MapLayer) => {
     setEnabledLayers((prev) => {
       const next = new Set(prev);
       if (next.has(layer)) {
         next.delete(layer);
-        // Disable multi-select mode when machine groups layer is turned off
         if (layer === 'machineGroups') {
           setMultiSelectMode(false);
-          // Clear machine group selections
           setSelectedItems((prev) => {
             const filtered = prev.filter(
               (s) =>
@@ -527,10 +501,8 @@ export function MapView() {
             return filtered;
           });
         }
-        // When buildings layer is turned off, turn off all sub-layers
         if (layer === 'buildings') {
           setBuildingSubLayers(new Set());
-          // Clear building-related selections
           setSelectedItems((prev) => {
             const filtered = prev.filter(
               (s) =>
@@ -542,17 +514,14 @@ export function MapView() {
             return filtered;
           });
         }
-        // When infrastructure layer is turned off, turn off all sub-layers
         if (layer === 'infrastructure') {
           setInfrastructureSubLayers(new Set());
         }
-        // When vehicles layer is turned off, turn off all sub-layers
         if (layer === 'vehicles') {
           setVehicleSubLayers(new Set());
         }
       } else {
         next.add(layer);
-        // When buildings layer is turned on, turn on all sub-layers
         if (layer === 'buildings') {
           setBuildingSubLayers(
             new Set([
@@ -569,11 +538,9 @@ export function MapView() {
             ])
           );
         }
-        // When infrastructure layer is turned on, turn on all sub-layers
         if (layer === 'infrastructure') {
           setInfrastructureSubLayers(new Set(['belts', 'pipes', 'railway', 'hypertubes']));
         }
-        // When vehicles layer is turned on, turn on all sub-layers
         if (layer === 'vehicles') {
           setVehicleSubLayers(
             new Set(['trains', 'drones', 'trucks', 'tractors', 'explorers', 'players', 'paths'])
@@ -584,7 +551,6 @@ export function MapView() {
     });
   };
 
-  // Calculate which purities exist for each resource type
   const availablePuritiesByResource = useMemo(() => {
     const map = new Map<ResourceType, Set<ResourceNodePurity>>();
     for (const node of displayData.resourceNodes) {
@@ -596,13 +562,11 @@ export function MapView() {
     return map;
   }, [displayData.resourceNodes]);
 
-  // Pre-compute tower visibility data for optimized radar visibility checks
   const towerVisibilityData = useMemo(
     () => computeTowerVisibilityData(displayData.radarTowers),
     [displayData.radarTowers]
   );
 
-  // Cell-based filter helpers for resource nodes
   const getCellKey = (resourceType: ResourceType, purity: ResourceNodePurity) =>
     `${resourceType}:${purity}`;
 
@@ -622,16 +586,13 @@ export function MapView() {
     });
   };
 
-  // ResourceType values now match image filenames directly
   const getResourceImageName = (resourceType: ResourceType): string => resourceType;
 
-  // Toggle building sub-layer
   const toggleBuildingSubLayer = (subLayer: BuildingSubLayer) => {
     setBuildingSubLayers((prev) => {
       const next = new Set(prev);
       if (next.has(subLayer)) {
         next.delete(subLayer);
-        // Clear selection if it's related to the disabled sub-layer
         if (subLayer === 'trainStation') {
           setSelectedItems((prev) => {
             const filtered = prev.filter((s) => s.type !== 'trainStation');
@@ -662,7 +623,6 @@ export function MapView() {
       } else {
         next.add(subLayer);
       }
-      // Update parent buildings layer based on sub-layers
       if (next.size === 0) {
         setEnabledLayers((prevLayers) => {
           const nextLayers = new Set(prevLayers);
@@ -680,7 +640,6 @@ export function MapView() {
     });
   };
 
-  // Toggle infrastructure sub-layer
   const toggleInfrastructureSubLayer = (subLayer: InfrastructureSubLayer) => {
     setInfrastructureSubLayers((prev) => {
       const next = new Set(prev);
@@ -689,7 +648,6 @@ export function MapView() {
       } else {
         next.add(subLayer);
       }
-      // Update parent infrastructure layer based on sub-layers
       if (next.size === 0) {
         setEnabledLayers((prevLayers) => {
           const nextLayers = new Set(prevLayers);
@@ -707,7 +665,6 @@ export function MapView() {
     });
   };
 
-  // Toggle vehicle sub-layer
   const toggleVehicleSubLayer = (subLayer: VehicleSubLayer) => {
     setVehicleSubLayers((prev) => {
       const next = new Set(prev);
@@ -716,7 +673,6 @@ export function MapView() {
       } else {
         next.add(subLayer);
       }
-      // Update parent vehicles layer based on sub-layers
       if (next.size === 0) {
         setEnabledLayers((prevLayers) => {
           const nextLayers = new Set(prevLayers);
@@ -734,7 +690,6 @@ export function MapView() {
     });
   };
 
-  // Toggle layer expansion
   const toggleLayerExpansion = (layer: MapLayer) => {
     setExpandedLayers((prev) => {
       const next = new Set(prev);
@@ -747,7 +702,6 @@ export function MapView() {
     });
   };
 
-  // Convert BuildingSubLayer set to MachineCategory set (only machine-related sub-layers)
   const visibleBuildingCategories = new Set<MachineCategory>(
     Array.from(buildingSubLayers)
       .map((sub): MachineCategory | null => {
@@ -759,7 +713,7 @@ export function MapView() {
           case 'generator':
             return 'generator' as MachineCategory;
           default:
-            return null; // trainStation and droneStation don't map to MachineCategory
+            return null;
         }
       })
       .filter((cat): cat is MachineCategory => cat !== null)
@@ -800,7 +754,6 @@ export function MapView() {
       );
       setMachineGroups(groups);
 
-      // Update selections if they include machine groups (use functional update to avoid stale closure)
       setSelectedItems((prevItems) =>
         prevItems.map((item) => {
           if (item.type === 'machineGroup') {
@@ -808,7 +761,6 @@ export function MapView() {
             if (newActiveGroup) {
               return { type: 'machineGroup', data: newActiveGroup };
             }
-            // Group no longer exists, keep with stale data (better UX)
           }
           return item;
         })
@@ -830,10 +782,8 @@ export function MapView() {
   const handleSelectItem = (item: SelectedMapItem | null) => {
     console.log('handleSelectItem called with:', item?.type, item);
     if (item === null) {
-      // Clear all selections
       clearSelections();
     } else {
-      // Check if this item is already selected - if so, remove it (toggle behavior)
       const existingIndex = selectedItems.findIndex((s) => isSameSelection(s, item));
       if (existingIndex >= 0) {
         removeSelection(existingIndex);
@@ -841,757 +791,562 @@ export function MapView() {
         addSelection(item);
       }
     }
-    // Auto-disable multi-select mode after a selection is made
     if (item && multiSelectMode) {
       setMultiSelectMode(false);
     }
   };
 
   return (
-    <DashboardContent
-      maxWidth={false}
-      disablePadding
-      sx={{
-        position: 'relative',
-        flex: '1 1 auto',
-        minHeight: 0,
-        overflow: 'hidden',
-      }}
-    >
-      <Backdrop
-        open={api.isLoading}
-        sx={{
-          position: 'absolute',
-          color: theme.palette.primary.main,
-          backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.5),
-          zIndex: (t) => t.zIndex.drawer + 1,
-        }}
-      >
-        <CircularProgress color="inherit" />
-      </Backdrop>
+    <div className="relative flex flex-1 min-h-0 overflow-hidden">
+      {/* Loading Backdrop */}
+      {api.isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+          <Spinner className="size-8 text-primary" />
+        </div>
+      )}
 
       {!api.isLoading && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 16,
-            left: isMobile ? 16 : 'calc(var(--layout-nav-vertical-width) + 16px)',
-            right: 16,
-            bottom: 16,
-            zIndex: 1,
-          }}
+        <div
+          className={cn(
+            'fixed inset-4 z-[1]',
+            !isMobile && 'left-[calc(var(--sidebar-width)+16px)]'
+          )}
         >
           {/* Map Controls Buttons */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 16,
-              right: 16,
-              zIndex: 1001, // Above sidebar
-              display: 'flex',
-              gap: 1,
-            }}
-          >
+          <div className="absolute top-4 right-4 z-[1001] flex gap-2">
             {/* Reset Button */}
-            <Tooltip title="Reset map to defaults">
-              <IconButton
-                onClick={resetMapState}
-                size="small"
-                sx={{
-                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
-                  backdropFilter: 'blur(8px)',
-                  '&:hover': {
-                    backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
-                  },
-                }}
-              >
-                <Iconify icon="mdi:refresh" width={20} />
-              </IconButton>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={resetMapState}
+                  className="bg-popover/90 backdrop-blur-sm"
+                >
+                  <Iconify icon="mdi:refresh" className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Reset map to defaults</TooltipContent>
             </Tooltip>
 
             {/* Map Style Toggle */}
-            <Tooltip title={useGameMapStyle ? 'Switch to realistic map' : 'Switch to game map'}>
-              <Box
-                onClick={() => setUseGameMapStyle(!useGameMapStyle)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: 1,
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    p: 0.75,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: !useGameMapStyle ? theme.palette.primary.main : 'transparent',
-                    color: !useGameMapStyle
-                      ? theme.palette.primary.contrastText
-                      : theme.palette.text.secondary,
-                    transition: 'all 0.2s ease',
-                  }}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  onClick={() => setUseGameMapStyle(!useGameMapStyle)}
+                  className="flex items-center bg-popover/90 backdrop-blur-sm rounded-md overflow-hidden cursor-pointer hover:bg-popover"
                 >
-                  <Iconify icon="mdi:earth" width={20} />
-                </Box>
-                <Box
-                  sx={{
-                    p: 0.75,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: useGameMapStyle ? theme.palette.primary.main : 'transparent',
-                    color: useGameMapStyle
-                      ? theme.palette.primary.contrastText
-                      : theme.palette.text.secondary,
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <Iconify icon="mdi:gamepad-variant" width={20} />
-                </Box>
-              </Box>
+                  <div
+                    className={cn(
+                      'p-1.5 flex items-center justify-center transition-all',
+                      !useGameMapStyle
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground'
+                    )}
+                  >
+                    <Iconify icon="mdi:earth" className="size-5" />
+                  </div>
+                  <div
+                    className={cn(
+                      'p-1.5 flex items-center justify-center transition-all',
+                      useGameMapStyle
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground'
+                    )}
+                  >
+                    <Iconify icon="mdi:gamepad-variant" className="size-5" />
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {useGameMapStyle ? 'Switch to realistic map' : 'Switch to game map'}
+              </TooltipContent>
             </Tooltip>
 
-            {/* Multi-select toggle button (works alongside Ctrl+drag) */}
-            <Tooltip
-              title={
-                !enabledLayers.has('machineGroups')
+            {/* Multi-select toggle button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={() => setMultiSelectMode(!multiSelectMode)}
+                  disabled={!enabledLayers.has('machineGroups')}
+                  className={cn(
+                    'backdrop-blur-sm',
+                    multiSelectMode
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      : 'bg-popover/90'
+                  )}
+                >
+                  <Iconify icon="mdi:selection-drag" className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {!enabledLayers.has('machineGroups')
                   ? 'Enable Machine Groups layer to use multi-select'
                   : multiSelectMode
                     ? 'Disable multi-select mode'
-                    : 'Enable multi-select mode'
-              }
-              placement="bottom"
-            >
-              <span>
-                <IconButton
-                  onClick={() => setMultiSelectMode(!multiSelectMode)}
-                  disabled={!enabledLayers.has('machineGroups')}
-                  size="small"
-                  sx={{
-                    backgroundColor: multiSelectMode
-                      ? theme.palette.primary.main
-                      : varAlpha(theme.palette.background.paperChannel, 0.9),
-                    backdropFilter: 'blur(8px)',
-                    color: multiSelectMode ? theme.palette.primary.contrastText : 'inherit',
-                    '&:hover': {
-                      backgroundColor: multiSelectMode
-                        ? theme.palette.primary.dark
-                        : varAlpha(theme.palette.background.paperChannel, 1),
-                    },
-                    '&.Mui-disabled': {
-                      backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.5),
-                      color: varAlpha(theme.palette.text.primaryChannel, 0.3),
-                    },
-                  }}
-                >
-                  <Iconify icon="mdi:selection-drag" />
-                </IconButton>
-              </span>
+                    : 'Enable multi-select mode'}
+              </TooltipContent>
             </Tooltip>
 
             {/* Layers Button */}
-            <IconButton
-              onClick={(e) => setLayersAnchor(e.currentTarget)}
-              size="small"
-              sx={{
-                backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
-                backdropFilter: 'blur(8px)',
-                '&:hover': {
-                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
-                },
-              }}
-            >
-              <Iconify icon="mdi:layers" />
-            </IconButton>
+            <Popover open={layersPopoverOpen} onOpenChange={setLayersPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon-sm" className="bg-popover/90 backdrop-blur-sm">
+                  <Iconify icon="mdi:layers" className="size-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 max-h-[80vh] overflow-y-auto">
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Layers</h4>
+                  <div className="flex flex-col gap-1">
+                    {layerOptions.map((layer) => (
+                      <div key={layer.key}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={enabledLayers.has(layer.key)}
+                              onCheckedChange={() => toggleLayer(layer.key)}
+                            />
+                            <span className="text-sm">{layer.label}</span>
+                          </div>
+                          {layer.expandable && (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => toggleLayerExpansion(layer.key)}
+                            >
+                              <Iconify
+                                icon={
+                                  expandedLayers.has(layer.key)
+                                    ? 'mdi:chevron-up'
+                                    : 'mdi:chevron-down'
+                                }
+                                className="size-4"
+                              />
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Machine Groups settings */}
+                        {layer.key === 'machineGroups' && (
+                          <Collapsible open={expandedLayers.has('machineGroups')}>
+                            <CollapsibleContent className="pl-4 pt-2">
+                              <p className="text-xs text-muted-foreground mb-1">Filters</p>
+                              <div className="flex flex-wrap gap-1 mb-3">
+                                {filterCategories.map((cat) => (
+                                  <Badge
+                                    key={cat.key}
+                                    variant={visibleCategories.has(cat.key) ? 'default' : 'outline'}
+                                    className="cursor-pointer text-xs"
+                                    onClick={() => toggleCategory(cat.key)}
+                                  >
+                                    {cat.label}
+                                  </Badge>
+                                ))}
+                              </div>
+
+                              <p className="text-xs text-muted-foreground mb-1">Grouping</p>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Checkbox
+                                  id="auto-group"
+                                  checked={autoGroup}
+                                  onCheckedChange={(checked) => setAutoGroup(checked === true)}
+                                />
+                                <Label htmlFor="auto-group" className="text-xs">
+                                  Auto-group by zoom
+                                </Label>
+                              </div>
+                              <div className="px-1">
+                                <Slider
+                                  disabled={autoGroup}
+                                  value={[manualGroupIndex]}
+                                  onValueChange={([value]) => setManualGroupIndex(value)}
+                                  step={1}
+                                  min={0}
+                                  max={groupingValues.length - 1}
+                                />
+                                <div className="flex justify-between mt-1">
+                                  {groupingMarksWithLabels
+                                    .filter((m) => m.label)
+                                    .map((mark) => (
+                                      <span
+                                        key={mark.value}
+                                        className="text-[0.55rem] text-muted-foreground"
+                                      >
+                                        {mark.label}
+                                      </span>
+                                    ))}
+                                </div>
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+
+                        {/* Building sub-layers */}
+                        {layer.key === 'buildings' && (
+                          <Collapsible open={expandedLayers.has('buildings')}>
+                            <CollapsibleContent className="pl-6 flex flex-col gap-0.5">
+                              {buildingSubLayerOptions.map((subLayer) => (
+                                <div key={subLayer.key} className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`building-${subLayer.key}`}
+                                    checked={buildingSubLayers.has(subLayer.key)}
+                                    onCheckedChange={() => toggleBuildingSubLayer(subLayer.key)}
+                                    style={
+                                      {
+                                        '--checkbox-color': subLayer.color,
+                                      } as React.CSSProperties
+                                    }
+                                    className="data-[state=checked]:bg-[var(--checkbox-color)] data-[state=checked]:border-[var(--checkbox-color)]"
+                                  />
+                                  <Label
+                                    htmlFor={`building-${subLayer.key}`}
+                                    className="text-xs text-muted-foreground"
+                                  >
+                                    {subLayer.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+
+                        {/* Infrastructure sub-layers */}
+                        {layer.key === 'infrastructure' && (
+                          <Collapsible open={expandedLayers.has('infrastructure')}>
+                            <CollapsibleContent className="pl-6 flex flex-col gap-0.5">
+                              {infrastructureSubLayerOptions.map((subLayer) => (
+                                <div key={subLayer.key} className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`infra-${subLayer.key}`}
+                                    checked={infrastructureSubLayers.has(subLayer.key)}
+                                    onCheckedChange={() =>
+                                      toggleInfrastructureSubLayer(subLayer.key)
+                                    }
+                                    style={
+                                      {
+                                        '--checkbox-color': subLayer.color,
+                                      } as React.CSSProperties
+                                    }
+                                    className="data-[state=checked]:bg-[var(--checkbox-color)] data-[state=checked]:border-[var(--checkbox-color)]"
+                                  />
+                                  <Label
+                                    htmlFor={`infra-${subLayer.key}`}
+                                    className="text-xs text-muted-foreground"
+                                  >
+                                    {subLayer.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+
+                        {/* Vehicles sub-layers */}
+                        {layer.key === 'vehicles' && (
+                          <Collapsible open={expandedLayers.has('vehicles')}>
+                            <CollapsibleContent className="pl-6 flex flex-col gap-0.5">
+                              {vehicleSubLayerOptions.map((subLayer) => (
+                                <div key={subLayer.key} className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`vehicle-${subLayer.key}`}
+                                    checked={vehicleSubLayers.has(subLayer.key)}
+                                    onCheckedChange={() => toggleVehicleSubLayer(subLayer.key)}
+                                    style={
+                                      {
+                                        '--checkbox-color': subLayer.color,
+                                      } as React.CSSProperties
+                                    }
+                                    className="data-[state=checked]:bg-[var(--checkbox-color)] data-[state=checked]:border-[var(--checkbox-color)]"
+                                  />
+                                  <Label
+                                    htmlFor={`vehicle-${subLayer.key}`}
+                                    className="text-xs text-muted-foreground"
+                                  >
+                                    {subLayer.label}
+                                  </Label>
+                                </div>
+                              ))}
+                              <Separator className="my-1" />
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id="show-vehicle-names"
+                                  checked={showVehicleNames}
+                                  onCheckedChange={(checked) =>
+                                    setShowVehicleNames(checked === true)
+                                  }
+                                />
+                                <Label
+                                  htmlFor="show-vehicle-names"
+                                  className="text-xs text-muted-foreground"
+                                >
+                                  Show names
+                                </Label>
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+
+                        {/* Resources filter */}
+                        {layer.key === 'resources' && (
+                          <Collapsible open={expandedLayers.has('resources')}>
+                            <CollapsibleContent className="pl-6 pt-2 flex flex-col gap-2">
+                              {/* Resource matrix */}
+                              <div className="flex flex-col gap-1 mb-2">
+                                {allResourceTypes.map((rt) => (
+                                  <div
+                                    key={rt.key}
+                                    className="flex items-center justify-between gap-2"
+                                  >
+                                    <span className="text-[0.65rem] text-muted-foreground min-w-[60px]">
+                                      {rt.label}
+                                    </span>
+                                    <div className="flex gap-1">
+                                      {allPurities.map((p) => {
+                                        const isAvailable = availablePuritiesByResource
+                                          .get(rt.key)
+                                          ?.has(p.key);
+                                        if (!isAvailable) {
+                                          return <div key={p.key} className="w-6 h-6" />;
+                                        }
+                                        return (
+                                          <button
+                                            key={p.key}
+                                            type="button"
+                                            onClick={() => toggleCell(rt.key, p.key)}
+                                            className={cn(
+                                              'w-6 h-6 p-0 rounded-full bg-black/50 hover:bg-black/70 transition-opacity',
+                                              isCellEnabled(rt.key, p.key)
+                                                ? 'opacity-100'
+                                                : 'opacity-30'
+                                            )}
+                                            style={{
+                                              border: `2px solid ${p.color}`,
+                                            }}
+                                          >
+                                            <img
+                                              src={`assets/images/satisfactory/32x32/${getResourceImageName(rt.key)}.png`}
+                                              alt={rt.label}
+                                              className="w-4 h-4 object-contain mx-auto"
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display =
+                                                  'none';
+                                              }}
+                                            />
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <p className="text-xs text-muted-foreground mb-1">Filters</p>
+                              <div className="flex flex-wrap gap-1">
+                                <Badge
+                                  variant={
+                                    resourceNodeFilter.exploitedFilter === 'exploited'
+                                      ? 'default'
+                                      : 'outline'
+                                  }
+                                  className={cn(
+                                    'cursor-pointer text-[0.65rem] h-5',
+                                    resourceNodeFilter.exploitedFilter === 'exploited' &&
+                                      'bg-green-500 hover:bg-green-600'
+                                  )}
+                                  onClick={() =>
+                                    setResourceNodeFilter((prev) => ({
+                                      ...prev,
+                                      exploitedFilter:
+                                        prev.exploitedFilter === 'exploited' ? 'all' : 'exploited',
+                                    }))
+                                  }
+                                >
+                                  Exploited
+                                </Badge>
+                                <Badge
+                                  variant={
+                                    resourceNodeFilter.exploitedFilter === 'notExploited'
+                                      ? 'default'
+                                      : 'outline'
+                                  }
+                                  className={cn(
+                                    'cursor-pointer text-[0.65rem] h-5',
+                                    resourceNodeFilter.exploitedFilter === 'notExploited' &&
+                                      'bg-amber-500 hover:bg-amber-600'
+                                  )}
+                                  onClick={() =>
+                                    setResourceNodeFilter((prev) => ({
+                                      ...prev,
+                                      exploitedFilter:
+                                        prev.exploitedFilter === 'notExploited'
+                                          ? 'all'
+                                          : 'notExploited',
+                                    }))
+                                  }
+                                >
+                                  Not Exploited
+                                </Badge>
+                                <Badge
+                                  variant={
+                                    resourceNodeFilter.radarVisibilityFilter === 'visible'
+                                      ? 'default'
+                                      : 'outline'
+                                  }
+                                  className={cn(
+                                    'cursor-pointer text-[0.65rem] h-5',
+                                    resourceNodeFilter.radarVisibilityFilter === 'visible' &&
+                                      'bg-blue-500 hover:bg-blue-600'
+                                  )}
+                                  onClick={() =>
+                                    setResourceNodeFilter((prev) => ({
+                                      ...prev,
+                                      radarVisibilityFilter:
+                                        prev.radarVisibilityFilter === 'visible'
+                                          ? 'all'
+                                          : 'visible',
+                                    }))
+                                  }
+                                >
+                                  Radar Visible
+                                </Badge>
+                                <Badge
+                                  variant={
+                                    resourceNodeFilter.radarVisibilityFilter === 'notVisible'
+                                      ? 'default'
+                                      : 'outline'
+                                  }
+                                  className={cn(
+                                    'cursor-pointer text-[0.65rem] h-5',
+                                    resourceNodeFilter.radarVisibilityFilter === 'notVisible' &&
+                                      'bg-purple-500 hover:bg-purple-600'
+                                  )}
+                                  onClick={() =>
+                                    setResourceNodeFilter((prev) => ({
+                                      ...prev,
+                                      radarVisibilityFilter:
+                                        prev.radarVisibilityFilter === 'notVisible'
+                                          ? 'all'
+                                          : 'notVisible',
+                                    }))
+                                  }
+                                >
+                                  Not Radar Visible
+                                </Badge>
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* Help Button (desktop only) */}
             {!isMobile && (
-              <IconButton
-                onClick={(e) => setHelpAnchor(e.currentTarget)}
-                size="small"
-                sx={{
-                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
-                  backdropFilter: 'blur(8px)',
-                  '&:hover': {
-                    backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
-                  },
-                }}
-              >
-                <Iconify icon="mdi:help-circle-outline" />
-              </IconButton>
+              <Popover open={helpPopoverOpen} onOpenChange={setHelpPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    className="bg-popover/90 backdrop-blur-sm"
+                  >
+                    <Iconify icon="mdi:help-circle-outline" className="size-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56">
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm">Controls</h4>
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-[0.7rem]">
+                            Ctrl
+                          </Badge>
+                          <span className="text-sm">+ Drag</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Multi-select items on the map
+                        </p>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-[0.7rem]">
+                            Click
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Select a single item</p>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-[0.7rem]">
+                            Scroll
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Zoom in/out</p>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
 
             {/* Settings Button */}
-            <Tooltip title="Map Settings">
-              <IconButton
-                onClick={(e) => setSettingsAnchor(e.currentTarget)}
-                size="small"
-                sx={{
-                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.9),
-                  backdropFilter: 'blur(8px)',
-                  '&:hover': {
-                    backgroundColor: varAlpha(theme.palette.background.paperChannel, 1),
-                  },
-                }}
-              >
-                <Iconify icon="mdi:cog" width={20} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-
-          {/* Help Popover */}
-          <Popover
-            open={Boolean(helpAnchor)}
-            anchorEl={helpAnchor}
-            onClose={() => setHelpAnchor(null)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            slotProps={{
-              paper: {
-                sx: {
-                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
-                  backdropFilter: 'blur(8px)',
-                  mt: 1,
-                },
-              },
-            }}
-          >
-            <Box sx={{ p: 2, minWidth: 220 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-                Controls
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    <Chip
-                      label="Ctrl"
-                      size="small"
-                      variant="outlined"
-                      sx={{ fontSize: '0.7rem' }}
+            <Popover open={settingsPopoverOpen} onOpenChange={setSettingsPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="bg-popover/90 backdrop-blur-sm"
+                    >
+                      <Iconify icon="mdi:cog" className="size-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Map Settings</TooltipContent>
+                </Tooltip>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-56">
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Map Settings</h4>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Building Opacity</Label>
+                    <Slider
+                      value={[buildingOpacity]}
+                      onValueChange={([value]) => setBuildingOpacity(value)}
+                      min={0}
+                      max={1}
+                      step={0.1}
                     />
-                    <Typography variant="body2">+ Drag</Typography>
-                  </Box>
-                  <Typography variant="caption" color="textSecondary">
-                    Multi-select items on the map
-                  </Typography>
-                </Box>
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    <Chip
-                      label="Click"
-                      size="small"
-                      variant="outlined"
-                      sx={{ fontSize: '0.7rem' }}
-                    />
-                  </Box>
-                  <Typography variant="caption" color="textSecondary">
-                    Select a single item
-                  </Typography>
-                </Box>
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    <Chip
-                      label="Scroll"
-                      size="small"
-                      variant="outlined"
-                      sx={{ fontSize: '0.7rem' }}
-                    />
-                  </Box>
-                  <Typography variant="caption" color="textSecondary">
-                    Zoom in/out
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-          </Popover>
-
-          {/* Layers Popover */}
-          <Popover
-            open={Boolean(layersAnchor)}
-            anchorEl={layersAnchor}
-            onClose={() => setLayersAnchor(null)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            slotProps={{
-              paper: {
-                sx: {
-                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
-                  backdropFilter: 'blur(8px)',
-                  mt: 1,
-                  width: 280,
-                  maxHeight: '80vh',
-                },
-              },
-            }}
-          >
-            <Box sx={{ p: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-                Layers
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                {layerOptions.map((layer) => (
-                  <Box key={layer.key}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={enabledLayers.has(layer.key)}
-                            onChange={() => toggleLayer(layer.key)}
-                            size="small"
-                          />
-                        }
-                        label={<Typography variant="body2">{layer.label}</Typography>}
-                        sx={{ ml: 0, flex: 1 }}
-                      />
-                      {layer.expandable && (
-                        <IconButton
-                          size="small"
-                          onClick={() => toggleLayerExpansion(layer.key)}
-                          sx={{ p: 0.5 }}
-                        >
-                          <Iconify
-                            icon={
-                              expandedLayers.has(layer.key) ? 'mdi:chevron-up' : 'mdi:chevron-down'
-                            }
-                            width={18}
-                          />
-                        </IconButton>
-                      )}
-                    </Box>
-                    {/* Machine Groups settings */}
-                    {layer.key === 'machineGroups' && (
-                      <Collapse in={expandedLayers.has('machineGroups')}>
-                        <Box sx={{ pl: 2, pt: 1 }}>
-                          {/* Filters Section */}
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ mb: 0.5, display: 'block' }}
-                          >
-                            Filters
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
-                            {filterCategories.map((cat) => (
-                              <Chip
-                                key={cat.key}
-                                label={cat.label}
-                                onClick={() => toggleCategory(cat.key)}
-                                color={visibleCategories.has(cat.key) ? 'primary' : 'default'}
-                                variant={visibleCategories.has(cat.key) ? 'filled' : 'outlined'}
-                                size="small"
-                                sx={{ fontSize: '0.7rem', height: 24 }}
-                              />
-                            ))}
-                          </Box>
-
-                          {/* Grouping Section */}
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ mb: 0.5, display: 'block' }}
-                          >
-                            Grouping
-                          </Typography>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={autoGroup}
-                                onChange={(e) => setAutoGroup(e.target.checked)}
-                                size="small"
-                              />
-                            }
-                            label={<Typography variant="caption">Auto-group by zoom</Typography>}
-                            sx={{ ml: 0, my: -0.5 }}
-                          />
-                          <Box sx={{ px: 0.5, mt: 0.5 }}>
-                            <Slider
-                              disabled={autoGroup}
-                              value={manualGroupIndex}
-                              onChange={(_, value) => setManualGroupIndex(value as number)}
-                              step={1}
-                              marks={groupingMarksWithLabels}
-                              min={0}
-                              max={groupingValues.length - 1}
-                              size="small"
-                              valueLabelDisplay="auto"
-                              valueLabelFormat={(idx) => {
-                                const val = groupingValues[idx];
-                                return val === 0
-                                  ? 'None'
-                                  : val >= 1000
-                                    ? `${val / 1000}K`
-                                    : `${val}`;
-                              }}
-                              sx={{
-                                '& .MuiSlider-markLabel': {
-                                  fontSize: '0.55rem',
-                                },
-                              }}
-                            />
-                          </Box>
-                        </Box>
-                      </Collapse>
-                    )}
-                    {/* Building sub-layers */}
-                    {layer.key === 'buildings' && (
-                      <Collapse in={expandedLayers.has('buildings')}>
-                        <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                          {buildingSubLayerOptions.map((subLayer) => (
-                            <Box key={subLayer.key}>
-                              <FormControlLabel
-                                control={
-                                  <Checkbox
-                                    checked={buildingSubLayers.has(subLayer.key)}
-                                    onChange={() => toggleBuildingSubLayer(subLayer.key)}
-                                    size="small"
-                                    sx={{
-                                      color: subLayer.color,
-                                      '&.Mui-checked': {
-                                        color: subLayer.color,
-                                      },
-                                    }}
-                                  />
-                                }
-                                label={
-                                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                    {subLayer.label}
-                                  </Typography>
-                                }
-                                sx={{ ml: 0, my: -0.5 }}
-                              />
-                            </Box>
-                          ))}
-                        </Box>
-                      </Collapse>
-                    )}
-                    {/* Infrastructure sub-layers */}
-                    {layer.key === 'infrastructure' && (
-                      <Collapse in={expandedLayers.has('infrastructure')}>
-                        <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                          {infrastructureSubLayerOptions.map((subLayer) => (
-                            <FormControlLabel
-                              key={subLayer.key}
-                              control={
-                                <Checkbox
-                                  checked={infrastructureSubLayers.has(subLayer.key)}
-                                  onChange={() => toggleInfrastructureSubLayer(subLayer.key)}
-                                  size="small"
-                                  sx={{
-                                    color: subLayer.color,
-                                    '&.Mui-checked': {
-                                      color: subLayer.color,
-                                    },
-                                  }}
-                                />
-                              }
-                              label={
-                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                  {subLayer.label}
-                                </Typography>
-                              }
-                              sx={{ ml: 0, my: -0.5 }}
-                            />
-                          ))}
-                        </Box>
-                      </Collapse>
-                    )}
-                    {/* Vehicles sub-layers */}
-                    {layer.key === 'vehicles' && (
-                      <Collapse in={expandedLayers.has('vehicles')}>
-                        <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                          {vehicleSubLayerOptions.map((subLayer) => (
-                            <FormControlLabel
-                              key={subLayer.key}
-                              control={
-                                <Checkbox
-                                  checked={vehicleSubLayers.has(subLayer.key)}
-                                  onChange={() => toggleVehicleSubLayer(subLayer.key)}
-                                  size="small"
-                                  sx={{
-                                    color: subLayer.color,
-                                    '&.Mui-checked': {
-                                      color: subLayer.color,
-                                    },
-                                  }}
-                                />
-                              }
-                              label={
-                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                  {subLayer.label}
-                                </Typography>
-                              }
-                              sx={{ ml: 0, my: -0.5 }}
-                            />
-                          ))}
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={showVehicleNames}
-                                onChange={() => setShowVehicleNames((prev) => !prev)}
-                                size="small"
-                                sx={{
-                                  color: 'text.secondary',
-                                  '&.Mui-checked': {
-                                    color: 'text.primary',
-                                  },
-                                }}
-                              />
-                            }
-                            label={
-                              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                Show names
-                              </Typography>
-                            }
-                            sx={{
-                              ml: 0,
-                              my: -0.5,
-                              mt: 0.5,
-                              pt: 0.5,
-                              borderTop: '1px solid',
-                              borderColor: 'divider',
-                            }}
-                          />
-                        </Box>
-                      </Collapse>
-                    )}
-                    {/* Resources filter */}
-                    {layer.key === 'resources' && (
-                      <Collapse in={expandedLayers.has('resources')}>
-                        <Box
-                          sx={{ pl: 3, pt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}
-                        >
-                          {/* Resource matrix */}
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1 }}>
-                            {allResourceTypes.map((rt) => (
-                              <Box
-                                key={rt.key}
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  gap: 1,
-                                }}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  sx={{
-                                    color: 'text.secondary',
-                                    fontSize: '0.65rem',
-                                    minWidth: 60,
-                                  }}
-                                >
-                                  {rt.label}
-                                </Typography>
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  {allPurities.map((p) => {
-                                    const isAvailable = availablePuritiesByResource
-                                      .get(rt.key)
-                                      ?.has(p.key);
-                                    if (!isAvailable) {
-                                      return <Box key={p.key} sx={{ width: 24, height: 24 }} />;
-                                    }
-                                    return (
-                                      <IconButton
-                                        key={p.key}
-                                        size="small"
-                                        onClick={() => toggleCell(rt.key, p.key)}
-                                        sx={{
-                                          width: 24,
-                                          height: 24,
-                                          p: 0,
-                                          border: `2px solid ${p.color}`,
-                                          borderRadius: '50%',
-                                          opacity: isCellEnabled(rt.key, p.key) ? 1 : 0.3,
-                                          backgroundColor: 'rgba(0,0,0,0.5)',
-                                          '&:hover': {
-                                            backgroundColor: 'rgba(0,0,0,0.7)',
-                                          },
-                                        }}
-                                      >
-                                        <Box
-                                          component="img"
-                                          src={`assets/images/satisfactory/32x32/${getResourceImageName(rt.key)}.png`}
-                                          sx={{ width: 16, height: 16, objectFit: 'contain' }}
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                          }}
-                                        />
-                                      </IconButton>
-                                    );
-                                  })}
-                                </Box>
-                              </Box>
-                            ))}
-                          </Box>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ mb: 0.5, display: 'block' }}
-                          >
-                            Filters
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            <Chip
-                              label="Exploited"
-                              onClick={() =>
-                                setResourceNodeFilter((prev) => ({
-                                  ...prev,
-                                  exploitedFilter:
-                                    prev.exploitedFilter === 'exploited' ? 'all' : 'exploited',
-                                }))
-                              }
-                              size="small"
-                              variant={
-                                resourceNodeFilter.exploitedFilter === 'exploited'
-                                  ? 'filled'
-                                  : 'outlined'
-                              }
-                              color={
-                                resourceNodeFilter.exploitedFilter === 'exploited'
-                                  ? 'success'
-                                  : 'default'
-                              }
-                              sx={{ fontSize: '0.65rem', height: 22 }}
-                            />
-                            <Chip
-                              label="Not Exploited"
-                              onClick={() =>
-                                setResourceNodeFilter((prev) => ({
-                                  ...prev,
-                                  exploitedFilter:
-                                    prev.exploitedFilter === 'notExploited'
-                                      ? 'all'
-                                      : 'notExploited',
-                                }))
-                              }
-                              size="small"
-                              variant={
-                                resourceNodeFilter.exploitedFilter === 'notExploited'
-                                  ? 'filled'
-                                  : 'outlined'
-                              }
-                              color={
-                                resourceNodeFilter.exploitedFilter === 'notExploited'
-                                  ? 'warning'
-                                  : 'default'
-                              }
-                              sx={{ fontSize: '0.65rem', height: 22 }}
-                            />
-                            <Chip
-                              label="Radar Visible"
-                              onClick={() =>
-                                setResourceNodeFilter((prev) => ({
-                                  ...prev,
-                                  radarVisibilityFilter:
-                                    prev.radarVisibilityFilter === 'visible' ? 'all' : 'visible',
-                                }))
-                              }
-                              size="small"
-                              variant={
-                                resourceNodeFilter.radarVisibilityFilter === 'visible'
-                                  ? 'filled'
-                                  : 'outlined'
-                              }
-                              color={
-                                resourceNodeFilter.radarVisibilityFilter === 'visible'
-                                  ? 'info'
-                                  : 'default'
-                              }
-                              sx={{ fontSize: '0.65rem', height: 22 }}
-                            />
-                            <Chip
-                              label="Not Radar Visible"
-                              onClick={() =>
-                                setResourceNodeFilter((prev) => ({
-                                  ...prev,
-                                  radarVisibilityFilter:
-                                    prev.radarVisibilityFilter === 'notVisible'
-                                      ? 'all'
-                                      : 'notVisible',
-                                }))
-                              }
-                              size="small"
-                              variant={
-                                resourceNodeFilter.radarVisibilityFilter === 'notVisible'
-                                  ? 'filled'
-                                  : 'outlined'
-                              }
-                              color={
-                                resourceNodeFilter.radarVisibilityFilter === 'notVisible'
-                                  ? 'secondary'
-                                  : 'default'
-                              }
-                              sx={{ fontSize: '0.65rem', height: 22 }}
-                            />
-                          </Box>
-                        </Box>
-                      </Collapse>
-                    )}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          </Popover>
-
-          {/* Settings Popover */}
-          <Popover
-            open={Boolean(settingsAnchor)}
-            anchorEl={settingsAnchor}
-            onClose={() => setSettingsAnchor(null)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            slotProps={{
-              paper: {
-                sx: {
-                  backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
-                  backdropFilter: 'blur(8px)',
-                  mt: 1,
-                },
-              },
-            }}
-          >
-            <Box sx={{ p: 2, width: 220 }}>
-              <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                Map Settings
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Building Opacity
-              </Typography>
-              <Slider
-                value={buildingOpacity}
-                onChange={(_, value) => setBuildingOpacity(value as number)}
-                min={0}
-                max={1}
-                step={0.1}
-                marks
-                valueLabelDisplay="auto"
-                valueLabelFormat={(v) => `${Math.round(v * 100)}%`}
-                size="small"
-              />
-              <Divider sx={{ my: 1.5 }} />
-              <Typography variant="caption" color="text.secondary">
-                Building Color Mode
-              </Typography>
-              <FormControl size="small" fullWidth sx={{ mt: 0.5 }}>
-                <Select
-                  value={buildingColorMode}
-                  onChange={(e) => setBuildingColorMode(e.target.value as BuildingColorMode)}
-                >
-                  <MenuItem value="type">By Type</MenuItem>
-                  <MenuItem value="status">By Status</MenuItem>
-                  <MenuItem value="grid">By Power Grid</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          </Popover>
+                    <div className="text-right text-xs text-muted-foreground">
+                      {Math.round(buildingOpacity * 100)}%
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Building Color Mode</Label>
+                    <Select
+                      value={buildingColorMode}
+                      onValueChange={(value) => setBuildingColorMode(value as BuildingColorMode)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="type">By Type</SelectItem>
+                        <SelectItem value="status">By Status</SelectItem>
+                        <SelectItem value="grid">By Power Grid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
           {/* MapContainer */}
           <MapContainer
@@ -1606,14 +1361,11 @@ export function MapView() {
             maxZoom={8}
             zoomDelta={0.25}
             zoomSnap={0.25}
+            className="w-full h-full rounded-[10px] z-0"
             style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: '10px',
               backgroundColor: '#0e0e0e',
               border: '1px solid #1e1e1e',
               boxShadow: '0 0 15px rgba(0, 0, 0, 0.8)',
-              zIndex: 0,
             }}
           >
             <TileLayer
@@ -1682,8 +1434,8 @@ export function MapView() {
               onClose={clearSelections}
             />
           )}
-        </Box>
+        </div>
       )}
-    </DashboardContent>
+    </div>
   );
 }

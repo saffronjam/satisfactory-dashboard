@@ -1,20 +1,19 @@
-import Timeline from '@mui/lab/Timeline';
-import TimelineConnector from '@mui/lab/TimelineConnector';
-import TimelineContent from '@mui/lab/TimelineContent';
-import TimelineDot from '@mui/lab/TimelineDot';
-import type { TimelineItemProps } from '@mui/lab/TimelineItem';
-import TimelineItem, { timelineItemClasses } from '@mui/lab/TimelineItem';
-import TimelineSeparator from '@mui/lab/TimelineSeparator';
-import type { CardProps } from '@mui/material/Card';
-import Card from '@mui/material/Card';
-import CardHeader from '@mui/material/CardHeader';
-import Typography from '@mui/material/Typography';
+import { cn } from '@/lib/utils';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Timeline,
+  TimelineConnector,
+  TimelineContent,
+  TimelineDot,
+  type TimelineDotProps,
+  TimelineItem,
+  TimelineSeparator,
+} from '@/components/timeline';
 
 import { fDateTime } from 'src/utils/format-time';
 
-// ----------------------------------------------------------------------
-
-type Props = CardProps & {
+type Props = React.ComponentProps<'div'> & {
   title?: string;
   subheader?: string;
   list: {
@@ -25,58 +24,65 @@ type Props = CardProps & {
   }[];
 };
 
-export function AnalyticsOrderTimeline({ title, subheader, list, ...other }: Props) {
+/**
+ * Displays a timeline of order events within a card container.
+ */
+export function AnalyticsOrderTimeline({ title, subheader, list, className, ...other }: Props) {
   return (
-    <Card {...other}>
-      <CardHeader title={title} subheader={subheader} />
+    <Card className={cn(className)} {...other}>
+      <CardHeader>
+        {title && <CardTitle>{title}</CardTitle>}
+        {subheader && <CardDescription>{subheader}</CardDescription>}
+      </CardHeader>
 
-      <Timeline
-        sx={{
-          m: 0,
-          p: 3,
-          [`& .${timelineItemClasses.root}:before`]: {
-            flex: 0,
-            padding: 0,
-          },
-        }}
-      >
-        {list.map((item, index) => (
-          <Item key={item.id} item={item} lastItem={index === list.length - 1} />
-        ))}
-      </Timeline>
+      <CardContent>
+        <Timeline>
+          {list.map((item, index) => (
+            <Item key={item.id} item={item} lastItem={index === list.length - 1} />
+          ))}
+        </Timeline>
+      </CardContent>
     </Card>
   );
 }
 
-// ----------------------------------------------------------------------
-
-type ItemProps = TimelineItemProps & {
+type ItemProps = {
   lastItem: boolean;
   item: Props['list'][number];
 };
 
-function Item({ item, lastItem, ...other }: ItemProps) {
+/**
+ * Maps order type strings to timeline dot color variants.
+ */
+function getColorForType(type: string): TimelineDotProps['color'] {
+  switch (type) {
+    case 'order1':
+      return 'primary';
+    case 'order2':
+      return 'success';
+    case 'order3':
+      return 'info';
+    case 'order4':
+      return 'warning';
+    default:
+      return 'error';
+  }
+}
+
+/**
+ * Individual timeline item displaying order title and timestamp.
+ */
+function Item({ item, lastItem }: ItemProps) {
   return (
-    <TimelineItem {...other}>
+    <TimelineItem>
       <TimelineSeparator>
-        <TimelineDot
-          color={
-            (item.type === 'order1' && 'primary') ||
-            (item.type === 'order2' && 'success') ||
-            (item.type === 'order3' && 'info') ||
-            (item.type === 'order4' && 'warning') ||
-            'error'
-          }
-        />
-        {lastItem ? null : <TimelineConnector />}
+        <TimelineDot color={getColorForType(item.type)} />
+        {!lastItem && <TimelineConnector />}
       </TimelineSeparator>
 
       <TimelineContent>
-        <Typography variant="subtitle2">{item.title}</Typography>
-
-        <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-          {fDateTime(item.time)}
-        </Typography>
+        <p className="text-sm font-medium">{item.title}</p>
+        <p className="text-xs text-muted-foreground">{fDateTime(item.time)}</p>
       </TimelineContent>
     </TimelineItem>
   );

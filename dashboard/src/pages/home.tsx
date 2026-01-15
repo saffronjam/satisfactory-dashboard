@@ -1,18 +1,22 @@
 import { Helmet } from 'react-helmet-async';
 
-import { CONFIG } from 'src/config-global';
+import { CONFIG } from '@/config-global';
 
-import { OverviewAnalyticsView } from 'src/sections/overview/view';
+import { OverviewAnalyticsView } from '@/sections/overview/view';
 
-// ----------------------------------------------------------------------
-
+/**
+ * Home page component displaying the main dashboard analytics view.
+ */
 export default function Page() {
   return (
     <>
       <Helmet>
-        <title> {`Dashboard - ${CONFIG.appName}`}</title>
-        <meta name="description" />
-        <meta name="keywords" content="react,material,kit,application,dashboard,admin,template" />
+        <title>{`Dashboard - ${CONFIG.appName}`}</title>
+        <meta
+          name="description"
+          content="Satisfactory factory dashboard for monitoring and managing your game factory"
+        />
+        <meta name="keywords" content="satisfactory,factory,dashboard,monitoring,game" />
       </Helmet>
 
       <OverviewAnalyticsView />

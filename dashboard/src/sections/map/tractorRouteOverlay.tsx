@@ -1,4 +1,3 @@
-import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { memo, useEffect, useState, useCallback } from 'react';
 import { useMap, useMapEvents } from 'react-leaflet';
 import {
@@ -11,6 +10,8 @@ import { Iconify } from 'src/components/iconify';
 import { fShortenNumber } from 'src/utils/format-number';
 import { ConvertToMapCoords2 } from './bounds';
 import { LocationInfo } from './components/locationInfo';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface AnimatedPosition {
   x: number;
@@ -26,7 +27,7 @@ interface TractorRouteOverlayProps {
   showPopover?: boolean;
 }
 
-// Get status color
+/** Gets the status color for the tractor status indicator */
 const getStatusColor = (status: string): string => {
   switch (status) {
     case TractorStatusSelfDriving:
@@ -39,7 +40,7 @@ const getStatusColor = (status: string): string => {
   }
 };
 
-// Get status label
+/** Gets the human-readable status label */
 const getStatusLabel = (status: string): string => {
   switch (status) {
     case TractorStatusSelfDriving:
@@ -63,7 +64,6 @@ function TractorRouteOverlayInner({
   const map = useMap();
   const [screenPos, setScreenPos] = useState<{ x: number; y: number } | null>(null);
 
-  // Calculate screen position from map position
   const updateScreenPosition = useCallback(() => {
     if (!tractor || !animatedPosition) return;
     const mapPos = ConvertToMapCoords2(animatedPosition.x, animatedPosition.y);
@@ -71,12 +71,10 @@ function TractorRouteOverlayInner({
     setScreenPos({ x: point.x, y: point.y });
   }, [map, tractor, animatedPosition]);
 
-  // Update position when animated position changes
   useEffect(() => {
     updateScreenPosition();
   }, [updateScreenPosition]);
 
-  // Update position when map moves/zooms
   useMapEvents({
     move: updateScreenPosition,
     zoom: updateScreenPosition,
@@ -89,144 +87,90 @@ function TractorRouteOverlayInner({
 
   return (
     <>
-      {/* Popover follows tractor position */}
       {screenPos && showPopover && (
-        <Paper
-          elevation={8}
+        <Card
           onMouseMove={(e) => e.stopPropagation()}
           onMouseOver={(e) => e.stopPropagation()}
           onMouseEnter={(e) => e.stopPropagation()}
           onMouseLeave={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
-          sx={{
-            position: 'absolute',
+          className="absolute z-[1500] p-3 pr-12 min-w-[200px] max-w-[350px] rounded-md pointer-events-auto shadow-lg"
+          style={{
             left: screenPos.x + 20,
             top: screenPos.y + 10,
-            zIndex: 1500,
-            p: 2,
-            pr: 6,
-            minWidth: 200,
-            maxWidth: 350,
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-            pointerEvents: 'auto',
           }}
         >
-          <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
-            <IconButton size="small" onClick={onHide} title="Hide popover">
+          <div className="absolute top-2 right-2 flex gap-1">
+            <Button variant="ghost" size="icon-sm" onClick={onHide} title="Hide popover">
               <Iconify icon="mdi:eye-off" width={18} />
-            </IconButton>
-            <IconButton size="small" onClick={onClose} title="Deselect">
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={onClose} title="Deselect">
               <Iconify icon="mdi:close" width={18} />
-            </IconButton>
-          </Box>
-          <Box sx={{ mb: 0.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              Tractor
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {tractor.name}
-            </Typography>
-          </Box>
+            </Button>
+          </div>
+          <div className="mb-1">
+            <span className="text-xs text-muted-foreground">Tractor</span>
+            <p className="text-sm font-medium">{tractor.name}</p>
+          </div>
 
-          {/* Status info */}
-          <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box
-                sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  backgroundColor: getStatusColor(tractor.status),
-                }}
+          <div className="mt-2 flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: getStatusColor(tractor.status) }}
               />
-              <Typography variant="caption" color="text.secondary">
+              <span className="text-xs text-muted-foreground">
                 Status: {getStatusLabel(tractor.status)}
-              </Typography>
-            </Box>
-          </Box>
+              </span>
+            </div>
+          </div>
 
-          {/* Fuel info */}
           {tractor.fuel && (
-            <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Iconify icon="mdi:gas-station" width={14} sx={{ color: 'text.secondary' }} />
-                <Typography variant="caption" color="text.secondary">
+            <div className="mt-2 pt-2 border-t border-border">
+              <div className="flex items-center gap-1">
+                <Iconify icon="mdi:gas-station" width={14} className="text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
                   Fuel: {fShortenNumber(tractor.fuel.amount, [], { decimals: 1 })}
-                </Typography>
-              </Box>
-            </Box>
+                </span>
+              </div>
+            </div>
           )}
 
-          {/* Inventory */}
           {tractor.inventory && tractor.inventory.length > 0 && (
-            <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: 'block', mb: 0.5 }}
-              >
-                Inventory:
-              </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 0.5,
-                  maxHeight: 100,
-                  overflowY: 'auto',
-                }}
-              >
+            <div className="mt-2 pt-2 border-t border-border">
+              <span className="text-xs text-muted-foreground block mb-1">Inventory:</span>
+              <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto">
                 {tractor.inventory.map((item, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                    }}
-                  >
-                    <Box
-                      component="img"
+                  <div key={idx} className="flex items-center gap-1">
+                    <img
                       src={`assets/images/satisfactory/64x64/${item.name}.png`}
                       alt={item.name}
-                      sx={{
-                        width: 16,
-                        height: 16,
-                        objectFit: 'contain',
-                      }}
+                      className="w-4 h-4 object-contain"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
                     />
-                    <Typography variant="caption" color="text.primary">
+                    <span className="text-xs text-foreground">
                       {fShortenNumber(item.count, [], { decimals: 1 })}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ fontSize: '0.65rem' }}
-                    >
-                      {item.name}
-                    </Typography>
-                  </Box>
+                    </span>
+                    <span className="text-[0.65rem] text-muted-foreground">{item.name}</span>
+                  </div>
                 ))}
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
 
-          {/* Speed info (only show when moving) */}
           {isMoving && (
-            <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" color="text.secondary">
+            <div className="mt-2 pt-2 border-t border-border">
+              <span className="text-xs text-muted-foreground">
                 Speed: {tractor.speed.toFixed(0)} km/h
-              </Typography>
-            </Box>
+              </span>
+            </div>
           )}
 
           <LocationInfo x={tractor.x} y={tractor.y} z={tractor.z} />
-        </Paper>
+        </Card>
       )}
     </>
   );

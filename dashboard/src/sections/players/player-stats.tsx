@@ -1,12 +1,19 @@
-import { Card, Typography } from '@mui/material';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+/**
+ * Player stats card showing basic player information.
+ */
 export default function PlayerStats({ player }: { player: any }) {
   return (
     <Card>
-      <Typography variant="h5">Player Stats</Typography>
-      <Typography variant="body1">Player: {player.name}</Typography>
-      <Typography variant="body1">HP: {player.hp}</Typography>
-      <Typography variant="body1">Color: {player.color}</Typography>
+      <CardHeader>
+        <CardTitle>Player Stats</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-1">
+        <p>Player: {player.name}</p>
+        <p>HP: {player.hp}</p>
+        <p>Color: {player.color}</p>
+      </CardContent>
     </Card>
   );
 }

@@ -1,10 +1,20 @@
-import { Iconify } from 'src/components/iconify';
-
-// ----------------------------------------------------------------------
+import {
+  Bug,
+  Factory,
+  LayoutDashboard,
+  Map,
+  Network,
+  Plane,
+  Server,
+  Settings,
+  TrainFront,
+  Users,
+  Zap,
+} from 'lucide-react';
 
 type NavItem = {
   title: string;
-  path: string;
+  path?: string;
   icon: React.ReactNode;
   group: 'main' | 'sub' | 'debug';
   children?: NavItem[];
@@ -14,74 +24,77 @@ const baseNavData: NavItem[] = [
   {
     title: 'Dashboard',
     path: '/',
-    icon: <Iconify icon="mage:dashboard-fill" width={24} height={24} />,
+    icon: <LayoutDashboard size={24} />,
     group: 'main',
   },
   {
     title: 'Map',
     path: '/map',
-    icon: <Iconify icon="mdi:map" width={24} height={24} />,
+    icon: <Map size={24} />,
     group: 'main',
   },
   {
     title: 'Production',
     path: '/production',
-    icon: <Iconify icon="material-symbols:factory" width={24} height={24} />,
+    icon: <Factory size={24} />,
     group: 'main',
   },
   {
     title: 'Power',
     path: '/power',
-    icon: <Iconify icon="mdi:flash" width={24} height={24} />,
+    icon: <Zap size={24} />,
     group: 'main',
   },
   {
     title: 'Trains',
     path: '/trains',
-    icon: <Iconify icon="mdi:train" width={24} height={24} />,
+    icon: <TrainFront size={24} />,
     group: 'main',
   },
   {
     title: 'Drones',
     path: '/drones',
-    icon: <Iconify icon="mdi:drone" width={24} height={24} />,
+    icon: <Plane size={24} />,
     group: 'main',
   },
   {
     title: 'Players',
     path: '/players',
-    icon: <Iconify icon="mdi:account-group" width={24} height={24} />,
+    icon: <Users size={24} />,
     group: 'main',
   },
   {
     title: 'Settings',
     path: '/settings',
-    icon: <Iconify icon="mdi:cog" width={24} height={24} />,
+    icon: <Settings size={24} />,
     group: 'main',
   },
 ];
 
 const debugNavItem: NavItem = {
   title: 'Debug',
-  path: '/debug',
-  icon: <Iconify icon="mdi:bug" width={24} height={24} />,
+  icon: <Bug size={24} />,
   group: 'debug',
   children: [
     {
       title: 'Endpoints',
       path: '/debug',
-      icon: <Iconify icon="mdi:api" width={20} height={20} />,
+      icon: <Network size={20} />,
       group: 'debug',
     },
     {
       title: 'Nodes',
       path: '/debug/nodes',
-      icon: <Iconify icon="mdi:server-network" width={20} height={20} />,
+      icon: <Server size={20} />,
       group: 'debug',
     },
   ],
 };
 
+/**
+ * Returns navigation data for the dashboard sidebar based on debug mode setting.
+ * Includes main navigation items and conditionally adds debug items.
+ */
 export function getNavData(isDebugMode: boolean): NavItem[] {
   if (isDebugMode) {
     return [...baseNavData, debugNavItem];

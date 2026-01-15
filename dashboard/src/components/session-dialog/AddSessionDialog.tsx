@@ -1,27 +1,23 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  Collapse,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  IconButton,
-  InputAdornment,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { SessionInfo } from 'src/apiTypes';
-import { Iconify } from 'src/components/iconify';
-import { useSession } from 'src/contexts/sessions';
-import { sessionApi } from 'src/services/sessionApi';
+import { AlertCircle, Laptop, Loader2, Network, Plus, TestTube } from 'lucide-react';
+import { SessionInfo } from '@/apiTypes';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import { useSession } from '@/contexts/sessions';
+import { sessionApi } from '@/services/sessionApi';
 
 interface AddSessionDialogProps {
   open: boolean;
@@ -30,6 +26,10 @@ interface AddSessionDialogProps {
 
 const DEFAULT_FRM_PORT = '8080';
 
+/**
+ * AddSessionDialog provides a modal form for adding new sessions to the dashboard.
+ * Users can connect to a real Satisfactory FRM server or create a demo session with mock data.
+ */
 export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClose }) => {
   const { createSession, createMockSession, previewSession, mockExists } = useSession();
 
@@ -43,7 +43,6 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
     null
   );
 
-  // Fetch client IP when dialog opens
   useEffect(() => {
     if (open) {
       sessionApi
@@ -81,7 +80,6 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
       const info = await previewSession(address.trim());
       setTestResult({ success: true, info });
 
-      // Auto-fill name with session name if empty
       if (!name.trim() && info.sessionName) {
         setName(info.sessionName);
       }
@@ -148,131 +146,151 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Session</DialogTitle>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Session</DialogTitle>
+        </DialogHeader>
 
-      <DialogContent>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+        <div className="flex flex-col gap-4 pt-1">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="size-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <TextField
-            label="Session Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="My Factory"
-            fullWidth
-            helperText="A friendly name for this session"
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="session-name">Session Name</Label>
+            <Input
+              id="session-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="My Factory"
+            />
+            <p className="text-xs text-muted-foreground">A friendly name for this session</p>
+          </div>
 
-          <TextField
-            label="Server Address"
-            value={address}
-            onChange={(e) => {
-              setAddress(e.target.value);
-              setTestResult(null);
-            }}
-            placeholder="192.168.1.100:8080"
-            fullWidth
-            helperText="IP address and port of the Ficsit Remote Monitoring server"
-            InputProps={{
-              endAdornment: clientIP && (
-                <InputAdornment position="end">
-                  <Tooltip title={`Use this computer (${clientIP}:${DEFAULT_FRM_PORT})`}>
-                    <IconButton onClick={handleUseThisComputer} edge="end" size="small">
-                      <Iconify icon="mdi:laptop" />
-                    </IconButton>
-                  </Tooltip>
-                </InputAdornment>
-              ),
-            }}
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="server-address">Server Address</Label>
+            <div className="relative">
+              <Input
+                id="server-address"
+                value={address}
+                onChange={(e) => {
+                  setAddress(e.target.value);
+                  setTestResult(null);
+                }}
+                placeholder="192.168.1.100:8080"
+                className={cn(clientIP && 'pr-10')}
+              />
+              {clientIP && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={handleUseThisComputer}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      <Laptop className="size-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Use this computer ({clientIP}:{DEFAULT_FRM_PORT})
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              IP address and port of the Ficsit Remote Monitoring server
+            </p>
+          </div>
 
-          <Collapse in={testResult?.success && !!testResult?.info} timeout={300}>
-            <Card variant="outlined">
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                <Typography variant="subtitle2" color="success.main" sx={{ mb: 1 }}>
-                  Connection Successful
-                </Typography>
+          <div
+            className={cn(
+              'grid transition-all duration-300',
+              testResult?.success && testResult?.info
+                ? 'grid-rows-[1fr] opacity-100'
+                : 'grid-rows-[0fr] opacity-0'
+            )}
+          >
+            <div className="overflow-hidden">
+              <Card className="border py-3">
+                <CardContent className="space-y-2 px-4 py-0">
+                  <p className="text-sm font-medium text-green-500">Connection Successful</p>
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Save Name
-                    </Typography>
-                    <Typography variant="body2">{testResult?.info?.sessionName}</Typography>
-                  </Box>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Save Name</span>
+                      <span className="text-sm">{testResult?.info?.sessionName}</span>
+                    </div>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Play Time
-                    </Typography>
-                    <Typography variant="body2">
-                      {testResult?.info?.totalPlayDurationText ||
-                        (testResult?.info && formatPlayTime(testResult.info))}
-                    </Typography>
-                  </Box>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Total Play Time</span>
+                      <span className="text-sm">
+                        {testResult?.info?.totalPlayDurationText ||
+                          (testResult?.info && formatPlayTime(testResult.info))}
+                      </span>
+                    </div>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      In-Game Days
-                    </Typography>
-                    <Typography variant="body2">{testResult?.info?.passedDays}</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Collapse>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">In-Game Days</span>
+                      <span className="text-sm">{testResult?.info?.passedDays}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
 
           {!mockExists && (
             <>
-              <Divider sx={{ my: 1 }}>
-                <Typography variant="caption" color="text.secondary">
+              <div className="relative my-1">
+                <Separator />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
                   OR
-                </Typography>
-              </Divider>
+                </span>
+              </div>
 
               <Button
-                variant="outlined"
+                variant="outline"
                 onClick={handleCreateMock}
                 disabled={isCreating}
-                startIcon={
-                  isCreating ? <CircularProgress size={20} /> : <Iconify icon="mdi:test-tube" />
-                }
+                className="w-full"
               >
+                {isCreating ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <TestTube className="size-4" />
+                )}
                 Add Demo Session
               </Button>
 
-              <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+              <p className="text-center text-xs text-muted-foreground">
                 Try Satisfactory Dashboard with simulated data
-              </Typography>
+              </p>
             </>
           )}
-        </Box>
-      </DialogContent>
+        </div>
 
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button
-          variant="outlined"
-          onClick={handleTest}
-          disabled={isTesting || !address.trim()}
-          startIcon={isTesting ? <CircularProgress size={20} /> : <Iconify icon="mdi:connection" />}
-        >
-          {isTesting ? 'Testing...' : 'Test'}
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleCreate}
-          disabled={isCreating || !name.trim() || !address.trim()}
-          startIcon={isCreating ? <CircularProgress size={20} /> : <Iconify icon="mdi:plus" />}
-        >
-          {isCreating ? 'Adding...' : 'Add'}
-        </Button>
-      </DialogActions>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="ghost" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button variant="outline" onClick={handleTest} disabled={isTesting || !address.trim()}>
+            {isTesting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Network className="size-4" />
+            )}
+            {isTesting ? 'Testing...' : 'Test'}
+          </Button>
+          <Button onClick={handleCreate} disabled={isCreating || !name.trim() || !address.trim()}>
+            {isCreating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            {isCreating ? 'Adding...' : 'Add'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 };

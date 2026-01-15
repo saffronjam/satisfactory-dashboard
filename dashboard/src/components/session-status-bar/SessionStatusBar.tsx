@@ -1,37 +1,23 @@
-import { Box, Typography, useTheme } from '@mui/material';
-import { Iconify } from 'src/components/iconify';
-import { useSession } from 'src/contexts/sessions';
+import { Iconify } from '@/components/iconify';
+import { useSession } from '@/contexts/sessions';
 
+/**
+ * Status bar displayed at the bottom of the screen when a session is offline.
+ * Shows an alert with error styling to inform users the FRM server is not responding.
+ */
 export const SessionStatusBar = () => {
-  const theme = useTheme();
   const { selectedSession, isLoading } = useSession();
 
-  // Don't show if loading, online, or no session selected
   if (isLoading || !selectedSession || selectedSession.isOnline) {
     return null;
   }
 
   return (
-    <Box
-      sx={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 36,
-        backgroundColor: theme.palette.error.dark,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 1,
-        zIndex: theme.zIndex.snackbar,
-        px: 2,
-      }}
-    >
-      <Iconify icon="mdi:alert-circle" sx={{ color: 'white', width: 18, height: 18 }} />
-      <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
+    <div className="fixed bottom-0 left-0 right-0 h-9 bg-destructive flex items-center justify-center gap-2 z-50 px-2">
+      <Iconify icon="mdi:alert-circle" width={18} className="text-white" />
+      <span className="text-sm text-white font-medium">
         Session is offline. Make sure the FRM server is running.
-      </Typography>
-    </Box>
+      </span>
+    </div>
   );
 };

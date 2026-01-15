@@ -1,27 +1,26 @@
 import { Icon } from '@iconify/react';
-import Box from '@mui/material/Box';
 import { forwardRef } from 'react';
-
-import { iconifyClasses } from './classes';
+import { cn } from '@/lib/utils';
 
 import type { IconifyProps } from './types';
 
-// ----------------------------------------------------------------------
-
-export const Iconify = forwardRef<SVGElement, IconifyProps>(
-  ({ className, width = 20, sx, ...other }, ref) => (
-    <Box
+/**
+ * Iconify wrapper component that provides consistent styling and sizing for icons.
+ * Uses @iconify/react under the hood with Tailwind styling support.
+ */
+export const Iconify = forwardRef<SVGSVGElement, IconifyProps>(
+  ({ className, width = 20, style, ...other }, ref) => (
+    <Icon
       ref={ref}
-      component={Icon}
-      className={iconifyClasses.root.concat(className ? ` ${className}` : '')}
-      sx={{
+      className={cn('shrink-0 inline-flex', className)}
+      style={{
         width,
         height: width,
-        flexShrink: 0,
-        display: 'inline-flex',
-        ...sx,
+        ...style,
       }}
       {...other}
     />
   )
 );
+
+Iconify.displayName = 'Iconify';

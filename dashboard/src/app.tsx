@@ -1,17 +1,13 @@
-import 'src/global.css';
+import 'src/index.css';
 
-import CloseIcon from '@mui/icons-material/Close';
-import { Alert, IconButton, Snackbar } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 import { useScrollToTop } from 'src/hooks/use-scroll-to-top';
 import { Router } from 'src/routes/sections';
 
-import { ThemeProvider } from 'src/theme/theme-provider';
 import { ConnectionCheckerProvider } from './contexts/api/ConnectionChecker';
 import { useAuth } from './contexts/auth/useAuth';
-
-// ----------------------------------------------------------------------
 
 /**
  * Root application component that handles routing and global notifications.
@@ -27,86 +23,28 @@ export default function App() {
     clearSessionExpired,
     clearJustLoggedIn,
   } = useAuth();
-  const [showDefaultPasswordWarning, setShowDefaultPasswordWarning] = useState(false);
-  const [showSessionExpired, setShowSessionExpired] = useState(false);
 
   useEffect(() => {
     if (justLoggedIn && usedDefaultPassword) {
-      setShowDefaultPasswordWarning(true);
+      toast.warning(
+        'You are using the default password. Please change it in Settings for security.',
+        { duration: 10000 }
+      );
       clearJustLoggedIn();
     }
   }, [justLoggedIn, usedDefaultPassword, clearJustLoggedIn]);
 
   useEffect(() => {
     if (sessionExpired) {
-      setShowSessionExpired(true);
+      toast.info('Session expired. Please log in again.', { duration: 5000 });
       clearSessionExpired();
     }
   }, [sessionExpired, clearSessionExpired]);
 
-  const handleCloseDefaultPasswordWarning = (
-    _event?: React.SyntheticEvent | Event,
-    reason?: string
-  ) => {
-    if (reason !== 'clickaway') {
-      setShowDefaultPasswordWarning(false);
-    }
-  };
-
-  const handleCloseSessionExpired = (_event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason !== 'clickaway') {
-      setShowSessionExpired(false);
-    }
-  };
-
   return (
-    <ThemeProvider>
+    <>
       <ConnectionCheckerProvider />
-      <Snackbar
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        open={showDefaultPasswordWarning}
-        autoHideDuration={10000}
-        onClose={handleCloseDefaultPasswordWarning}
-      >
-        <Alert
-          severity="warning"
-          action={
-            <IconButton
-              aria-label="close"
-              color="inherit"
-              size="small"
-              onClick={handleCloseDefaultPasswordWarning}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          }
-        >
-          You are using the default password. Please change it in Settings for security.
-        </Alert>
-      </Snackbar>
-      <Snackbar
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        open={showSessionExpired}
-        autoHideDuration={5000}
-        onClose={handleCloseSessionExpired}
-      >
-        <Alert
-          severity="info"
-          action={
-            <IconButton
-              aria-label="close"
-              color="inherit"
-              size="small"
-              onClick={handleCloseSessionExpired}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          }
-        >
-          Session expired. Please log in again.
-        </Alert>
-      </Snackbar>
       <Router />
-    </ThemeProvider>
+    </>
   );
 }

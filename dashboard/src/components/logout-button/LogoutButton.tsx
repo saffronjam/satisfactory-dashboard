@@ -1,8 +1,10 @@
-import { Box, Button, CircularProgress } from '@mui/material';
+import { LogOut } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import { Iconify } from 'src/components/iconify';
-import { useAuth } from 'src/contexts/auth/useAuth';
-import { authApi } from 'src/services/auth';
+
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { useAuth } from '@/contexts/auth/useAuth';
+import { authApi } from '@/services/auth';
 
 /**
  * Logout button component for the sidebar navigation.
@@ -25,36 +27,16 @@ export function LogoutButton() {
   }, [clearAuth]);
 
   return (
-    <Box sx={{ px: 2, pb: 1 }}>
+    <div className="px-2 pb-1">
       <Button
-        fullWidth
-        variant="outlined"
-        color="inherit"
+        variant="outline"
         onClick={handleLogout}
         disabled={isLoggingOut}
-        startIcon={
-          isLoggingOut ? (
-            <CircularProgress size={16} color="inherit" />
-          ) : (
-            <Iconify icon="mdi:logout" width={20} height={20} />
-          )
-        }
-        sx={{
-          justifyContent: 'flex-start',
-          px: 2,
-          py: 1,
-          borderRadius: 2,
-          typography: 'body2',
-          fontWeight: 'fontWeightMedium',
-          borderColor: 'divider',
-          '&:hover': {
-            borderColor: 'text.secondary',
-            bgcolor: 'action.hover',
-          },
-        }}
+        className="w-full justify-start gap-2 rounded-lg px-2 py-1 text-sm font-medium"
       >
+        {isLoggingOut ? <Spinner className="size-5" /> : <LogOut className="size-5" />}
         {isLoggingOut ? 'Logging out...' : 'Logout'}
       </Button>
-    </Box>
+    </div>
   );
 }

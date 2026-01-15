@@ -1,22 +1,14 @@
-import {
-  Box,
-  Card,
-  CardContent,
-  Chip,
-  Grid2 as Grid,
-  Stack,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import { Icon } from '@iconify/react';
 import { Circuit } from 'src/apiTypes';
-import { Iconify } from 'src/components/iconify';
-import { varAlpha } from 'src/theme/styles';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { fPercent, fShortenNumber, WattHoursUnits, WattUnits } from 'src/utils/format-number';
 
+/**
+ * Displays power circuit statistics including production, consumption, and battery status.
+ */
 export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string }) {
-  const theme = useTheme();
-
-  // Battery time to full
   const secondsToFullyCharge = circuit.battery.untilFull;
   const fullyChargedIn = new Date(0, 0, 0, 0, 0, secondsToFullyCharge);
   const formatted = `${String(fullyChargedIn.getHours()).padStart(2, '0')}:${String(fullyChargedIn.getMinutes()).padStart(2, '0')}:${String(fullyChargedIn.getSeconds()).padStart(2, '0')}`;
@@ -25,244 +17,131 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
 
   const getMaxConsumeColor = () => {
     const percentage = (circuit.consumption.max / circuit.production.total) * 100;
-    if (percentage > 80) return theme.palette.warning.main;
-    return theme.palette.success.main;
+    if (percentage > 80) return 'border-yellow-500';
+    return 'border-green-500';
   };
 
   const getConsumeColor = () => {
     const percentage = (circuit.consumption.total / circuit.production.total) * 100;
-    if (percentage > 100) return theme.palette.error.main;
-    if (percentage > 80) return theme.palette.warning.main;
-    return theme.palette.success.main;
+    if (percentage > 100) return 'border-red-500';
+    if (percentage > 80) return 'border-yellow-500';
+    return 'border-green-500';
   };
 
-  const getProduction = () => {
-    if (circuit.production.total === 0) return theme.palette.error.main;
-    return theme.palette.success.main;
+  const getProductionColor = () => {
+    if (circuit.production.total === 0) return 'border-red-500';
+    return 'border-green-500';
   };
 
   const getProductionCapacityColor = () => {
-    if (circuit.capacity.total === 0) return theme.palette.error.main;
-    return theme.palette.success.main;
+    if (circuit.capacity.total === 0) return 'border-red-500';
+    return 'border-green-500';
   };
 
   const getBatteryPercentColor = () => {
-    if (circuit.battery.percentage > 80) return theme.palette.success.main;
-    if (circuit.battery.percentage > 50) return theme.palette.warning.main;
-    return theme.palette.error.main;
+    if (circuit.battery.percentage > 80) return 'border-green-500';
+    if (circuit.battery.percentage > 50) return 'border-yellow-500';
+    return 'border-red-500';
   };
 
   const getBatteryDifferentialColor = () => {
-    // If already full, the battery is not charging
-    if (circuit.battery.percentage === 100) return theme.palette.success.main;
-
-    // If positive, the battery is charging
-    if (circuit.battery.differential > 0) return theme.palette.success.main;
-    // If negative, the battery is discharging
-    if (circuit.battery.differential < 0) return theme.palette.error.main;
-    return theme.palette.warning.main;
+    if (circuit.battery.percentage === 100) return 'border-green-500';
+    if (circuit.battery.differential > 0) return 'border-green-500';
+    if (circuit.battery.differential < 0) return 'border-red-500';
+    return 'border-yellow-500';
   };
 
   const getBatteryCapacityColor = () => {
-    if (circuit.battery.capacity === 0) return theme.palette.error.main;
+    if (circuit.battery.capacity === 0) return 'border-red-500';
 
     const hoursCovered = circuit.battery.capacity / circuit.consumption.total;
-    if (hoursCovered > 10) return theme.palette.success.main;
-    if (hoursCovered > 5) return theme.palette.warning.main;
-    return theme.palette.error.main;
+    if (hoursCovered > 10) return 'border-green-500';
+    if (hoursCovered > 5) return 'border-yellow-500';
+    return 'border-red-500';
   };
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        marginBottom: '30px',
-        padding: '20px',
-      }}
-    >
-      <CardContent>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginBottom: 2,
-          }}
-        >
-          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', marginRight: 2 }}>
-            <Typography variant="h5">{name}</Typography>
-          </Box>
-          <Stack direction="row" spacing={1}>
+    <Card className="mb-8 p-5">
+      <CardContent className="p-0">
+        <div className="mb-4 flex flex-row items-start justify-between">
+          <div className="mr-2 flex flex-row items-center">
+            <h2 className="text-xl font-semibold">{name}</h2>
+          </div>
+          <div className="flex flex-row gap-2">
             {circuit.fuseTriggered && (
-              <Chip
-                variant="filled"
-                sx={{
-                  paddingLeft: '6px',
-                  fontWeight: 'bold',
-                  backgroundColor: varAlpha(theme.palette.error.darkerChannel, 1),
-                  color: varAlpha(theme.palette.error.lighterChannel, 0.7),
-                }}
-                color="error"
-                label="Fuse Triggered"
-                icon={<Iconify icon="bi:exclamation-triangle" width="auto" height="auto" />}
-              />
+              <Badge variant="destructive" className="gap-1.5 bg-red-900/80 px-3 py-1 text-red-200">
+                <Icon icon="bi:exclamation-triangle" className="h-4 w-4" />
+                Fuse Triggered
+              </Badge>
             )}
 
             {!hasBattery && (
-              // Icon = exclamation mark
-              <Chip
-                sx={{ paddingLeft: '6px' }}
-                variant="filled"
-                label="No Battery connected"
-                icon={
-                  <Iconify icon="fluent:plug-disconnected-16-regular" width="auto" height="auto" />
-                }
-              />
+              <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+                <Icon icon="fluent:plug-disconnected-16-regular" className="h-4 w-4" />
+                No Battery connected
+              </Badge>
             )}
-          </Stack>
-        </Box>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card
-              variant="outlined"
-              sx={{
-                padding: theme.spacing(2),
-                margin: 0,
-                height: '100%',
-                borderColor: getProductionCapacityColor(),
-              }}
-            >
-              <Typography variant="h6">
-                {fShortenNumber(circuit.capacity.total, WattUnits, { decimals: 3 })}
-              </Typography>
-              <Typography variant="body2">Power Capacity</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card
-              variant="outlined"
-              sx={{
-                padding: theme.spacing(2),
-                margin: 0,
-                height: '100%',
-                borderColor: getProduction(),
-              }}
-            >
-              <Typography variant="h6">
-                {fShortenNumber(circuit.production.total, WattUnits, { decimals: 3 })}
-              </Typography>
-              <Typography variant="body2">Power Production</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card
-              variant="outlined"
-              sx={{
-                padding: theme.spacing(2),
-                margin: 0,
-                height: '100%',
-                borderColor: getConsumeColor(),
-              }}
-            >
-              <Typography variant="h6">
-                {fShortenNumber(circuit.consumption.total, WattUnits, { decimals: 3 })}
-              </Typography>
-              <Typography variant="body2">Current Consumption</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card
-              variant="outlined"
-              sx={{
-                padding: theme.spacing(2),
-                margin: 0,
-                height: '100%',
-                borderColor: getMaxConsumeColor(),
-              }}
-            >
-              <Typography variant="h6">
-                {fShortenNumber(circuit.consumption.max, WattUnits, { decimals: 3 })}
-              </Typography>
-              <Typography variant="body2">Max Consumption</Typography>
-            </Card>
-          </Grid>
-        </Grid>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <Card className={cn('h-full p-4', getProductionCapacityColor())}>
+            <h3 className="text-lg font-semibold">
+              {fShortenNumber(circuit.capacity.total, WattUnits, { decimals: 3 })}
+            </h3>
+            <p className="text-sm text-muted-foreground">Power Capacity</p>
+          </Card>
+          <Card className={cn('h-full p-4', getProductionColor())}>
+            <h3 className="text-lg font-semibold">
+              {fShortenNumber(circuit.production.total, WattUnits, { decimals: 3 })}
+            </h3>
+            <p className="text-sm text-muted-foreground">Power Production</p>
+          </Card>
+          <Card className={cn('h-full p-4', getConsumeColor())}>
+            <h3 className="text-lg font-semibold">
+              {fShortenNumber(circuit.consumption.total, WattUnits, { decimals: 3 })}
+            </h3>
+            <p className="text-sm text-muted-foreground">Current Consumption</p>
+          </Card>
+          <Card className={cn('h-full p-4', getMaxConsumeColor())}>
+            <h3 className="text-lg font-semibold">
+              {fShortenNumber(circuit.consumption.max, WattUnits, { decimals: 3 })}
+            </h3>
+            <p className="text-sm text-muted-foreground">Max Consumption</p>
+          </Card>
+        </div>
 
         {hasBattery && (
           <>
-            <Grid container sx={{ marginTop: '30px' }}>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Typography variant="h6">Battery</Typography>
-              </Grid>
-              <Grid></Grid>
-            </Grid>
-            <Grid container spacing={2} sx={{ marginTop: '20px' }}>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    padding: theme.spacing(2),
-                    margin: 0,
-                    height: '100%',
-                    borderColor: hasBattery ? getBatteryCapacityColor() : '',
-                  }}
-                >
-                  <Typography variant="h6">
-                    {fShortenNumber(circuit.battery.capacity, WattHoursUnits, { decimals: 3 })}
-                  </Typography>
-                  <Typography variant="body2">Battery Capacity</Typography>
-                </Card>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    padding: theme.spacing(2),
-                    margin: 0,
-                    height: '100%',
-                    borderColor: hasBattery ? getBatteryPercentColor() : '',
-                  }}
-                >
-                  <Typography variant="h6">
-                    {hasBattery
-                      ? `${fPercent(circuit.battery.percentage, { decimals: 0 })} %`
-                      : '-'}
-                  </Typography>
-                  <Typography variant="body2">Battery Percent</Typography>
-                </Card>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    padding: theme.spacing(2),
-                    margin: 0,
-                    height: '100%',
-                    borderColor: hasBattery ? getBatteryDifferentialColor() : '',
-                  }}
-                >
-                  <Typography variant="h6">
-                    {hasBattery
-                      ? fShortenNumber(circuit.battery.differential, WattUnits, { decimals: 3 })
-                      : '-'}
-                  </Typography>
-                  <Typography variant="body2">Battery Differential</Typography>
-                </Card>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    padding: theme.spacing(2),
-                    margin: 0,
-                    height: '100%',
-                  }}
-                >
-                  <Typography variant="h6">{formatted}</Typography>
-                  <Typography variant="body2">Battery Until Time</Typography>
-                </Card>
-              </Grid>
-            </Grid>
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold">Battery</h3>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <Card className={cn('h-full p-4', hasBattery ? getBatteryCapacityColor() : '')}>
+                <h3 className="text-lg font-semibold">
+                  {fShortenNumber(circuit.battery.capacity, WattHoursUnits, { decimals: 3 })}
+                </h3>
+                <p className="text-sm text-muted-foreground">Battery Capacity</p>
+              </Card>
+              <Card className={cn('h-full p-4', hasBattery ? getBatteryPercentColor() : '')}>
+                <h3 className="text-lg font-semibold">
+                  {hasBattery ? `${fPercent(circuit.battery.percentage, { decimals: 0 })} %` : '-'}
+                </h3>
+                <p className="text-sm text-muted-foreground">Battery Percent</p>
+              </Card>
+              <Card className={cn('h-full p-4', hasBattery ? getBatteryDifferentialColor() : '')}>
+                <h3 className="text-lg font-semibold">
+                  {hasBattery
+                    ? fShortenNumber(circuit.battery.differential, WattUnits, { decimals: 3 })
+                    : '-'}
+                </h3>
+                <p className="text-sm text-muted-foreground">Battery Differential</p>
+              </Card>
+              <Card className="h-full p-4">
+                <h3 className="text-lg font-semibold">{formatted}</h3>
+                <p className="text-sm text-muted-foreground">Battery Until Time</p>
+              </Card>
+            </div>
           </>
         )}
       </CardContent>

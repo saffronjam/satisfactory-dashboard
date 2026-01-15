@@ -1,25 +1,22 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  FormControl,
-  Grid2 as Grid,
-  IconButton,
-  InputAdornment,
-  InputLabel,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { CheckCircle, Eye, EyeOff, Lock, Palette, Terminal } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+
+import { useTheme } from '@/components/theme-provider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+
 import { Settings } from 'src/apiTypes';
-import { Iconify } from 'src/components/iconify';
-import { DashboardContent } from 'src/layouts/dashboard';
 import { authApi } from 'src/services/auth';
 import { settingsApi } from 'src/services/settingsApi';
 
@@ -28,6 +25,9 @@ import { settingsApi } from 'src/services/settingsApi';
  * Allows authenticated users to change the dashboard access key.
  */
 export const SettingsView = () => {
+  // Theme state
+  const { theme, setTheme } = useTheme();
+
   // Settings state
   const [settings, setSettings] = useState<Settings | null>(null);
   const [logLevel, setLogLevel] = useState<string>('Info');
@@ -116,204 +116,232 @@ export const SettingsView = () => {
     currentPassword.length > 0 && newPassword.length > 0 && confirmPassword.length > 0;
 
   return (
-    <DashboardContent maxWidth="xl">
-      <Typography variant="h4" sx={{ mb: 5 }}>
-        Settings
-      </Typography>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
 
-      <Grid container spacing={3}>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Change Access Key - Left Side */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                <Iconify icon="mdi:lock-outline" sx={{ width: 24, height: 24 }} />
-                <Typography variant="h6">Change Access Key</Typography>
-              </Box>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="size-5" />
+              Change Access Key
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-              {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
-                  {error}
-                </Alert>
-              )}
+            {success && (
+              <Alert className="mb-4 border-green-500/50 bg-green-500/10">
+                <CheckCircle className="size-4 text-green-500" />
+                <AlertDescription className="text-green-500">{success}</AlertDescription>
+              </Alert>
+            )}
 
-              {success && (
-                <Alert severity="success" sx={{ mb: 3 }}>
-                  {success}
-                </Alert>
-              )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="current-password">Current Password</Label>
+                <div className="relative">
+                  <Input
+                    id="current-password"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    disabled={isSubmitting}
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowCurrentPassword((prev) => !prev)}
+                    disabled={isSubmitting}
+                  >
+                    {showCurrentPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                    <span className="sr-only">
+                      {showCurrentPassword ? 'Hide password' : 'Show password'}
+                    </span>
+                  </Button>
+                </div>
+              </div>
 
-              <Box component="form" onSubmit={handleSubmit}>
-                <TextField
-                  fullWidth
-                  label="Current Password"
-                  type={showCurrentPassword ? 'text' : 'password'}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  disabled={isSubmitting}
-                  sx={{ mb: 2 }}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowCurrentPassword((prev) => !prev)}
-                            edge="end"
-                            disabled={isSubmitting}
-                          >
-                            <Iconify icon={showCurrentPassword ? 'mdi:eye-off' : 'mdi:eye'} />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="new-password"
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    disabled={isSubmitting}
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowNewPassword((prev) => !prev)}
+                    disabled={isSubmitting}
+                  >
+                    {showNewPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    <span className="sr-only">
+                      {showNewPassword ? 'Hide password' : 'Show password'}
+                    </span>
+                  </Button>
+                </div>
+              </div>
 
-                <TextField
-                  fullWidth
-                  label="New Password"
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  disabled={isSubmitting}
-                  sx={{ mb: 2 }}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowNewPassword((prev) => !prev)}
-                            edge="end"
-                            disabled={isSubmitting}
-                          >
-                            <Iconify icon={showNewPassword ? 'mdi:eye-off' : 'mdi:eye'} />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirm-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={isSubmitting}
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    disabled={isSubmitting}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                    <span className="sr-only">
+                      {showConfirmPassword ? 'Hide password' : 'Show password'}
+                    </span>
+                  </Button>
+                </div>
+              </div>
 
-                <TextField
-                  fullWidth
-                  label="Confirm New Password"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={isSubmitting}
-                  sx={{ mb: 3 }}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowConfirmPassword((prev) => !prev)}
-                            edge="end"
-                            disabled={isSubmitting}
-                          >
-                            <Iconify icon={showConfirmPassword ? 'mdi:eye-off' : 'mdi:eye'} />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-
-                <Button
-                  fullWidth
-                  size="large"
-                  type="submit"
-                  variant="contained"
-                  disabled={isSubmitting || !isFormValid}
-                  startIcon={
-                    isSubmitting ? <CircularProgress size={20} color="inherit" /> : undefined
-                  }
-                >
-                  {isSubmitting ? 'Changing Password...' : 'Change Password'}
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={isSubmitting || !isFormValid}
+              >
+                {isSubmitting && <Spinner className="mr-2" />}
+                {isSubmitting ? 'Changing Password...' : 'Change Password'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         {/* Log Level - Right Side */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                <Iconify icon="mdi:console-line" sx={{ width: 24, height: 24 }} />
-                <Typography variant="h6">Log Level</Typography>
-              </Box>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Terminal className="size-5" />
+              Log Level
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {settingsError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{settingsError}</AlertDescription>
+              </Alert>
+            )}
 
-              {settingsError && (
-                <Alert severity="error" sx={{ mb: 3 }}>
-                  {settingsError}
-                </Alert>
-              )}
+            {settingsSuccess && (
+              <Alert className="mb-4 border-green-500/50 bg-green-500/10">
+                <CheckCircle className="size-4 text-green-500" />
+                <AlertDescription className="text-green-500">{settingsSuccess}</AlertDescription>
+              </Alert>
+            )}
 
-              {settingsSuccess && (
-                <Alert severity="success" sx={{ mb: 3 }}>
-                  {settingsSuccess}
-                </Alert>
-              )}
-
-              {isLoadingSettings ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-                  <CircularProgress />
-                </Box>
-              ) : (
-                <Box component="form" onSubmit={handleSettingsSubmit}>
-                  <FormControl fullWidth sx={{ mb: 3 }}>
-                    <InputLabel>Log Level</InputLabel>
-                    <Select
-                      value={logLevel}
-                      label="Log Level"
-                      onChange={(e: SelectChangeEvent) => setLogLevel(e.target.value)}
-                      disabled={isUpdatingSettings}
-                      sx={{
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          boxShadow: 'none',
-                        },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          boxShadow: 'none',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          boxShadow: 'none',
-                        },
-                      }}
-                    >
-                      {logLevels.map((level) => (
-                        <MenuItem key={level} value={level}>
-                          {level}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Changes apply immediately to all API and worker instances.
-                  </Typography>
-
-                  <Button
-                    fullWidth
-                    size="large"
-                    type="submit"
-                    variant="contained"
-                    disabled={isUpdatingSettings || logLevel === settings?.logLevel}
-                    startIcon={
-                      isUpdatingSettings ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : undefined
-                    }
+            {isLoadingSettings ? (
+              <div className="flex justify-center py-6">
+                <Spinner className="size-6" />
+              </div>
+            ) : (
+              <form onSubmit={handleSettingsSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="log-level">Log Level</Label>
+                  <Select
+                    value={logLevel}
+                    onValueChange={setLogLevel}
+                    disabled={isUpdatingSettings}
                   >
-                    {isUpdatingSettings ? 'Updating...' : 'Update Settings'}
-                  </Button>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </DashboardContent>
+                    <SelectTrigger id="log-level" className="w-full">
+                      <SelectValue placeholder="Select log level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {logLevels.map((level) => (
+                        <SelectItem key={level} value={level}>
+                          {level}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  Changes apply immediately to all API and worker instances.
+                </p>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  disabled={isUpdatingSettings || logLevel === settings?.logLevel}
+                >
+                  {isUpdatingSettings && <Spinner className="mr-2" />}
+                  {isUpdatingSettings ? 'Updating...' : 'Update Settings'}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Appearance - Third Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="size-5" />
+              Appearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="theme">Theme</Label>
+                <Select value={theme} onValueChange={setTheme}>
+                  <SelectTrigger id="theme" className="w-full">
+                    <SelectValue placeholder="Select theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Choose your preferred color scheme. System follows your device settings.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };

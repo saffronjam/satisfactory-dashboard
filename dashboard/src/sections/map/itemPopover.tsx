@@ -1,7 +1,7 @@
-import { Box, IconButton, Paper, Typography } from '@mui/material';
+import { X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Belt, Cable, Pipe, PipeJunction, SplitterMerger, TrainRail } from 'src/apiTypes';
-import { Iconify } from 'src/components/iconify';
+import { Button } from '@/components/ui/button';
 
 // Clicked infrastructure item types (stations now use hover tooltips)
 export type ClickedItem =
@@ -62,132 +62,97 @@ export function ItemPopover({ item, onClose }: ItemPopoverProps) {
       case 'belt':
         return (
           <>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-              Belt
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {item.data.name || 'Conveyor Belt'}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
+            <span className="text-xs text-muted-foreground mb-0.5 block">Belt</span>
+            <span className="text-sm font-medium block">{item.data.name || 'Conveyor Belt'}</span>
+            <div className="flex gap-2 mt-0.5">
+              <span className="text-xs text-muted-foreground">
                 Length: {formatLength(item.data.length)}
-              </Typography>
+              </span>
               {item.data.itemsPerMinute > 0 && (
-                <Typography variant="caption" color="text.secondary">
+                <span className="text-xs text-muted-foreground">
                   Rate: {formatItemsPerMin(item.data.itemsPerMinute)}
-                </Typography>
+                </span>
               )}
-            </Box>
+            </div>
           </>
         );
 
       case 'pipe':
         return (
           <>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-              Pipe
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {item.data.name || 'Pipeline'}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
+            <span className="text-xs text-muted-foreground mb-0.5 block">Pipe</span>
+            <span className="text-sm font-medium block">{item.data.name || 'Pipeline'}</span>
+            <div className="flex gap-2 mt-0.5">
+              <span className="text-xs text-muted-foreground">
                 Length: {formatLength(item.data.length)}
-              </Typography>
+              </span>
               {item.data.itemsPerMinute > 0 && (
-                <Typography variant="caption" color="text.secondary">
+                <span className="text-xs text-muted-foreground">
                   Flow: {formatItemsPerMin(item.data.itemsPerMinute)}
-                </Typography>
+                </span>
               )}
-            </Box>
+            </div>
           </>
         );
 
       case 'pipeJunction':
         return (
           <>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-              Pipe Junction
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
+            <span className="text-xs text-muted-foreground mb-0.5 block">Pipe Junction</span>
+            <span className="text-sm font-medium block">
               {item.data.name || 'Pipeline Junction'}
-            </Typography>
+            </span>
           </>
         );
 
       case 'splitterMerger':
         return (
           <>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
+            <span className="text-xs text-muted-foreground mb-0.5 block">
               {item.data.type.toLowerCase().includes('merger') ? 'Merger' : 'Splitter'}
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {item.data.type}
-            </Typography>
+            </span>
+            <span className="text-sm font-medium block">{item.data.type}</span>
           </>
         );
 
       case 'cable':
         return (
           <>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-              Power Cable
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {item.data.name || 'Power Line'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            <span className="text-xs text-muted-foreground mb-0.5 block">Power Cable</span>
+            <span className="text-sm font-medium block">{item.data.name || 'Power Line'}</span>
+            <span className="text-xs text-muted-foreground mt-0.5 block">
               Length: {formatLength(item.data.length)}
-            </Typography>
+            </span>
           </>
         );
 
       case 'trainRail':
         return (
           <>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-              Train Rail
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {item.data.type || 'Railway'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            <span className="text-xs text-muted-foreground mb-0.5 block">Train Rail</span>
+            <span className="text-sm font-medium block">{item.data.type || 'Railway'}</span>
+            <span className="text-xs text-muted-foreground mt-0.5 block">
               Length: {formatLength(item.data.length)}
-            </Typography>
+            </span>
           </>
         );
     }
   };
 
   return (
-    <Paper
+    <div
       ref={popoverRef}
-      elevation={8}
-      sx={{
-        position: 'absolute',
-        right: 16,
-        zIndex: 1500,
-        p: 2,
-        pr: 4.5,
-        minWidth: 140,
-        maxWidth: 220,
-        backgroundColor: 'background.paper',
-        borderRadius: 1,
-        pointerEvents: 'auto',
-      }}
+      className="absolute right-4 z-[1500] p-2 pr-9 min-w-[140px] max-w-[220px] bg-card rounded shadow-lg pointer-events-auto border border-border"
     >
-      <IconButton
-        size="small"
+      <Button
+        variant="ghost"
+        size="icon-sm"
         onClick={onClose}
-        sx={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-        }}
+        className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-foreground"
       >
-        <Iconify icon="mdi:close" width={18} />
-      </IconButton>
+        <X className="h-4 w-4" />
+      </Button>
       {renderContent()}
-    </Paper>
+    </div>
   );
 }

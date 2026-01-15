@@ -1,21 +1,16 @@
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import {
-  Autocomplete,
-  Backdrop,
-  Box,
-  Card,
-  CardContent,
-  Checkbox,
-  CircularProgress,
-  Container,
-  Divider,
-  Grid2 as Grid,
-  TextField,
-  Typography,
-  useTheme,
-} from '@mui/material';
 import { useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
+import { useContextSelector } from 'use-context-selector';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
+import { Gauge } from '@/components/gauge/gauge';
 import {
   TrainStatus,
   TrainStatusDerailed,
@@ -25,17 +20,10 @@ import {
   TrainStatusSelfDriving,
 } from 'src/apiTypes';
 import { ApiContext } from 'src/contexts/api/useApi';
-import { DashboardContent } from 'src/layouts/dashboard';
-import { varAlpha } from 'src/theme/styles';
 import { fNumber, fShortenNumber, MetricUnits, WattUnits } from 'src/utils/format-number';
-import { useContextSelector } from 'use-context-selector';
-import { Gauge } from '../gauge';
+
 import { TrainList } from '../train-list';
 
-const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
-const checkedIcon = <CheckBoxIcon fontSize="small" />;
-
-// Status options for dropdown
 const statusOptions: { value: TrainStatus; label: string }[] = [
   { value: TrainStatusSelfDriving, label: 'Self Driving' },
   { value: TrainStatusManualDriving, label: 'Manual Driving' },
@@ -44,6 +32,10 @@ const statusOptions: { value: TrainStatus; label: string }[] = [
   { value: TrainStatusDerailed, label: 'Derailed' },
 ];
 
+/**
+ * Trains page view component displaying train statistics, power consumption, speed gauges,
+ * and a filterable list of all trains with their current status.
+ */
 export function TrainsView() {
   const api = useContextSelector(ApiContext, (v) => {
     return {
@@ -53,22 +45,17 @@ export function TrainsView() {
       isOnline: v.isOnline,
     };
   });
-  const theme = useTheme();
 
-  // Filter state
   const [nameFilter, setNameFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<{ value: TrainStatus; label: string }[]>([]);
+  const [statusFilter, setStatusFilter] = useState<TrainStatus[]>([]);
+  const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
 
-  // Filter trains based on name and status
   const filteredTrains = useMemo(() => {
     return api.trains.filter((train) => {
-      // Name filter (case-insensitive)
       const matchesName =
         nameFilter === '' || train.name.toLowerCase().includes(nameFilter.toLowerCase());
 
-      // Status filter (if any selected)
-      const matchesStatus =
-        statusFilter.length === 0 || statusFilter.some((s) => s.value === train.status);
+      const matchesStatus = statusFilter.length === 0 || statusFilter.includes(train.status);
 
       return matchesName && matchesStatus;
     });
@@ -98,158 +85,150 @@ export function TrainsView() {
       );
     }, 0);
 
+  const toggleStatus = (status: TrainStatus) => {
+    setStatusFilter((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    );
+  };
+
+  if (api.isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Spinner className="size-8 text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <>
-      <Backdrop
-        open={api.isLoading === true}
-        sx={{
-          position: 'absolute',
-          color: theme.palette.primary.main,
-          backgroundColor: varAlpha(theme.palette.background.defaultChannel, 0.5),
-          zIndex: (t) => t.zIndex.drawer + 1,
-        }}
-      >
-        <CircularProgress color="inherit" />
-      </Backdrop>
+    <div className="mx-auto max-w-7xl pt-12">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-col gap-4">
+          <Card className="p-4">
+            <CardContent className="p-0">
+              <h3 className="text-3xl font-bold">{api.trains.length}</h3>
+              <p className="text-muted-foreground">Total Trains</p>
+            </CardContent>
+          </Card>
 
-      {!api.isLoading && (
-        <DashboardContent maxWidth="xl">
-          <Container sx={{ paddingTop: '50px' }}>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h3">{api.trains.length}</Typography>
-                    <Typography variant="inherit">Total Trains</Typography>
-                  </CardContent>
-                </Card>
+          <Card className="p-4">
+            <CardContent className="p-0">
+              <h3 className="text-3xl font-bold">{fShortenNumber(totalCarried(), MetricUnits)}</h3>
+              <p className="text-muted-foreground">Total Carried</p>
+            </CardContent>
+          </Card>
+        </div>
 
-                <Card>
-                  <CardContent>
-                    <Typography variant="h3">
-                      {fShortenNumber(totalCarried(), MetricUnits)}
-                    </Typography>
-                    <Typography variant="inherit">Total Carried</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <h6 className="mb-2 text-lg font-semibold">Power Consumption</h6>
 
-              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6">Power Consumption</Typography>
+            <Gauge value={(totalPowerConsumption() / maxPowerConsumption()) * 100 || 0} />
 
-                    <Gauge value={(totalPowerConsumption() / maxPowerConsumption()) * 100} />
+            <div className="mb-2 flex justify-between">
+              <div className="flex items-center">
+                <span className="text-sm text-muted-foreground">Current</span>
+                <span className="pl-1 font-bold">
+                  {fShortenNumber(totalPowerConsumption(), WattUnits, {
+                    decimals: 1,
+                    ensureConstantDecimals: true,
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center">
+                <span className="text-sm text-muted-foreground">Max</span>
+                <span className="pl-1 font-bold">
+                  {fShortenNumber(maxPowerConsumption(), WattUnits, { decimals: 2 })}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="body2">Current</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
-                          {fShortenNumber(totalPowerConsumption(), WattUnits, {
-                            decimals: 1,
-                            ensureConstantDecimals: true,
-                          })}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="body2">Max</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
-                          {fShortenNumber(maxPowerConsumption(), WattUnits, { decimals: 2 })}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <h6 className="mb-2 text-lg font-semibold">Train Speed (Average)</h6>
 
-              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6">Train Speed (Average)</Typography>
+            <Gauge value={(avgSpeed() / maxSpeed()) * 100} />
 
-                    <Gauge value={(avgSpeed() / maxSpeed()) * 100} />
+            <div className="mb-2 flex justify-between">
+              <div className="flex items-center">
+                <span className="text-sm text-muted-foreground">Current</span>
+                <span className="pl-1 font-bold">{fNumber(avgSpeed(), { decimals: 0 })} km/h</span>
+              </div>
+              <div className="flex items-center">
+                <span className="text-sm text-muted-foreground">Max</span>
+                <span className="pl-1 font-bold">{fNumber(maxSpeed(), { decimals: 0 })} km/h</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="body2">Current</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
-                          {fNumber(avgSpeed(), { decimals: 0 })} km/h
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="body2">Max</Typography>
-                        <Typography variant="body1" sx={{ pl: 0.5, fontWeight: 'bold' }}>
-                          {fNumber(maxSpeed(), { decimals: 0 })} km/h
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-            <Divider sx={{ mb: '50px', mt: '35px' }} />
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 3,
-                mt: 4,
-              }}
-            >
-              <Typography variant="h4">
-                All Trains
-                {filteredTrains.length !== api.trains.length && (
-                  <Typography component="span" variant="body1" color="textSecondary" sx={{ ml: 1 }}>
-                    ({filteredTrains.length} of {api.trains.length})
-                  </Typography>
-                )}
-              </Typography>
-            </Box>
+      <Separator className="mb-12 mt-9" />
 
-            {/* Filters */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-              <TextField
-                label="Search by name"
-                variant="outlined"
-                size="small"
-                value={nameFilter}
-                onChange={(e) => setNameFilter(e.target.value)}
-                sx={{ flex: 1, minWidth: 0 }}
-              />
-              <Autocomplete
-                multiple
-                size="small"
-                options={statusOptions}
-                disableCloseOnSelect
-                getOptionLabel={(option) => option.label}
-                value={statusFilter}
-                onChange={(_, newValue) => setStatusFilter(newValue)}
-                renderOption={(props, option, { selected }) => {
-                  const { key, ...rest } = props as any;
-                  return (
-                    <li key={key} {...rest}>
-                      <Checkbox
-                        icon={icon}
-                        checkedIcon={checkedIcon}
-                        style={{ marginRight: 8 }}
-                        checked={selected}
-                      />
-                      {option.label}
-                    </li>
-                  );
-                }}
-                renderInput={(params) => (
-                  <TextField {...params} label="Filter by status" placeholder="Status" />
-                )}
-                sx={{ flex: 1, minWidth: 0 }}
-              />
-            </Box>
+      <div className="mb-3 mt-4 flex items-center justify-between">
+        <h4 className="text-2xl font-bold">
+          All Trains
+          {filteredTrains.length !== api.trains.length && (
+            <span className="ml-2 text-base font-normal text-muted-foreground">
+              ({filteredTrains.length} of {api.trains.length})
+            </span>
+          )}
+        </h4>
+      </div>
 
-            <TrainList trains={filteredTrains} trainStations={api.trainStations} />
-          </Container>
-        </DashboardContent>
-      )}
-    </>
+      <div className="mb-6 flex gap-4">
+        <Input
+          placeholder="Search by name"
+          value={nameFilter}
+          onChange={(e) => setNameFilter(e.target.value)}
+          className="flex-1"
+        />
+
+        <Popover open={statusPopoverOpen} onOpenChange={setStatusPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="min-w-[180px] justify-between">
+              {statusFilter.length === 0 ? (
+                <span className="text-muted-foreground">Filter by status</span>
+              ) : (
+                <span>{statusFilter.length} status selected</span>
+              )}
+              <Icon icon="mdi:chevron-down" className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-2">
+            <div className="flex flex-col gap-2">
+              {statusOptions.map((option) => (
+                <div key={option.value} className="flex items-center gap-2">
+                  <Checkbox
+                    id={option.value}
+                    checked={statusFilter.includes(option.value)}
+                    onCheckedChange={() => toggleStatus(option.value)}
+                  />
+                  <Label htmlFor={option.value} className="cursor-pointer text-sm font-normal">
+                    {option.label}
+                  </Label>
+                </div>
+              ))}
+              {statusFilter.length > 0 && (
+                <>
+                  <Separator className="my-1" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setStatusFilter([])}
+                    className="justify-start"
+                  >
+                    Clear all
+                  </Button>
+                </>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <TrainList trains={filteredTrains} trainStations={api.trainStations} />
+    </div>
   );
 }

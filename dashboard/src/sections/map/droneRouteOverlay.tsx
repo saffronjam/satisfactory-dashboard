@@ -1,8 +1,9 @@
-import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { LatLngExpression } from 'leaflet';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { Polyline, useMap, useMapEvents } from 'react-leaflet';
 import { Drone, DroneStation, DroneStatusDocking, DroneStatusFlying } from 'src/apiTypes';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Iconify } from 'src/components/iconify';
 import { fShortenNumber } from 'src/utils/format-number';
 import { ConvertToMapCoords2 } from './bounds';
@@ -139,144 +140,105 @@ function DroneRouteOverlayInner({
 
       {/* Popover follows drone position */}
       {screenPos && showPopover && (
-        <Paper
-          elevation={8}
+        <Card
           onMouseMove={(e) => e.stopPropagation()}
           onMouseOver={(e) => e.stopPropagation()}
           onMouseEnter={(e) => e.stopPropagation()}
           onMouseLeave={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
-          sx={{
-            position: 'absolute',
+          className="absolute z-[1500] p-3 pr-12 min-w-[200px] max-w-[350px] rounded-md pointer-events-auto shadow-lg"
+          style={{
             left: screenPos.x + 20,
             top: screenPos.y + 10,
-            zIndex: 1500,
-            p: 2,
-            pr: 6,
-            minWidth: 200,
-            maxWidth: 350,
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-            pointerEvents: 'auto',
           }}
         >
-          <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
-            <IconButton size="small" onClick={onHide} title="Hide popover">
+          <div className="absolute top-2 right-2 flex gap-1">
+            <Button variant="ghost" size="icon-sm" onClick={onHide} title="Hide popover">
               <Iconify icon="mdi:eye-off" width={18} />
-            </IconButton>
-            <IconButton size="small" onClick={onClose} title="Deselect">
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={onClose} title="Deselect">
               <Iconify icon="mdi:close" width={18} />
-            </IconButton>
-          </Box>
-          <Typography variant="body2" fontWeight="medium" sx={{ mb: 0.5 }}>
-            Drone
-          </Typography>
+            </Button>
+          </div>
+          <p className="text-sm font-medium mb-1">Drone</p>
 
           {/* Status and route info */}
-          <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <div className="mt-2 flex flex-col gap-1">
             {isDocking && dockingStationName ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box
-                  className="docking-indicator"
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    backgroundColor: '#3b82f6',
-                  }}
-                />
-                <Typography variant="caption" color="text.secondary">
+              <div className="flex items-center gap-2">
+                <div className="docking-indicator w-2 h-2 rounded-full bg-blue-500" />
+                <span className="text-xs text-muted-foreground">
                   Docking at: {dockingStationName}
-                </Typography>
-              </Box>
+                </span>
+              </div>
             ) : (
               <>
                 {/* Status indicator */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      backgroundColor: getStatusColor(drone.status),
-                    }}
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: getStatusColor(drone.status) }}
                   />
-                  <Typography variant="caption" color="text.secondary">
+                  <span className="text-xs text-muted-foreground">
                     Status: {getStatusLabel(drone.status)}
-                  </Typography>
-                </Box>
+                  </span>
+                </div>
 
                 {/* Route info (only when flying) */}
                 {isFlying && (
                   <>
                     {sourceStation && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            backgroundColor: '#4b5563',
-                          }}
-                        />
-                        <Typography variant="caption" color="text.secondary">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-600" />
+                        <span className="text-xs text-muted-foreground">
                           From: {sourceStation.name}
-                        </Typography>
-                      </Box>
+                        </span>
+                      </div>
                     )}
                     {destinationStation && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            backgroundColor: '#8B5CF6',
-                          }}
-                        />
-                        <Typography variant="caption" color="text.secondary">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-violet-500" />
+                        <span className="text-xs text-muted-foreground">
                           To: {destinationStation.name}
-                        </Typography>
-                      </Box>
+                        </span>
+                      </div>
                     )}
                   </>
                 )}
 
                 {/* Home station (when idle) */}
                 {!isFlying && drone.home && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Iconify icon="mdi:home" width={14} sx={{ color: 'text.secondary' }} />
-                    <Typography variant="caption" color="text.secondary">
-                      Home: {drone.home.name}
-                    </Typography>
-                  </Box>
+                  <div className="flex items-center gap-2">
+                    <Iconify icon="mdi:home" width={14} className="text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Home: {drone.home.name}</span>
+                  </div>
                 )}
               </>
             )}
-          </Box>
+          </div>
 
           {/* Destination station fuel info */}
           {destinationStation?.fuel && (
-            <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Iconify icon="mdi:gas-station" width={14} sx={{ color: 'text.secondary' }} />
-                <Typography variant="caption" color="text.secondary">
+            <div className="mt-2 pt-2 border-t border-border">
+              <div className="flex items-center gap-1">
+                <Iconify icon="mdi:gas-station" width={14} className="text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
                   Dest. Fuel: {fShortenNumber(destinationStation.fuel.amount, [], { decimals: 1 })}
-                </Typography>
-              </Box>
-            </Box>
+                </span>
+              </div>
+            </div>
           )}
 
           {/* Speed info */}
-          <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="caption" color="text.secondary">
+          <div className="mt-2 pt-2 border-t border-border">
+            <span className="text-xs text-muted-foreground">
               Speed: {drone.speed.toFixed(0)} km/h
-            </Typography>
-          </Box>
+            </span>
+          </div>
 
           <LocationInfo x={drone.x ?? 0} y={drone.y ?? 0} z={drone.z} />
-        </Paper>
+        </Card>
       )}
 
       {/* CSS for animated dashed line and docking indicator */}

@@ -1,8 +1,7 @@
-import { Box, IconButton, useTheme } from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import { Iconify } from 'src/components/iconify';
+import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { varAlpha } from 'src/theme/styles';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface MapSidebarProps {
   open: boolean;
@@ -12,7 +11,6 @@ interface MapSidebarProps {
 }
 
 export const MapSidebar = ({ open, isMobile = false, onClose, children }: MapSidebarProps) => {
-  const theme = useTheme();
   const [dragOffset, setDragOffset] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -79,26 +77,13 @@ export const MapSidebar = ({ open, isMobile = false, onClose, children }: MapSid
     dragStartY.current = null;
   };
 
-  // Don't render if not open (but allow closing animation on mobile)
   if (!open && !isClosing) {
     return null;
   }
 
-  // Desktop styles - positioned below the icon buttons
-  const desktopStyles = {
-    position: 'absolute',
-    top: 60, // Below icon buttons
-    right: 16,
-    bottom: 16,
-    width: 300,
-    borderRadius: '10px',
-  };
+  const defaultHeight = 33;
+  const expandedHeight = 75;
 
-  // Mobile styles - bottom sheet with snap points
-  const defaultHeight = 33; // vh
-  const expandedHeight = 75; // vh
-
-  // Calculate visual height during drag
   const dragHeightAdjust =
     dragOffset < 0
       ? Math.min(expandedHeight - defaultHeight, (Math.abs(dragOffset) / window.innerHeight) * 100)
@@ -110,133 +95,71 @@ export const MapSidebar = ({ open, isMobile = false, onClose, children }: MapSid
         : 0)
     : defaultHeight + dragHeightAdjust;
 
-  const mobileStyles = {
-    position: 'fixed',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: `${visualHeight}vh`,
-    borderRadius: '16px 16px 0 0',
+  const getTransformStyle = () => {
+    if (!isMobile) {
+      if (isClosing) return 'translateX(20px)';
+      if (isOpening) return 'translateX(20px)';
+      return 'translateX(0)';
+    }
+    if (isClosing) return 'translateY(100%)';
+    if (!isExpanded && dragOffset > 0) return `translateY(${dragOffset}px)`;
+    return undefined;
+  };
+
+  const getTransitionStyle = () => {
+    if (!isMobile) {
+      if (isClosing) return 'transform 0.2s ease-in, opacity 0.2s ease-in';
+      return 'transform 0.2s ease-out, opacity 0.2s ease-out';
+    }
+    if (isClosing) return 'transform 0.25s ease-in';
+    if (dragOffset !== 0) return 'none';
+    return 'height 0.25s ease-out, transform 0.25s ease-out';
   };
 
   return (
-    <Box
-      sx={{
-        ...(isMobile ? mobileStyles : desktopStyles),
-        backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
-        backdropFilter: 'blur(8px)',
-        zIndex: 1000,
-        boxShadow: '0 0 15px rgba(0, 0, 0, 0.8)',
-        overflow: 'auto',
-        // Desktop opening animation - slide in from right
-        ...(!isMobile && {
-          transform: isOpening ? 'translateX(20px)' : 'translateX(0)',
-          opacity: isOpening ? 0 : 1,
-          transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
-        }),
-        // Desktop closing animation
-        ...(!isMobile &&
-          isClosing && {
-            transform: 'translateX(20px)',
-            opacity: 0,
-            transition: 'transform 0.2s ease-in, opacity 0.2s ease-in',
-          }),
-        // Apply drag offset transform when dragging down from default state (closing)
-        ...(isMobile &&
-          !isExpanded &&
-          dragOffset > 0 &&
-          !isClosing && {
-            transform: `translateY(${dragOffset}px)`,
-          }),
-        // Closing animation - slide down off screen
-        ...(isMobile &&
-          isClosing && {
-            transform: 'translateY(100%)',
-            transition: 'transform 0.25s ease-in',
-          }),
-        // No transition during drag
-        ...(isMobile &&
-          dragOffset !== 0 &&
-          !isClosing && {
-            transition: 'none',
-          }),
-        // Smooth transition when snapping
-        ...(isMobile &&
-          dragOffset === 0 &&
-          !isClosing && {
-            transition: 'height 0.25s ease-out, transform 0.25s ease-out',
-          }),
+    <div
+      className={cn(
+        'bg-card/95 backdrop-blur-md z-[1000] shadow-[0_0_15px_rgba(0,0,0,0.8)] overflow-auto',
+        isMobile
+          ? 'fixed left-0 right-0 bottom-0 rounded-t-2xl'
+          : 'absolute top-[60px] right-4 bottom-4 w-[300px] rounded-[10px]'
+      )}
+      style={{
+        height: isMobile ? `${visualHeight}vh` : undefined,
+        transform: getTransformStyle(),
+        transition: getTransitionStyle(),
+        opacity: !isMobile && (isOpening || isClosing) ? 0 : 1,
       }}
     >
-      {/* Mobile drag handle area - sticky at top */}
       {isMobile && (
-        <Box
+        <div
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          sx={{
-            position: 'sticky',
-            top: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: 36,
-            cursor: 'grab',
-            touchAction: 'none',
-            backgroundColor: varAlpha(theme.palette.background.paperChannel, 0.95),
-            backdropFilter: 'blur(8px)',
-            zIndex: 1,
-            borderRadius: '16px 16px 0 0',
-          }}
+          className="sticky top-0 flex justify-center items-center h-9 cursor-grab touch-none bg-card/95 backdrop-blur-md z-[1] rounded-t-2xl"
         >
-          {/* Drag handle */}
-          <Box
-            sx={{
-              width: 40,
-              height: 4,
-              backgroundColor: theme.palette.grey[500],
-              borderRadius: 2,
-            }}
-          />
-          {/* Close button */}
-          <IconButton
+          <div className="w-10 h-1 bg-gray-500 rounded-full" />
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={handleClose}
-            size="small"
-            sx={{
-              position: 'absolute',
-              right: 8,
-              padding: 0.5,
-              color: theme.palette.grey[500],
-              '&:hover': {
-                color: theme.palette.grey[300],
-              },
-            }}
+            className="absolute right-2 h-6 w-6 text-gray-500 hover:text-gray-300"
           >
-            <Iconify icon="mdi:close" width={18} />
-          </IconButton>
-        </Box>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       )}
-      {/* Desktop close button */}
       {!isMobile && open && (
-        <IconButton
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={handleClose}
-          size="small"
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            padding: 0.5,
-            color: theme.palette.grey[500],
-            '&:hover': {
-              color: theme.palette.grey[300],
-              backgroundColor: alpha(theme.palette.grey[500], 0.1),
-            },
-          }}
+          className="absolute top-2 right-2 h-6 w-6 text-gray-500 hover:text-gray-300"
         >
-          <Iconify icon="mdi:close" width={20} />
-        </IconButton>
+          <X className="h-5 w-5" />
+        </Button>
       )}
-      <Box sx={{ padding: 2, pt: isMobile ? 1 : 2 }}>{children}</Box>
-    </Box>
+      <div className={cn('p-4', isMobile && 'pt-2')}>{children}</div>
+    </div>
   );
 };
