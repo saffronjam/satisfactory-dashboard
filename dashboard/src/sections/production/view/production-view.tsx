@@ -44,7 +44,7 @@ type Column = {
     | 'consumption efficiency';
   label: string;
   labelIcon?: string;
-  minWidth?: number;
+  widthClass: string;
   align?: 'left' | 'right' | 'center';
   format?: (value: number) => string;
   severity?: (value: number | string) => Severity;
@@ -87,14 +87,14 @@ function calculateTrend(data: number[]): number {
 }
 
 const columns: readonly Column[] = [
-  { id: 'icon', label: '', minWidth: 44, align: 'center' },
-  { id: 'name', label: 'Name', minWidth: 100, align: 'left' },
+  { id: 'icon', label: '', widthClass: 'w-[44px]', align: 'center' },
+  { id: 'name', label: 'Name', widthClass: 'w-auto', align: 'left' },
 
   {
     id: 'inventory',
     label: 'Inventory',
     labelIcon: 'mdi:earth',
-    minWidth: 150,
+    widthClass: 'w-[150px]',
     align: 'center',
     format: (value) => fShortenNumber(value, MetricUnits, { decimals: 2 }),
     severity: () => Severity.none,
@@ -118,7 +118,7 @@ const columns: readonly Column[] = [
     id: 'cloudInventory',
     label: 'Cloud',
     labelIcon: 'mdi:cloud',
-    minWidth: 120,
+    widthClass: 'w-[120px]',
     align: 'center',
     format: (value) => fShortenNumber(value, MetricUnits, { decimals: 2 }),
     severity: () => Severity.none,
@@ -126,7 +126,7 @@ const columns: readonly Column[] = [
   {
     id: 'production',
     label: 'Production',
-    minWidth: 150,
+    widthClass: 'w-[150px]',
     align: 'center',
     format: (value: number) => `${fShortenNumber(value, PerMinuteMetricUnits, { decimals: 2 })}`,
     severity: () => Severity.none,
@@ -149,7 +149,7 @@ const columns: readonly Column[] = [
   {
     id: 'consumption',
     label: 'Consumption',
-    minWidth: 150,
+    widthClass: 'w-[150px]',
     align: 'center',
     format: (value: number) => `${fShortenNumber(value, PerMinuteMetricUnits, { decimals: 2 })}`,
     severity: () => Severity.none,
@@ -171,8 +171,8 @@ const columns: readonly Column[] = [
   },
   {
     id: 'production efficiency',
-    label: 'Production Efficiency',
-    minWidth: 100,
+    label: 'Prod Eff',
+    widthClass: 'w-[100px]',
     align: 'center',
     format: (value: number) => `${Math.round(value * 100)}%`,
     severity: (value: number | string) => {
@@ -195,8 +195,8 @@ const columns: readonly Column[] = [
   },
   {
     id: 'consumption efficiency',
-    label: 'Consumption Efficiency',
-    minWidth: 100,
+    label: 'Cons Eff',
+    widthClass: 'w-[100px]',
     align: 'center',
     format: (value: number) => `${Math.round(value * 100)}%`,
     severity: (value: number | string) => {
@@ -364,13 +364,11 @@ export function ProductionView() {
         />
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Icon icon="mdi:filter-variant" className="mr-1 size-4" />
-              {activeFiltersCount > 0
-                ? `${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''}`
-                : 'Filters'}
-            </Button>
+          <DropdownMenuTrigger className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-input bg-background px-3 text-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <Icon icon="mdi:filter-variant" className="size-4" />
+            {activeFiltersCount > 0
+              ? `${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''}`
+              : 'Filters'}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuCheckboxItem
@@ -421,15 +419,15 @@ export function ProductionView() {
 
       <div className="overflow-hidden rounded-lg border bg-card">
         <div className="max-h-[calc(100vh-16rem)] overflow-auto">
-          <Table>
+          <Table className="table-fixed">
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 {columns.map((column) => (
                   <TableHead
                     key={column.id}
-                    style={{ minWidth: column.minWidth }}
                     className={cn(
                       'select-none',
+                      column.widthClass,
                       column.id !== 'icon' && 'cursor-pointer hover:bg-muted/50',
                       alignmentClasses[column.align || 'left']
                     )}
@@ -565,7 +563,7 @@ export function ProductionView() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page:</span>
             <Select value={rowsPerPage.toString()} onValueChange={handleChangeRowsPerPage}>
-              <SelectTrigger size="sm" className="w-16">
+              <SelectTrigger size="sm" className="w-20">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
