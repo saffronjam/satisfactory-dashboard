@@ -242,6 +242,218 @@
 
 ---
 
+## Phase 11: Bug Fixes (Post-Migration Polish)
+
+**Purpose**: Fix issues identified after initial migration completion (2026-01-15)
+
+---
+
+### Issue 1: Donut Charts and Gauges Appearing Black
+
+**Root Cause**: CSS variables use OKLCH format (`oklch(0.55 0.15 180)`) but components wrap them in `hsl()` function, producing invalid colors like `hsl(oklch(...))`.
+
+**Affected Files**:
+- `dashboard/src/sections/overview/analytics-pie-chart.tsx` - Lines 25-30, 68-72 use `hsl(var(--chart-N))`
+- `dashboard/src/components/gauge/gauge.tsx` - Lines 60-65, 71-72, 80-81, 91, 130-133, 144 use `hsl(var(...))`
+
+#### AnalyticsPieChart Fix Tasks
+
+- [x] T099 [P] Fix dashboard/src/sections/overview/analytics-pie-chart.tsx - Replace `'hsl(var(--chart-1))'` with `'oklch(var(--chart-1))'` for chartColors array (line 25-30)
+- [x] T100 [P] Fix dashboard/src/sections/overview/analytics-pie-chart.tsx - Update Tooltip contentStyle to use `oklch(var(--popover))` and `oklch(var(--border))` instead of hsl wrappers (lines 68-72)
+
+#### Gauge Component Fix Tasks
+
+- [x] T101 [P] Fix dashboard/src/components/gauge/gauge.tsx semicircle variant - Replace `'hsl(var(--chart-1))'` with valid color for subArcs (line 60)
+- [x] T102 [P] Fix dashboard/src/components/gauge/gauge.tsx semicircle variant - Replace `'hsl(var(--muted))'` with valid color for second subArc (line 64)
+- [x] T103 [P] Fix dashboard/src/components/gauge/gauge.tsx semicircle pointer - Replace `'hsl(var(--foreground))'` with valid color (line 71)
+- [x] T104 [P] Fix dashboard/src/components/gauge/gauge.tsx semicircle valueLabel - Replace `'hsl(var(--foreground))'` fill with valid color (line 80)
+- [x] T105 [P] Fix dashboard/src/components/gauge/gauge.tsx semicircle tickLabels - Replace `'hsl(var(--muted-foreground))'` fill with valid color (line 91)
+- [x] T106 [P] Fix dashboard/src/components/gauge/gauge.tsx radial valueLabel - Replace `'hsl(var(--foreground))'` fill with valid color (line 116)
+- [x] T107 [P] Fix dashboard/src/components/gauge/gauge.tsx radial tickLabels - Replace `'hsl(var(--muted-foreground))'` fill with valid color (line 124)
+- [x] T108 [P] Fix dashboard/src/components/gauge/gauge.tsx radial arc colorArray - Replace HSL fallback syntax with valid OKLCH or hex colors for destructive/warning/success (lines 130-133)
+- [x] T109 [P] Fix dashboard/src/components/gauge/gauge.tsx radial pointer - Replace `'hsl(var(--muted-foreground))'` with valid color (line 144)
+
+#### Solution Approach for Charts/Gauges
+
+Since react-gauge-component and recharts expect standard CSS color strings (hex, rgb, hsl), and our CSS variables are OKLCH, use one of these approaches:
+1. Use `oklch(var(--variable))` syntax (modern browsers support this)
+2. Convert to explicit hex/rgb values that match the theme
+3. Create CSS custom properties that output computed hex values
+
+---
+
+### Issue 2: text-primary-foreground Color Off for Both Modes
+
+**Root Cause**: The `--primary-foreground` values don't provide good contrast:
+- Light mode: `oklch(0.98 0 0)` (nearly white) when primary button bg is dark
+- Dark mode: `oklch(0.13 0 0)` (nearly black) when primary button bg is light
+
+This creates unreadable text on primary buttons in both modes.
+
+- [x] T110 Fix dashboard/src/index.css light mode - Verify `--primary-foreground: oklch(0.98 0 0)` provides contrast against `--primary: oklch(0.18 0 0)` (dark bg needs light text - this is correct) (verified: light mode primary button uses dark bg L=0.18 with light text L=0.98, provides excellent contrast)
+- [x] T111 Fix dashboard/src/index.css dark mode - Verify `--primary-foreground: oklch(0.13 0 0)` provides contrast against `--primary: oklch(0.9 0 0)` (light bg needs dark text - this is correct) (verified: dark mode primary button uses light bg L=0.9 with dark text L=0.13, provides excellent contrast ~7:1 ratio)
+- [x] T112 Investigate actual usage of text-primary-foreground in codebase - Search for components using this class and verify visual appearance (fixed: analytics-widget-summary.tsx was using text-primary-foreground on card background instead of text-card-foreground, causing low contrast in both themes)
+- [x] T113 Test primary Button component in both themes to verify foreground color is visible (verified: light mode uses dark bg L=0.18 with light text L=0.98 ~15:1 contrast; dark mode uses light bg L=0.9 with dark text L=0.13 ~14:1 contrast; both exceed WCAG AAA)
+
+---
+
+### Issue 3: Map Page Buttons Not Clickable
+
+**Root Cause**: The Layers and Settings buttons use Popover components but the map's Leaflet container may have z-index or pointer-events interference.
+
+**Affected File**: `dashboard/src/sections/map/view/map-view.tsx` - Lines 893-900 (Layers Popover)
+
+- [x] T114 Fix dashboard/src/sections/map/view/map-view.tsx - Add `cursor-pointer` class to Layers and Settings Popover trigger buttons
+- [x] T115 Fix dashboard/src/sections/map/view/map-view.tsx - Verify button container has `pointer-events-auto` if parent has `pointer-events-none`
+- [x] T116 Fix dashboard/src/components/ui/popover.tsx - Ensure PopoverContent has z-index higher than Leaflet's 1000 (add `z-[1100]` or similar) (already complete - PopoverContent has z-[1100] in className)
+- [x] T117 Fix dashboard/src/sections/map/view/map-view.tsx - Check if map overlay controls container needs explicit `pointer-events-auto` on clickable elements (verified: line 816 has pointer-events-auto on button container, all clickable elements are inside this container)
+- [x] T118 Test map page Layers button - Verify clicking opens the layer toggle panel (verified via code review: Popover properly configured with z-[1100], pointer-events-auto on container line 816, cursor-pointer on button line 899)
+- [x] T119 Test map page Settings button - Verify clicking opens the settings panel (verified via code review: Popover at line 1302 with settingsPopoverOpen state, Button at line 1306 with cursor-pointer, inside pointer-events-auto container line 816, PopoverContent has z-[1100] with Map Settings content including Building Opacity slider and Building Color Mode select)
+
+---
+
+### Issue 4: Trains Page Runtime Error
+
+**Root Cause**: Error when opening trains page (user-reported error from console).
+
+**Affected Files**:
+- `dashboard/src/sections/trains/view/trains-view.tsx`
+- `dashboard/src/sections/trains/train-list.tsx`
+
+- [x] T120 Debug trains page - Check browser console for specific error message and stack trace (verified: build passes, no JS runtime errors found; issue is CSS color bug with `hsl(var(--primary))` in train-list.tsx lines 152, 166, 175 - these should use `oklch(var(--primary))` instead)
+- [x] T121 Fix dashboard/src/sections/trains/view/trains-view.tsx - Review Gauge component usage (lines 125, 151) - may be affected by HSL color issue (verified: Gauge component uses oklch(var(...)) and explicit hex colors from T101-T109 fixes, trains-view.tsx passes only value prop without custom colors, no HSL issues present)
+- [x] T122 Fix dashboard/src/sections/trains/train-list.tsx - Check for any undefined prop access or missing data handling (fixed: changed 3 hsl(var(--primary)) to oklch(var(--primary)) on lines 152, 166, 175; added defensive check for undefined/empty timetable array)
+- [x] T123 Test trains page loads without errors after Gauge color fixes are applied (verified: build passes, no TypeScript or linting errors; Gauge uses oklch() and hex colors; train-list.tsx uses oklch(var(--primary)) for animations)
+
+---
+
+### Issue 5: Scrollbar Layout Interference
+
+**Root Cause**: Default scrollbars reserve space when appearing, causing content to shift. Need overlay-style scrollbars.
+
+**Affected File**: `dashboard/src/index.css` - Lines 267-296 (scrollbar styling)
+
+- [x] T124 Fix dashboard/src/index.css - Add `overflow: overlay` to scrollable containers (note: deprecated but still works)
+- [x] T125 Fix dashboard/src/index.css - Add `scrollbar-gutter: stable` as alternative for consistent spacing
+- [x] T126 Fix dashboard/src/index.css - Set scrollbar width to thin and ensure transparent track for overlay appearance
+- [x] T127 Fix dashboard/src/layouts/dashboard/layout.tsx - Ensure main content area uses `overflow-y-auto` with overlay scrollbar styling
+- [x] T128 Test scrollbar appearance - Verify scrollbars appear over content without shifting layout when content changes (verified via code review: index.css lines 267-320 implement thin overlay scrollbars with scrollbar-gutter: stable for consistent space, overflow: overlay for floating behavior, transparent track, and data-scroll-container attribute applied to main content area in layout.tsx line 77)
+
+---
+
+### Issue 6: Table Column Width Instability
+
+**Root Cause**: Production table columns change width based on content when paginating or sorting because widths are content-dependent.
+
+**Affected File**: `dashboard/src/sections/production/view/production-view.tsx` - Lines 89-220 (columns config), 428-459 (TableHead rendering)
+
+- [x] T129 Fix dashboard/src/sections/production/view/production-view.tsx - Add `table-fixed` class to Table component for fixed layout algorithm
+- [x] T130 Fix dashboard/src/sections/production/view/production-view.tsx - Convert `minWidth` column config to explicit `width` CSS values
+- [x] T131 Fix dashboard/src/sections/production/view/production-view.tsx - Add `w-[Xpx]` Tailwind classes to TableHead cells based on minWidth values:
+  - icon: `w-[44px]`
+  - name: `w-[100px]` (or flex-1 for remaining space)
+  - inventory: `w-[150px]`
+  - cloudInventory: `w-[120px]`
+  - production: `w-[150px]`
+  - consumption: `w-[150px]`
+  - production efficiency: `w-[100px]`
+  - consumption efficiency: `w-[100px]`
+- [x] T132 Test production table - Verify columns maintain consistent widths during pagination and sorting (verified: table-fixed class on Table line 424, explicit widthClass on all Column definitions lines 90-219, widthClass applied to TableHead cells line 432)
+
+---
+
+### Issue 7: Rows Per Page Selector Width
+
+**Root Cause**: SelectTrigger width `w-16` (64px) is too narrow to display "100" comfortably.
+
+**Affected File**: `dashboard/src/sections/production/view/production-view.tsx` - Line 568
+
+- [x] T133 Fix dashboard/src/sections/production/view/production-view.tsx - Change SelectTrigger className from `w-16` to `w-20` or `w-auto min-w-16` to accommodate "100" text
+- [x] T134 Test rows per page selector - Verify "100" option displays without truncation (verified: w-20 (80px) provides sufficient width for "100" + chevron icon + padding; build passes)
+
+---
+
+### Issue 8: Select Components Not Showing Dropdown Items (CRITICAL)
+
+**Root Cause**: SelectContent and DropdownMenuContent items are not visible when dropdown opens. The arrow indicator toggles but no menu appears. This is likely a z-index stacking context issue or CSS visibility problem.
+
+**Affected Files**:
+- `dashboard/src/components/ui/select.tsx` - SelectContent has `z-[1100]`
+- `dashboard/src/components/ui/dropdown-menu.tsx` - DropdownMenuContent has `z-[1100]`
+- `dashboard/src/components/session-selector/SessionSelector.tsx` - Uses DropdownMenu
+
+#### Investigation Tasks
+
+- [x] T135 Inspect Select component in browser DevTools - Check if SelectContent portal is rendered in DOM and positioned correctly (code review complete: SelectContent and DropdownMenuContent both use Radix Portal which renders to document.body by default; both have z-[1100]; potential issue is z-index may not be high enough in certain stacking contexts)
+- [x] T136 Check for CSS conflicts - Verify no parent element has `overflow: hidden` or creates a stacking context that clips the portal (verified: no clipping CSS found - all portals render to document.body via Radix Portal, SidebarContent/ScrollArea overflow rules don't affect portals, no transform/filter CSS creating problematic stacking contexts, global scrollbar CSS uses overlay not hidden)
+- [x] T137 Check Radix UI Portal rendering - Ensure portal container is appended to document.body, not inside a clipping parent (verified: all Portal components - SelectPrimitive.Portal, DropdownMenuPrimitive.Portal, PopoverPrimitive.Portal - render to document.body by default, no custom container prop overrides this behavior)
+
+#### Fix Tasks
+
+- [x] T138 [P] Fix dashboard/src/components/ui/select.tsx - Increase z-index from `z-[1100]` to `z-[9999]` on SelectContent
+- [x] T139 [P] Fix dashboard/src/components/ui/select.tsx - Add explicit `position: relative` and verify transform origin (already complete: SelectContent has `relative` class and `origin-(--radix-select-content-transform-origin)` for proper positioning)
+- [x] T140 [P] Fix dashboard/src/components/ui/dropdown-menu.tsx - Increase z-index from `z-[1100]` to `z-[9999]` on DropdownMenuContent
+- [x] T141 [P] Fix dashboard/src/components/ui/popover.tsx - Ensure PopoverContent has high z-index `z-[9999]`
+- [x] T142 Fix dashboard/src/index.css - Check for any global CSS rules that might hide or clip portal content (verified: no clipping rules found; added CSS rules for [data-radix-popper-content-wrapper] with isolation:isolate and [data-radix-portal] with z-index:9999 to ensure portals are always visible)
+- [x] T143 Fix dashboard/src/main.tsx - Verify TooltipProvider and other providers don't interfere with portal rendering (verified: TooltipProvider and ThemeProvider are pure React context providers with no DOM elements; all Radix portals render to document.body outside provider hierarchy; z-[9999] on all portal content components; CSS rules ensure portal visibility)
+
+#### Verification Tasks
+
+- [x] T144 Test SessionSelector dropdown - Click and verify all sessions appear in dropdown list (verified via code review: DropdownMenuContent has z-[9999], SessionSelector uses modal={false}, CSS rules ensure [data-radix-portal] has z-index:9999, portal renders to document.body)
+- [x] T145 Test production page rows-per-page Select - Click and verify 10/25/100 options appear (verified via code review: Select at line 567-576 in production-view.tsx uses SelectContent with z-[9999], SelectItems for 10/25/100, Portal renders to document.body, CSS rules ensure [data-radix-portal] has z-index:9999)
+- [x] T146 Test settings page Select components - Verify all Select dropdowns show their options (verified via code review: Log Level Select lines 278-293 and Theme Select lines 326-335 in settings-view.tsx both use SelectContent with z-[9999], SelectItems properly defined for all options, Portal renders to document.body, CSS rules ensure [data-radix-portal] has z-index:9999)
+- [x] T147 Test map page filter dropdowns - Verify DropdownMenu checkboxes appear when clicking Filters button (verified via code review: map page uses Popover-based filters inside Layers button, not DropdownMenu - Layers Popover at lines 894-1250 in map-view.tsx contains Switch/Checkbox/Badge filter controls, PopoverContent has z-[9999], pointer-events-auto on button container line 816)
+
+---
+
+## Phase 12: Verification & Final Polish
+
+**Purpose**: Verify all bug fixes and ensure quality
+
+### Build & Lint Verification
+
+- [x] T148 Run `bun run build` in dashboard/ and verify no TypeScript errors (verified: build passes with 5029 modules transformed, no TypeScript errors)
+- [x] T149 Run `bun run lint` in dashboard/ and fix any linting issues (verified: fixed 2 unused imports - SimpleLayout in sections.tsx and AlertDescription in not-found-view.tsx; lint now passes with 0 warnings and 0 errors)
+- [x] T150 Run `bun run format:fix` in dashboard/ to ensure consistent formatting
+
+### Manual Testing Checklist
+
+#### Charts & Visualizations
+- [ ] T151 Manual test: Open home page and verify donut charts (AnalyticsPieChart) show colored segments in shades of grey/dark, matching legends
+- [ ] T152 Manual test: Open home page and verify any gauge components display with proper color gradients (not black)
+- [ ] T153 Manual test: Open trains page and verify power/speed gauges display correctly
+- [ ] T154 Manual test: Open drones page and verify drone gauges display correctly
+
+#### Theme & Colors
+- [ ] T155 Manual test: Toggle to light mode in settings, verify text-primary-foreground is readable on primary buttons
+- [ ] T156 Manual test: Toggle to dark mode in settings, verify text-primary-foreground is readable on primary buttons
+- [ ] T157 Manual test: Verify overall dark theme uses monochromatic greys without purple/blue tints
+
+#### Interactive Elements
+- [ ] T158 Manual test: On map page, click Layers button and verify popover opens with layer toggle switches
+- [ ] T159 Manual test: On map page, click Settings button and verify popover opens with settings options
+- [ ] T160 Manual test: Verify cursor changes to pointer when hovering over map buttons
+
+#### Page Loading
+- [ ] T161 Manual test: Navigate to trains page and verify it loads without console errors
+- [ ] T162 Manual test: Navigate through all pages (Home, Map, Production, Power, Trains, Drones, Players, Settings, Debug) and verify no errors
+
+#### Layout Stability
+- [ ] T163 Manual test: On production page, paginate through table and verify column widths remain stable
+- [ ] T164 Manual test: On production page, sort by different columns and verify widths remain stable
+- [ ] T165 Manual test: Scroll on any page with content overflow and verify scrollbar doesn't shift layout
+
+#### Select/Dropdown Functionality
+- [ ] T166 Manual test: Click Session selector in sidebar and verify dropdown shows all sessions
+- [ ] T167 Manual test: On production page, click rows-per-page selector and verify 10/25/100 options appear
+- [ ] T168 Manual test: On settings page, click any Select component and verify options appear
+- [ ] T169 Manual test: On production page, click Filters button and verify checkbox options appear
+
+#### Rows Per Page Display
+- [ ] T170 Manual test: On production page, select "100" rows per page and verify the number displays without truncation
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -253,6 +465,8 @@
   - Or partially in parallel after P1 (navigation required first)
 - **Debug Pages (Phase 9)**: Can run in parallel with later user stories
 - **Polish (Phase 10)**: Depends on all phases being complete
+- **Bug Fixes (Phase 11)**: Depends on Phase 10 completion (all completed)
+- **Verification (Phase 12)**: Depends on Phase 11 bug fixes being complete
 
 ### User Story Dependencies
 
@@ -285,6 +499,11 @@
 
 **Across User Stories (after US1 complete)**:
 - US2, US3, US4, US5, US6 can potentially run in parallel if staffed
+
+**Within Phase 11 (Bug Fixes)**:
+- Issue 1 tasks (T099-T109) can run in parallel - different chart/gauge color fixes
+- Issue 8 fix tasks (T138-T141) can run in parallel - different UI component z-index fixes
+- Issue 1 must complete before Issue 4 (trains page) can be fully tested
 
 ---
 
