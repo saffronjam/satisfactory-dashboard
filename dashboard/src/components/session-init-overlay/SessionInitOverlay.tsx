@@ -32,7 +32,7 @@ export const SessionInitOverlay = () => {
   }
 
   return (
-    <div className="fixed inset-0 lg:left-[var(--sidebar-width,230px)] z-50 text-foreground bg-background flex flex-col items-center justify-center gap-4">
+    <div className="fixed inset-0 md:left-[var(--sidebar-width)] z-50 text-foreground bg-background flex flex-col items-center justify-center gap-4">
       {isPaused ? (
         <>
           <PauseCircle className="size-16 opacity-80" />
