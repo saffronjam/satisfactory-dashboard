@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { PopoverMap } from '@/components/popover-map';
 import { cn } from '@/lib/utils';
 import {
   Drone,
@@ -186,20 +187,25 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
           </div>
         </div>
 
-        {/* Footer: Speed and Fuel */}
+        {/* Footer: Speed, Fuel, and Map */}
         <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <span className="text-sm">Speed:</span>
-            <span className="pl-1 text-lg font-bold">
-              {fNumber(drone.speed, { decimals: 0 })} km/h
-            </span>
-          </div>
-          {drone.home?.fuel?.Name && (
-            <div className="flex items-center gap-2">
-              <Icon icon="mdi:fuel" className="size-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{drone.home.fuel.Name}</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center">
+              <span className="text-sm">Speed:</span>
+              <span className="pl-1 text-lg font-bold">
+                {fNumber(drone.speed, { decimals: 0 })} km/h
+              </span>
             </div>
-          )}
+            {drone.home?.fuel?.Name && (
+              <div className="flex items-center gap-2">
+                <Icon icon="mdi:fuel" className="size-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{drone.home.fuel.Name}</span>
+              </div>
+            )}
+          </div>
+          <PopoverMap entity={drone} entityType="drone">
+            <Icon icon="mdi:map-marker" className="size-4" />
+          </PopoverMap>
         </div>
       </CardContent>
     </Card>
