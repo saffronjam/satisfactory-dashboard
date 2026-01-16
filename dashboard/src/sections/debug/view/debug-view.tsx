@@ -76,8 +76,8 @@ function JsonNode({
   return (
     <div className="font-mono text-[0.85rem]">
       <div
-        className={`flex items-center py-0.5 px-1 rounded transition-colors duration-300 ${
-          isChanged ? 'bg-yellow-600' : ''
+        className={`flex items-center py-1 px-1.5 rounded transition-colors duration-300 ${
+          isChanged ? 'bg-yellow-500/30 my-0.5' : ''
         } ${isExpandable ? 'cursor-pointer hover:bg-accent' : ''}`}
         onClick={() => isExpandable && setExpanded(!expanded)}
       >
@@ -242,7 +242,10 @@ function DataRoot({
           <Icon icon="mdi:database" className="size-5 mr-2 text-primary" />
           <span className="font-semibold">{name}</span>
           {changedPaths.size > 0 && (
-            <Badge variant="secondary" className="ml-2 h-5 text-[0.7rem] bg-yellow-600 text-white">
+            <Badge
+              variant="secondary"
+              className="ml-2 h-5 text-[0.7rem] bg-yellow-500/50 text-yellow-100"
+            >
               {changedPaths.size} changes
             </Badge>
           )}
