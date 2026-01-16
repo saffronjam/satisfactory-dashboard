@@ -25,12 +25,12 @@
     --ring: oklch(0.5 0 0);
     --radius: 0.5rem;
 
-    /* Chart colors for light mode - colorful palette */
-    --chart-1: oklch(0.55 0.15 180);  /* Teal */
-    --chart-2: oklch(0.5 0.15 280);   /* Purple */
-    --chart-3: oklch(0.55 0.15 30);   /* Orange */
-    --chart-4: oklch(0.45 0.15 120);  /* Green */
-    --chart-5: oklch(0.5 0.15 60);    /* Gold */
+    /* Chart colors for light mode - purple/blue palette */
+    --chart-1: oklch(0.65 0.2 285); /* Purple - vibrant */
+    --chart-2: oklch(0.65 0.2 250); /* Blue - vibrant */
+    --chart-3: oklch(0.65 0.2 210); /* Cyan - vibrant */
+    --chart-4: oklch(0.65 0.2 25); /* Coral - vibrant */
+    --chart-5: oklch(0.65 0.2 320); /* Pink/Magenta - vibrant */
 
     /* Semantic chart colors for gauges */
     --chart-success: 142 76% 36%;
@@ -70,12 +70,12 @@
     --input: oklch(0.2 0 0);
     --ring: oklch(0.5 0 0);
 
-    /* Chart colors for dark mode - colorful palette */
-    --chart-1: oklch(0.7 0.15 180);   /* Teal */
-    --chart-2: oklch(0.65 0.15 280);  /* Purple */
-    --chart-3: oklch(0.7 0.15 30);    /* Orange */
-    --chart-4: oklch(0.6 0.15 120);   /* Green */
-    --chart-5: oklch(0.65 0.15 60);   /* Gold */
+    /* Chart colors for dark mode - purple/blue palette (more muted) */
+    --chart-1: oklch(0.55 0.15 285); /* Purple - muted */
+    --chart-2: oklch(0.55 0.15 250); /* Blue - muted */
+    --chart-3: oklch(0.55 0.15 210); /* Cyan - muted */
+    --chart-4: oklch(0.55 0.15 25); /* Coral - muted */
+    --chart-5: oklch(0.55 0.15 320); /* Pink/Magenta - muted */
 
     /* Semantic chart colors for gauges */
     --chart-success: 142 76% 36%;
@@ -268,12 +268,28 @@
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: oklch(0.4 0 0) transparent;
+    scrollbar-color: oklch(0.4 0 0 / 0.5) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: oklch(0.6 0 0 / 0.5) transparent;
+  }
+
+  /* Use overflow: overlay so scrollbars appear over content (deprecated but still works) */
+  /* scrollbar-gutter: stable reserves space to prevent layout shifts */
+  html,
+  body,
+  [data-scroll-container],
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    overflow: overlay;
+    scrollbar-gutter: stable;
   }
 
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -281,12 +297,20 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.4 0 0);
-    border-radius: 4px;
+    background: oklch(0.4 0 0 / 0.5);
+    border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.5 0 0);
+    background: oklch(0.4 0 0 / 0.8);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(0.6 0 0 / 0.5);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.6 0 0 / 0.8);
   }
 
   /* Ensure scrollbars overlay content */
