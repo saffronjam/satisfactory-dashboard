@@ -73,6 +73,7 @@ export function LoginView() {
                   type="button"
                   variant="ghost"
                   size="icon"
+                  tabIndex={-1}
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                   onClick={handleTogglePasswordVisibility}
                   disabled={isSubmitting}
