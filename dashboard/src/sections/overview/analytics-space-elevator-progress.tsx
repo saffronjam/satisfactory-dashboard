@@ -74,7 +74,7 @@ export function AnalyticsSpaceElevatorProgress({
               </div>
               <Progress
                 value={overallProgress * 100}
-                className="h-6 rounded-lg bg-muted [&>div]:bg-foreground/60 [&>div]:rounded-lg"
+                className="h-6 rounded-lg bg-muted [&>div]:bg-chart-1 [&>div]:rounded-lg"
               />
             </div>
 
@@ -83,6 +83,14 @@ export function AnalyticsSpaceElevatorProgress({
               {phases.map((obj, idx) => {
                 const progress = obj.totalCost > 0 ? (obj.amount / obj.totalCost) * 100 : 0;
                 const isComplete = progress >= 100;
+                const chartColors = [
+                  '[&>div]:bg-chart-1',
+                  '[&>div]:bg-chart-2',
+                  '[&>div]:bg-chart-3',
+                  '[&>div]:bg-chart-4',
+                  '[&>div]:bg-chart-5',
+                ];
+                const colorClass = chartColors[idx % chartColors.length];
 
                 return (
                   <div key={idx}>
@@ -106,10 +114,8 @@ export function AnalyticsSpaceElevatorProgress({
                     <Progress
                       value={Math.min(progress, 100)}
                       className={cn(
-                        'h-1.5 rounded bg-muted',
-                        isComplete
-                          ? '[&>div]:bg-green-500 [&>div]:rounded'
-                          : '[&>div]:bg-foreground/40 [&>div]:rounded'
+                        'h-1.5 rounded bg-muted [&>div]:rounded',
+                        isComplete ? '[&>div]:bg-green-500' : colorClass
                       )}
                     />
                   </div>

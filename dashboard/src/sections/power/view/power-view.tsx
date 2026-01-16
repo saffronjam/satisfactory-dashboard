@@ -62,14 +62,18 @@ export function PowerView() {
           ) : (
             <>
               {!anyFuseTriggered ? (
-                <Card className="bg-green-900 p-4 h-full">
-                  <div className="text-2xl font-bold">No Problems</div>
-                  <div className="text-muted-foreground">Current Status</div>
+                <Card className="bg-green-100 dark:bg-green-900 p-4 h-full">
+                  <div className="text-2xl font-bold text-green-800 dark:text-green-100">
+                    No Problems
+                  </div>
+                  <div className="text-green-600 dark:text-green-300">Current Status</div>
                 </Card>
               ) : (
-                <Card className="bg-red-900 p-4 h-full">
-                  <div className="text-2xl font-bold">Fuse Triggered</div>
-                  <div className="text-muted-foreground">Status</div>
+                <Card className="bg-red-100 dark:bg-red-900 p-4 h-full">
+                  <div className="text-2xl font-bold text-red-800 dark:text-red-100">
+                    Fuse Triggered
+                  </div>
+                  <div className="text-red-600 dark:text-red-300">Status</div>
                 </Card>
               )}
             </>

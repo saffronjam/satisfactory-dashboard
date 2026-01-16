@@ -85,25 +85,25 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Card className={cn('h-full p-4', getProductionCapacityColor())}>
+          <Card className={cn('h-full border-2 p-4', getProductionCapacityColor())}>
             <h3 className="text-lg font-semibold">
               {fShortenNumber(circuit.capacity.total, WattUnits, { decimals: 3 })}
             </h3>
             <p className="text-sm text-muted-foreground">Power Capacity</p>
           </Card>
-          <Card className={cn('h-full p-4', getProductionColor())}>
+          <Card className={cn('h-full border-2 p-4', getProductionColor())}>
             <h3 className="text-lg font-semibold">
               {fShortenNumber(circuit.production.total, WattUnits, { decimals: 3 })}
             </h3>
             <p className="text-sm text-muted-foreground">Power Production</p>
           </Card>
-          <Card className={cn('h-full p-4', getConsumeColor())}>
+          <Card className={cn('h-full border-2 p-4', getConsumeColor())}>
             <h3 className="text-lg font-semibold">
               {fShortenNumber(circuit.consumption.total, WattUnits, { decimals: 3 })}
             </h3>
             <p className="text-sm text-muted-foreground">Current Consumption</p>
           </Card>
-          <Card className={cn('h-full p-4', getMaxConsumeColor())}>
+          <Card className={cn('h-full border-2 p-4', getMaxConsumeColor())}>
             <h3 className="text-lg font-semibold">
               {fShortenNumber(circuit.consumption.max, WattUnits, { decimals: 3 })}
             </h3>
@@ -117,19 +117,28 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
               <h3 className="text-lg font-semibold">Battery</h3>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <Card className={cn('h-full p-4', hasBattery ? getBatteryCapacityColor() : '')}>
+              <Card
+                className={cn('h-full border-2 p-4', hasBattery ? getBatteryCapacityColor() : '')}
+              >
                 <h3 className="text-lg font-semibold">
                   {fShortenNumber(circuit.battery.capacity, WattHoursUnits, { decimals: 3 })}
                 </h3>
                 <p className="text-sm text-muted-foreground">Battery Capacity</p>
               </Card>
-              <Card className={cn('h-full p-4', hasBattery ? getBatteryPercentColor() : '')}>
+              <Card
+                className={cn('h-full border-2 p-4', hasBattery ? getBatteryPercentColor() : '')}
+              >
                 <h3 className="text-lg font-semibold">
                   {hasBattery ? `${fPercent(circuit.battery.percentage, { decimals: 0 })} %` : '-'}
                 </h3>
                 <p className="text-sm text-muted-foreground">Battery Percent</p>
               </Card>
-              <Card className={cn('h-full p-4', hasBattery ? getBatteryDifferentialColor() : '')}>
+              <Card
+                className={cn(
+                  'h-full border-2 p-4',
+                  hasBattery ? getBatteryDifferentialColor() : ''
+                )}
+              >
                 <h3 className="text-lg font-semibold">
                   {hasBattery
                     ? fShortenNumber(circuit.battery.differential, WattUnits, { decimals: 3 })
@@ -137,7 +146,7 @@ export function CircuitCard({ circuit, name }: { circuit: Circuit; name: string 
                 </h3>
                 <p className="text-sm text-muted-foreground">Battery Differential</p>
               </Card>
-              <Card className="h-full p-4">
+              <Card className="h-full border-2 p-4">
                 <h3 className="text-lg font-semibold">{formatted}</h3>
                 <p className="text-sm text-muted-foreground">Battery Until Time</p>
               </Card>
