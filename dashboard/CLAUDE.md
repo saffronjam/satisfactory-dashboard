@@ -505,6 +505,32 @@ When refactoring or improving code:
 - Trust that all instances will be updated together in a coordinated deployment
 - Simpler code is better than maintaining legacy compatibility layers
 
+### Radix UI Triggers (DropdownMenu, Popover, etc.)
+
+**NEVER use `asChild` with custom components** like `Button` on Radix UI triggers (`DropdownMenuTrigger`, `PopoverTrigger`, etc.). This breaks Radix Popper's position calculations with Tailwind CSS v4, causing dropdowns/popovers to appear at position (0,0) off-screen.
+
+**Correct approach** - style the trigger directly:
+```tsx
+// ✅ GOOD - style the trigger directly, no asChild
+<DropdownMenuTrigger className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">
+  Click me
+  <ChevronDown className="ml-2 size-4" />
+</DropdownMenuTrigger>
+
+// ✅ GOOD - for icon buttons
+<PopoverTrigger className="inline-flex size-8 items-center justify-center rounded-md border border-input bg-popover/90 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">
+  <Icon icon="mdi:layers" className="size-5" />
+</PopoverTrigger>
+```
+
+**Incorrect approach** - do NOT do this:
+```tsx
+// ❌ BAD - asChild with Button breaks positioning
+<DropdownMenuTrigger asChild>
+  <Button variant="outline">Click me</Button>
+</DropdownMenuTrigger>
+```
+
 ### Performance
 
 - Memoize expensive calculations with `useMemo`
