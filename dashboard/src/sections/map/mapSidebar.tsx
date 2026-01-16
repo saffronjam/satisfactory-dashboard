@@ -119,7 +119,7 @@ export const MapSidebar = ({ open, isMobile = false, onClose, children }: MapSid
   return (
     <div
       className={cn(
-        'bg-card/95 backdrop-blur-md z-[1000] shadow-[0_0_15px_rgba(0,0,0,0.8)] overflow-auto',
+        'bg-card/95 backdrop-blur-md z-[1000] shadow-[0_0_15px_rgba(0,0,0,0.8)] overflow-auto pointer-events-auto',
         isMobile
           ? 'fixed left-0 right-0 bottom-0 rounded-t-2xl'
           : 'absolute top-[60px] right-4 bottom-4 w-[300px] rounded-[10px]'

@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { memo, useEffect, useMemo } from 'react';
 import { Marker } from 'react-leaflet';
 import { Player } from 'src/apiTypes';
+import { getPlayerColorMap, PLAYER_COLORS } from 'src/utils/player-colors';
 import { ConvertToMapCoords2 } from '../bounds';
 import { AnimatedPosition, useVehicleAnimation } from '../hooks/useVehicleAnimation';
 
@@ -12,20 +13,6 @@ type PlayerVehicleLayerProps = {
   selectedName?: string | null;
   showNames?: boolean;
 };
-
-// Player colors - indexed by sorted name position for consistent colors
-const PLAYER_COLORS = [
-  '#FF6B6B', // Red
-  '#4ECDC4', // Teal
-  '#45B7D1', // Sky blue
-  '#96CEB4', // Mint
-  '#FFEAA7', // Yellow
-  '#DDA0DD', // Plum
-  '#98D8C8', // Sea green
-  '#F7DC6F', // Gold
-  '#BB8FCE', // Purple
-  '#85C1E9', // Light blue
-];
 
 // Player icon SVG (mdi:account-circle)
 const playerIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -114,19 +101,8 @@ function PlayerVehicleLayerInner({
   selectedName,
   showNames = true,
 }: PlayerVehicleLayerProps) {
-  // Sort players by name to get consistent color assignment
-  const sortedPlayers = useMemo(() => {
-    return [...players].sort((a, b) => a.name.localeCompare(b.name));
-  }, [players]);
-
   // Create color map based on sorted position
-  const playerColors = useMemo(() => {
-    const colors = new Map<string, string>();
-    sortedPlayers.forEach((player, index) => {
-      colors.set(player.name, PLAYER_COLORS[index % PLAYER_COLORS.length]);
-    });
-    return colors;
-  }, [sortedPlayers]);
+  const playerColors = useMemo(() => getPlayerColorMap(players), [players]);
 
   const animatedPositions = useVehicleAnimation(players);
 

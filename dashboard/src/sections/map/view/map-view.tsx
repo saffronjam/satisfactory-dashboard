@@ -808,23 +808,19 @@ export function MapView() {
       {!api.isLoading && (
         <div
           className={cn(
-            'fixed inset-4 z-[1]',
+            'fixed inset-4 z-[1] pointer-events-none',
             !isMobile && 'left-[calc(var(--sidebar-width)+16px)]'
           )}
         >
           {/* Map Controls Buttons */}
-          <div className="absolute top-4 right-4 z-[1001] flex gap-2">
+          <div className="absolute top-4 right-4 z-[1001] flex gap-2 pointer-events-auto">
             {/* Reset Button */}
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={resetMapState}
-                  className="bg-popover/90 backdrop-blur-sm"
-                >
-                  <Iconify icon="mdi:refresh" className="size-5" />
-                </Button>
+              <TooltipTrigger
+                onClick={resetMapState}
+                className="inline-flex size-8 items-center justify-center rounded-md border border-input bg-popover/90 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <Iconify icon="mdi:refresh" className="size-5" />
               </TooltipTrigger>
               <TooltipContent>Reset map to defaults</TooltipContent>
             </Tooltip>
@@ -865,21 +861,17 @@ export function MapView() {
 
             {/* Multi-select toggle button */}
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={() => setMultiSelectMode(!multiSelectMode)}
-                  disabled={!enabledLayers.has('machineGroups')}
-                  className={cn(
-                    'backdrop-blur-sm',
-                    multiSelectMode
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                      : 'bg-popover/90'
-                  )}
-                >
-                  <Iconify icon="mdi:selection-drag" className="size-5" />
-                </Button>
+              <TooltipTrigger
+                onClick={() => setMultiSelectMode(!multiSelectMode)}
+                disabled={!enabledLayers.has('machineGroups')}
+                className={cn(
+                  'inline-flex size-8 items-center justify-center rounded-md border border-input backdrop-blur-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:pointer-events-none disabled:opacity-50',
+                  multiSelectMode
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'bg-popover/90'
+                )}
+              >
+                <Iconify icon="mdi:selection-drag" className="size-5" />
               </TooltipTrigger>
               <TooltipContent>
                 {!enabledLayers.has('machineGroups')
@@ -892,10 +884,8 @@ export function MapView() {
 
             {/* Layers Button */}
             <Popover open={layersPopoverOpen} onOpenChange={setLayersPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="icon-sm" className="bg-popover/90 backdrop-blur-sm">
-                  <Iconify icon="mdi:layers" className="size-5" />
-                </Button>
+              <PopoverTrigger className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md border border-input bg-popover/90 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <Iconify icon="mdi:layers" className="size-5" />
               </PopoverTrigger>
               <PopoverContent align="end" className="w-72 max-h-[80vh] overflow-y-auto">
                 <div className="space-y-4">
@@ -1248,14 +1238,8 @@ export function MapView() {
             {/* Help Button (desktop only) */}
             {!isMobile && (
               <Popover open={helpPopoverOpen} onOpenChange={setHelpPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    className="bg-popover/90 backdrop-blur-sm"
-                  >
-                    <Iconify icon="mdi:help-circle-outline" className="size-5" />
-                  </Button>
+                <PopoverTrigger className="inline-flex size-8 items-center justify-center rounded-md border border-input bg-popover/90 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                  <Iconify icon="mdi:help-circle-outline" className="size-5" />
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-56">
                   <div className="space-y-4">
@@ -1296,19 +1280,8 @@ export function MapView() {
 
             {/* Settings Button */}
             <Popover open={settingsPopoverOpen} onOpenChange={setSettingsPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      className="bg-popover/90 backdrop-blur-sm"
-                    >
-                      <Iconify icon="mdi:cog" className="size-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Map Settings</TooltipContent>
-                </Tooltip>
+              <PopoverTrigger className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md border border-input bg-popover/90 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <Iconify icon="mdi:cog" className="size-5" />
               </PopoverTrigger>
               <PopoverContent align="end" className="w-56">
                 <div className="space-y-4">
@@ -1361,7 +1334,7 @@ export function MapView() {
             maxZoom={8}
             zoomDelta={0.25}
             zoomSnap={0.25}
-            className="w-full h-full rounded-[10px] z-0"
+            className="w-full h-full rounded-[10px] z-0 pointer-events-auto"
             style={{
               backgroundColor: '#0e0e0e',
               border: '1px solid #1e1e1e',
