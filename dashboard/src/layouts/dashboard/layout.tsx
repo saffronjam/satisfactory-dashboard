@@ -29,7 +29,7 @@ export type DashboardLayoutProps = {
  */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
-  const { sessions, isLoading: sessionsLoading } = useSession();
+  const { sessions, selectedSession, isLoading: sessionsLoading } = useSession();
   const { isDebugMode } = useDebug();
 
   const [addSessionDialogOpen, setAddSessionDialogOpen] = useState(false);
@@ -61,24 +61,41 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     </>
   );
 
+  // Check if the status bar will be visible (session offline)
+  const showStatusBar = !sessionsLoading && selectedSession && !selectedSession.isOnline;
+
   return (
     <>
       <AddSessionDialog
         open={addSessionDialogOpen}
         onClose={() => setAddSessionDialogOpen(false)}
       />
-      <SidebarProvider>
-        <AppSidebar
-          data={navData}
-          slots={{ topArea: sessionSelectorSlot, bottomArea: bottomSlot }}
-        />
-        <SidebarInset>
-          {!hideHeader && <DashboardHeader />}
-          <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
-        </SidebarInset>
-      </SidebarProvider>
-      <SessionStatusBar />
-      <SessionInitOverlay />
+      <div
+        className="min-h-screen flex flex-col"
+        style={
+          {
+            '--status-bar-height': showStatusBar ? '2.5rem' : '0px',
+          } as React.CSSProperties
+        }
+      >
+        <SidebarProvider className="flex-1">
+          <AppSidebar
+            data={navData}
+            slots={{ topArea: sessionSelectorSlot, bottomArea: bottomSlot }}
+          />
+          <SidebarInset>
+            {!hideHeader && <DashboardHeader />}
+            <main
+              className="flex-1 overflow-y-auto p-4 pb-[calc(1rem+var(--status-bar-height,0px))] md:p-6 md:pb-[calc(1.5rem+var(--status-bar-height,0px))]"
+              data-scroll-container
+            >
+              {children}
+            </main>
+          </SidebarInset>
+          <SessionInitOverlay />
+        </SidebarProvider>
+        <SessionStatusBar />
+      </div>
     </>
   );
 }

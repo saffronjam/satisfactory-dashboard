@@ -29,10 +29,10 @@ export function LogoutButton() {
   return (
     <div className="px-2 pb-1">
       <Button
-        variant="outline"
+        variant="ghost"
         onClick={handleLogout}
         disabled={isLoggingOut}
-        className="w-full justify-start gap-2 rounded-lg px-2 py-1 text-sm font-medium"
+        className="w-full justify-center gap-2 rounded-lg px-2 py-1 text-sm font-medium"
       >
         {isLoggingOut ? <Spinner className="size-5" /> : <LogOut className="size-5" />}
         {isLoggingOut ? 'Logging out...' : 'Logout'}

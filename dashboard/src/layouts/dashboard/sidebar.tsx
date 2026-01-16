@@ -48,23 +48,19 @@ function NavItemComponent({ item, pathname }: { item: NavItem; pathname: string 
   const [isExpanded, setIsExpanded] = useState(false);
   const hasChildren = item.children && item.children.length > 0;
   const isActive = item.path === pathname;
-  const isChildActive = hasChildren && item.children?.some((child) => child.path === pathname);
-
-  // Auto-expand if a child is active
-  const shouldHighlight = isActive || isChildActive;
 
   if (hasChildren) {
     return (
-      <Collapsible open={isExpanded || isChildActive} onOpenChange={setIsExpanded}>
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
-            <SidebarMenuButton isActive={shouldHighlight} tooltip={item.title}>
+            <SidebarMenuButton tooltip={item.title}>
               {item.icon}
               <span>{item.title}</span>
               <ChevronDown
                 className={cn(
                   'ml-auto size-4 transition-transform duration-200',
-                  (isExpanded || isChildActive) && 'rotate-180'
+                  isExpanded && 'rotate-180'
                 )}
               />
             </SidebarMenuButton>
@@ -136,7 +132,11 @@ export function AppSidebar({ data, slots }: AppSidebarProps) {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {subItems.map((item) => (
-                      <NavItemComponent key={item.path || item.title} item={item} pathname={pathname} />
+                      <NavItemComponent
+                        key={item.path || item.title}
+                        item={item}
+                        pathname={pathname}
+                      />
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -151,7 +151,11 @@ export function AppSidebar({ data, slots }: AppSidebarProps) {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {debugItems.map((item) => (
-                      <NavItemComponent key={item.path || item.title} item={item} pathname={pathname} />
+                      <NavItemComponent
+                        key={item.path || item.title}
+                        item={item}
+                        pathname={pathname}
+                      />
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
