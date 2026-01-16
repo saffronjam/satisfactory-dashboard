@@ -1,10 +1,13 @@
 import GaugeComponent, { type GaugeComponentProps } from 'react-gauge-component';
 import { cn } from '@/lib/utils';
 
+type GaugeSize = 'sm' | 'md' | 'lg';
+
 type BaseGaugeProps = {
   value: number;
   className?: string;
   label?: string;
+  size?: GaugeSize;
 };
 
 type RadialGaugeProps = BaseGaugeProps & {
@@ -25,12 +28,24 @@ type SemicircleGaugeProps = BaseGaugeProps & {
 
 export type GaugeProps = RadialGaugeProps | SemicircleGaugeProps;
 
+const sizeClasses: Record<GaugeSize, string> = {
+  sm: 'max-w-[140px]',
+  md: 'max-w-[180px]',
+  lg: 'max-w-[240px]',
+};
+
+const sizeDimensions: Record<GaugeSize, { width: number; height: number }> = {
+  sm: { width: 130, height: 105 },
+  md: { width: 150, height: 120 },
+  lg: { width: 200, height: 160 },
+};
+
 /**
  * Gauge component wrapper for react-gauge-component with Tailwind styling.
  * Provides consistent theming using CSS variables and supports radial and semicircle variants.
  */
 export function Gauge(props: GaugeProps) {
-  const { value, className, label, variant = 'radial' } = props;
+  const { value, className, label, variant = 'radial', size = 'lg' } = props;
 
   const commonProps: Partial<GaugeComponentProps> = {
     value,
@@ -46,10 +61,11 @@ export function Gauge(props: GaugeProps) {
     } = props as SemicircleGaugeProps;
 
     return (
-      <div className={cn('flex flex-col items-center', className)}>
+      <div className={cn('flex flex-col items-center', sizeClasses[size], className)}>
         <GaugeComponent
           type="semicircle"
           {...commonProps}
+          style={{ width: sizeDimensions[size].width, height: sizeDimensions[size].height }}
           arc={{
             width: 0.2,
             padding: 0.005,
@@ -57,18 +73,18 @@ export function Gauge(props: GaugeProps) {
             subArcs: [
               {
                 limit: value,
-                color: 'hsl(var(--chart-1))',
+                color: 'var(--chart-1)',
                 showTick: false,
               },
               {
-                color: 'hsl(var(--muted))',
+                color: 'var(--muted)',
                 showTick: false,
               },
             ],
           }}
           pointer={{
             type: 'needle',
-            color: 'hsl(var(--foreground))',
+            color: 'var(--foreground)',
             length: 0.7,
             width: 12,
           }}
@@ -77,7 +93,7 @@ export function Gauge(props: GaugeProps) {
               formatTextValue: formatValue,
               style: {
                 fontSize: '36px',
-                fill: 'hsl(var(--foreground))',
+                fill: 'var(--foreground)',
                 textShadow: 'none',
               },
             },
@@ -88,7 +104,7 @@ export function Gauge(props: GaugeProps) {
                   defaultTickValueConfig: {
                     style: {
                       fontSize: '10px',
-                      fill: 'hsl(var(--muted-foreground))',
+                      fill: 'var(--muted-foreground)',
                     },
                   },
                 }
@@ -103,34 +119,29 @@ export function Gauge(props: GaugeProps) {
   const { showValueLabel = false } = props as RadialGaugeProps;
 
   return (
-    <div className={cn('flex flex-col items-center', className)}>
+    <div className={cn('flex flex-col items-center', sizeClasses[size], className)}>
       <GaugeComponent
         type="radial"
         {...commonProps}
+        style={{ width: sizeDimensions[size].width, height: sizeDimensions[size].height }}
         labels={{
           valueLabel: {
             hide: !showValueLabel,
             style: {
               fontSize: '24px',
-              fill: 'hsl(var(--foreground))',
+              fill: 'var(--foreground)',
               textShadow: 'none',
             },
           },
           tickLabels: {
-            type: 'inner',
-            defaultTickValueConfig: {
-              style: {
-                fontSize: '10px',
-                fill: 'hsl(var(--muted-foreground))',
-              },
-            },
+            hideMinMax: true,
           },
         }}
         arc={{
           colorArray: [
-            'hsl(var(--chart-destructive, 0 84% 60%))',  // red (low = slow/bad)
-            'hsl(var(--chart-warning, 38 92% 50%))',     // yellow (mid)
-            'hsl(var(--chart-success, 142 76% 36%))',    // green (high = fast/good)
+            '#eb4034', // red (low = slow/bad) - matches hsl(0 84% 60%)
+            '#f5a623', // yellow (mid) - matches hsl(38 92% 50%)
+            '#16a34a', // green (high = fast/good) - matches hsl(142 76% 36%)
           ],
           padding: 0.02,
           width: 0.3,
@@ -140,7 +151,7 @@ export function Gauge(props: GaugeProps) {
           type: 'needle',
           elastic: true,
           animationDelay: 0,
-          color: 'hsl(var(--muted-foreground))',
+          color: 'var(--foreground)',
         }}
       />
       {label && <span className="text-sm text-muted-foreground">{label}</span>}
