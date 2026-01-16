@@ -100,6 +100,7 @@ type CreateSessionRequest struct {
 type UpdateSessionRequest struct {
 	Name     *string `json:"name,omitempty"`
 	IsPaused *bool   `json:"isPaused,omitempty"`
+	Address  *string `json:"address,omitempty"`
 }
 
 // SessionDTO is the data transfer object for Session with computed fields

@@ -208,7 +208,7 @@ func GetSession(ginContext *gin.Context) {
 
 // UpdateSession godoc
 // @Summary Update Session
-// @Description Update a session's properties (name, paused state). All fields are optional.
+// @Description Update a session's properties (name, paused state, address). All fields are optional.
 // @Tags Sessions
 // @Accept json
 // @Produce json
@@ -235,14 +235,20 @@ func UpdateSession(ginContext *gin.Context) {
 	}
 
 	// Check that at least one field is provided
-	if req.Name == nil && req.IsPaused == nil {
-		requestContext.UserError("At least one field (name or isPaused) must be provided")
+	if req.Name == nil && req.IsPaused == nil && req.Address == nil {
+		requestContext.UserError("At least one field (name, isPaused, or address) must be provided")
 		return
 	}
 
 	// Validate name if provided
 	if req.Name != nil && *req.Name == "" {
 		requestContext.UserError("Session name cannot be empty")
+		return
+	}
+
+	// Validate address if provided
+	if req.Address != nil && *req.Address == "" {
+		requestContext.UserError("Session address cannot be empty")
 		return
 	}
 
@@ -262,6 +268,9 @@ func UpdateSession(ginContext *gin.Context) {
 	}
 	if req.IsPaused != nil {
 		existingSession.IsPaused = *req.IsPaused
+	}
+	if req.Address != nil {
+		existingSession.Address = *req.Address
 	}
 
 	if err := getSessionStore().Update(existingSession); err != nil {

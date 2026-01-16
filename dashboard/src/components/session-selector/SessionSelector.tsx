@@ -35,6 +35,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<SessionDTO | null>(null);
   const [editName, setEditName] = useState('');
+  const [editAddress, setEditAddress] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [pausingSessionId, setPausingSessionId] = useState<string | null>(null);
 
@@ -49,20 +50,29 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
     e.preventDefault();
     setEditingSession(session);
     setEditName(session.name);
+    setEditAddress(session.address);
   };
 
   const handleEditClose = () => {
     setEditingSession(null);
     setEditName('');
+    setEditAddress('');
     setIsUpdating(false);
   };
 
   const handleEditSave = async () => {
     if (!editingSession || !editName.trim()) return;
+    // For non-mock sessions, require a valid address
+    if (!editingSession.isMock && !editAddress.trim()) return;
 
     setIsUpdating(true);
     try {
-      await updateSession(editingSession.id, { name: editName.trim() });
+      const updates: { name: string; address?: string } = { name: editName.trim() };
+      // Only include address for non-mock sessions
+      if (!editingSession.isMock) {
+        updates.address = editAddress.trim();
+      }
+      await updateSession(editingSession.id, updates);
       handleEditClose();
     } finally {
       setIsUpdating(false);
@@ -105,33 +115,24 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
 
   return (
     <div className="w-full">
-      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="h-auto w-full justify-start bg-sidebar-accent/30 px-3 py-2.5 hover:bg-sidebar-accent"
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div
-                className={cn('size-2 shrink-0 rounded-full', getStatusColor(selectedSession))}
-              />
-              <div className="min-w-0 flex-1 text-left">
-                <p className="truncate text-sm font-semibold text-foreground">
-                  {selectedSession?.name || 'Select Session'}
-                </p>
-                {selectedSession?.sessionName && (
-                  <p className="truncate text-xs text-muted-foreground">
-                    {selectedSession.sessionName}
-                  </p>
-                )}
-              </div>
-              {open ? (
-                <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-              )}
-            </div>
-          </Button>
+      <DropdownMenu open={open} onOpenChange={setOpen} modal={true}>
+        <DropdownMenuTrigger className="flex h-auto w-full items-center justify-start gap-3 rounded-md bg-sidebar-accent/30 px-3 py-2.5 text-left hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-ring">
+          <div className={cn('size-2 shrink-0 rounded-full', getStatusColor(selectedSession))} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {selectedSession?.name || 'Select Session'}
+            </p>
+            {selectedSession?.sessionName && (
+              <p className="truncate text-xs text-muted-foreground">
+                {selectedSession.sessionName}
+              </p>
+            )}
+          </div>
+          {open ? (
+            <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
@@ -206,19 +207,44 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && editName.trim()) {
+                  if (
+                    e.key === 'Enter' &&
+                    editName.trim() &&
+                    (editingSession?.isMock || editAddress.trim())
+                  ) {
                     void handleEditSave();
                   }
                 }}
                 autoFocus
               />
             </div>
+            {editingSession && !editingSession.isMock && (
+              <div className="grid gap-2">
+                <Label htmlFor="session-address">Server URL</Label>
+                <Input
+                  id="session-address"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && editName.trim() && editAddress.trim()) {
+                      void handleEditSave();
+                    }
+                  }}
+                  placeholder="192.168.1.100:8080"
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleEditClose}>
               Cancel
             </Button>
-            <Button onClick={handleEditSave} disabled={isUpdating || !editName.trim()}>
+            <Button
+              onClick={handleEditSave}
+              disabled={
+                isUpdating || !editName.trim() || (!editingSession?.isMock && !editAddress.trim())
+              }
+            >
               {isUpdating ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
