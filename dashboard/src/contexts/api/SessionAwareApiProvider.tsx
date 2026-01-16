@@ -1,5 +1,5 @@
-import { useNotifications } from '@toolpad/core';
 import React, { useCallback, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import type { SessionDTO } from 'src/apiTypes';
 import { useSession } from 'src/contexts/sessions';
 import { ApiProvider } from './ApiProvider';
@@ -10,7 +10,6 @@ interface SessionAwareApiProviderProps {
 
 export const SessionAwareApiProvider: React.FC<SessionAwareApiProviderProps> = ({ children }) => {
   const { selectedSession, updateSessionFromEvent } = useSession();
-  const { show } = useNotifications();
   const prevSessionRef = useRef<SessionDTO | null>(null);
 
   // Initialize/update prevSessionRef when selected session changes
@@ -31,15 +30,14 @@ export const SessionAwareApiProvider: React.FC<SessionAwareApiProviderProps> = (
         prevSessionRef.current.id === session.id &&
         prevSessionRef.current.sessionName !== session.sessionName
       ) {
-        show(`Save changed: ${prevSessionRef.current.sessionName} → ${session.sessionName}`, {
-          severity: 'info',
-          autoHideDuration: 5000,
+        toast.info(`Save changed: ${prevSessionRef.current.sessionName} → ${session.sessionName}`, {
+          duration: 5000,
         });
       }
       prevSessionRef.current = session;
       updateSessionFromEvent(session);
     },
-    [updateSessionFromEvent, show]
+    [updateSessionFromEvent]
   );
 
   return (
