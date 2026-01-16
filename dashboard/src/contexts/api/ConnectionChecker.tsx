@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import { useContextSelector } from 'use-context-selector';
 import { ApiContext } from './useApi';
 
+const CONNECTION_TOAST_ID = 'api-connection-status';
+
 /**
  * ConnectionCheckerProvider monitors the API connection status and displays
  * toast notifications when the connection state changes.
@@ -28,9 +30,10 @@ export const ConnectionCheckerProvider: React.FC = () => {
     previousOnline.current = isOnline;
 
     if (isOnline) {
-      toast.success(upMessage, { duration: 5000 });
+      // Using the same ID automatically replaces the offline toast
+      toast.success(upMessage, { id: CONNECTION_TOAST_ID, duration: 3000 });
     } else {
-      toast.error(downMessage, { duration: Infinity });
+      toast.error(downMessage, { id: CONNECTION_TOAST_ID, duration: Infinity });
     }
   }, [isOnline]);
 
