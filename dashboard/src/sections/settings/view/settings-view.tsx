@@ -158,6 +158,7 @@ export const SettingsView = () => {
                     type="button"
                     variant="ghost"
                     size="icon"
+                    tabIndex={-1}
                     className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                     onClick={() => setShowCurrentPassword((prev) => !prev)}
                     disabled={isSubmitting}
@@ -189,6 +190,7 @@ export const SettingsView = () => {
                     type="button"
                     variant="ghost"
                     size="icon"
+                    tabIndex={-1}
                     className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                     onClick={() => setShowNewPassword((prev) => !prev)}
                     disabled={isSubmitting}
@@ -216,6 +218,7 @@ export const SettingsView = () => {
                     type="button"
                     variant="ghost"
                     size="icon"
+                    tabIndex={-1}
                     className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     disabled={isSubmitting}
