@@ -1,6 +1,7 @@
 import 'src/index.css';
 
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useScrollToTop } from 'src/hooks/use-scroll-to-top';
@@ -27,7 +28,14 @@ export default function App() {
   useEffect(() => {
     if (justLoggedIn && usedDefaultPassword) {
       toast.warning(
-        'You are using the default password. Please change it in Settings for security.',
+        <span>
+          You are using the <strong>default access key</strong>.
+          <br />
+          Please{' '}
+          <Link to="/settings" className="underline">
+            click here to change it
+          </Link>
+        </span>,
         { duration: 10000 }
       );
       clearJustLoggedIn();
