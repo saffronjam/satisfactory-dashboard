@@ -10,6 +10,7 @@ import {
 } from 'src/apiTypes';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { PopoverMap } from '@/components/popover-map';
 import { cn } from '@/lib/utils';
 import { fNumber } from 'src/utils/format-number';
 import { abbreviations } from '../../utils/abbreviations';
@@ -83,7 +84,7 @@ function parseTrainItems(trainName: string) {
 /**
  * Displays a single train's status, timetable, and speed information.
  */
-function TrainCard({ train }: { train: Train }) {
+function TrainCard({ train, trainStations }: { train: Train; trainStations: TrainStation[] }) {
   const style = getStatusStyle(train.status);
   const items = parseTrainItems(train.name);
 
@@ -118,83 +119,94 @@ function TrainCard({ train }: { train: Train }) {
         </div>
 
         {/* Scrollable Timetable Node Graph */}
-        <div className="my-4 overflow-x-auto py-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-500 scrollbar-thumb-rounded">
-          <div className="flex min-w-full items-center">
-            {train.timetable.map((stop, index) => {
-              const isCurrentStop = index === train.timetableIndex;
-              const isPreviousStop =
-                index === train.timetableIndex - 1 ||
-                (train.timetableIndex === 0 && index === train.timetable.length - 1);
-              const isLastStop = index === train.timetable.length - 1;
-              const isWrapping = train.timetableIndex === 0 && train.status !== TrainStatusDocking;
+        {train.timetable && train.timetable.length > 0 && (
+          <div className="my-4 overflow-x-auto py-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-500 scrollbar-thumb-rounded">
+            <div className="flex min-w-full items-center">
+              {train.timetable.map((stop, index) => {
+                const isCurrentStop = index === train.timetableIndex;
+                const isPreviousStop =
+                  index === train.timetableIndex - 1 ||
+                  (train.timetableIndex === 0 && index === train.timetable.length - 1);
+                const isLastStop = index === train.timetable.length - 1;
+                const isWrapping =
+                  train.timetableIndex === 0 && train.status !== TrainStatusDocking;
 
-              const isLineActive = isCurrentStop && train.status !== TrainStatusDocking;
-              const isCircleActive = isPreviousStop && train.status === TrainStatusDocking;
+                const isLineActive = isCurrentStop && train.status !== TrainStatusDocking;
+                const isCircleActive = isPreviousStop && train.status === TrainStatusDocking;
 
-              return (
-                <div key={index} className="relative mb-2 flex min-w-[200px] flex-col items-center">
-                  {/* Station name directly above each circle */}
-                  <span className="mb-2 text-sm text-muted-foreground">{stop.station}</span>
-
-                  {/* Horizontal connecting line with animation */}
-                  {index > 0 && (
-                    <div
-                      className={cn(
-                        'absolute -left-[85px] top-[84%] -z-10 h-0.5 w-[170px]',
-                        isLineActive
-                          ? 'animate-train-flow bg-transparent bg-[length:50px_100%] bg-repeat'
-                          : 'bg-gray-600'
-                      )}
-                      style={
-                        isLineActive
-                          ? {
-                              backgroundImage:
-                                'linear-gradient(to right, transparent 20%, hsl(var(--primary)) 20%)',
-                            }
-                          : undefined
-                      }
-                    />
-                  )}
-                  {isWrapping && (
-                    <div
-                      className={cn(
-                        'absolute left-[30px] top-[84%] -z-10 h-0.5 w-[60px]',
-                        'animate-train-flow bg-transparent bg-[length:50px_100%] bg-repeat'
-                      )}
-                      style={{
-                        backgroundImage:
-                          'linear-gradient(to right, transparent 20%, hsl(var(--primary)) 20%)',
-                      }}
-                    />
-                  )}
-                  {isWrapping && isLastStop && (
-                    <div
-                      className="animate-train-flow absolute left-[110px] top-[84%] -z-10 h-0.5 w-[60px] bg-transparent bg-[length:50px_100%] bg-repeat"
-                      style={{
-                        backgroundImage:
-                          'linear-gradient(to right, transparent 20%, hsl(var(--primary)) 20%)',
-                      }}
-                    />
-                  )}
-
-                  {/* Circular node with conditional highlight */}
+                return (
                   <div
-                    className={cn(
-                      'h-2.5 w-2.5 rounded-full transition-colors duration-500',
-                      isCircleActive ? 'bg-primary' : 'bg-gray-600'
-                    )}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                    key={index}
+                    className="relative mb-2 flex min-w-[200px] flex-col items-center"
+                  >
+                    {/* Station name directly above each circle */}
+                    <span className="mb-2 text-sm text-muted-foreground">{stop.station}</span>
 
-        <div className="mt-4 flex items-center">
-          <span className="text-sm text-muted-foreground">Speed:</span>
-          <span className="ml-1 text-lg font-bold">
-            {fNumber(train.speed, { decimals: 0 })} km/h
-          </span>
+                    {/* Horizontal connecting line with animation */}
+                    {index > 0 && (
+                      <div
+                        className={cn(
+                          'absolute -left-[85px] top-[84%] -z-10 h-0.5 w-[170px]',
+                          isLineActive
+                            ? 'animate-train-flow bg-transparent bg-[length:50px_100%] bg-repeat'
+                            : 'bg-gray-600'
+                        )}
+                        style={
+                          isLineActive
+                            ? {
+                                backgroundImage:
+                                  'linear-gradient(to right, transparent 20%, var(--primary) 20%)',
+                              }
+                            : undefined
+                        }
+                      />
+                    )}
+                    {isWrapping && (
+                      <div
+                        className={cn(
+                          'absolute left-[30px] top-[84%] -z-10 h-0.5 w-[60px]',
+                          'animate-train-flow bg-transparent bg-[length:50px_100%] bg-repeat'
+                        )}
+                        style={{
+                          backgroundImage:
+                            'linear-gradient(to right, transparent 20%, oklch(var(--primary)) 20%)',
+                        }}
+                      />
+                    )}
+                    {isWrapping && isLastStop && (
+                      <div
+                        className="animate-train-flow absolute left-[110px] top-[84%] -z-10 h-0.5 w-[60px] bg-transparent bg-[length:50px_100%] bg-repeat"
+                        style={{
+                          backgroundImage:
+                            'linear-gradient(to right, transparent 20%, oklch(var(--primary)) 20%)',
+                        }}
+                      />
+                    )}
+
+                    {/* Circular node with conditional highlight */}
+                    <div
+                      className={cn(
+                        'h-2.5 w-2.5 rounded-full transition-colors duration-500',
+                        isCircleActive ? 'bg-primary' : 'bg-gray-600'
+                      )}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <span className="text-sm text-muted-foreground">Speed:</span>
+            <span className="ml-1 text-lg font-bold">
+              {fNumber(train.speed, { decimals: 0 })} km/h
+            </span>
+          </div>
+          <PopoverMap entity={train} entityType="train" trainStations={trainStations}>
+            <Icon icon="mdi:map-marker" className="size-4" />
+          </PopoverMap>
         </div>
       </CardContent>
     </Card>
@@ -204,11 +216,17 @@ function TrainCard({ train }: { train: Train }) {
 /**
  * Displays a list of train cards.
  */
-export function TrainList({ trains }: { trains: Train[]; trainStations: TrainStation[] }) {
+export function TrainList({
+  trains,
+  trainStations,
+}: {
+  trains: Train[];
+  trainStations: TrainStation[];
+}) {
   return (
     <>
       {trains.map((train, index) => (
-        <TrainCard key={index} train={train} />
+        <TrainCard key={index} train={train} trainStations={trainStations} />
       ))}
     </>
   );
