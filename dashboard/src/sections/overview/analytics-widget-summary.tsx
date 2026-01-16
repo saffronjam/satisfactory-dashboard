@@ -1,7 +1,7 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { fNumber, fShortenNumber } from 'src/utils/format-number';
+import { fShortenNumber } from 'src/utils/format-number';
 
 type Props = {
   title: string;
@@ -13,13 +13,25 @@ type Props = {
     categories?: string[];
   };
   className?: string;
+  color?: '1' | '2' | '3' | '4' | '5'; // Chart color variable (e.g., "1" for --chart-1)
 };
 
 /**
  * Summary widget card with sparkline chart for displaying key metrics.
  * Supports single values, dual values with separator, and string content.
  */
-export function AnalyticsWidgetSummary({ icon, title, total, chart, units, className }: Props) {
+export function AnalyticsWidgetSummary({
+  icon,
+  title,
+  total,
+  chart,
+  units,
+  className,
+  color = '1',
+}: Props) {
+  const gradientId = `sparklineGradient-${color}`;
+  const chartColor = `var(--chart-${color})`;
+
   const formatNumber = (value: number, options?: { decimals?: number; index?: number }) => {
     if (units) {
       if (Array.isArray(units[0]) && options?.index !== undefined) {
@@ -45,7 +57,7 @@ export function AnalyticsWidgetSummary({ icon, title, total, chart, units, class
         return (
           <div className="relative flex min-w-28 grow items-center justify-between">
             <div className="flex-1 text-center">
-              <span className="mr-2 text-right text-xl font-semibold text-primary-foreground">
+              <span className="mr-2 text-right text-xl font-semibold text-card-foreground">
                 {leftNumber}
               </span>
             </div>
@@ -53,7 +65,7 @@ export function AnalyticsWidgetSummary({ icon, title, total, chart, units, class
               <span className="text-2xl text-muted-foreground">|</span>
             </div>
             <div className="flex-1 text-center">
-              <span className="ml-2 text-left text-xl font-semibold text-primary-foreground">
+              <span className="ml-2 text-left text-xl font-semibold text-card-foreground">
                 {rightNumber}
               </span>
             </div>
@@ -65,7 +77,7 @@ export function AnalyticsWidgetSummary({ icon, title, total, chart, units, class
     if (typeof value === 'number') {
       return (
         <div className="min-w-28 grow text-center">
-          <span className="text-2xl font-bold text-primary-foreground">
+          <span className="text-2xl font-bold text-card-foreground">
             {formatNumber(value, { decimals: 1 })}
           </span>
         </div>
@@ -75,7 +87,7 @@ export function AnalyticsWidgetSummary({ icon, title, total, chart, units, class
     if (typeof value === 'string') {
       const newLineSplit = value.split('\n');
       return (
-        <div className="min-w-28 grow text-primary-foreground">
+        <div className="min-w-28 grow text-card-foreground">
           {newLineSplit.map((line, index) => (
             <div key={index} className="font-mono text-2xl font-bold">
               {line}
@@ -107,28 +119,31 @@ export function AnalyticsWidgetSummary({ icon, title, total, chart, units, class
           <ResponsiveContainer width="100%" height={66}>
             <AreaChart data={chartData} margin={{ top: 10, bottom: 10, left: 0, right: 0 }}>
               <defs>
-                <linearGradient id="sparklineGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <Area
                 type="natural"
                 dataKey="value"
-                stroke="hsl(var(--chart-1))"
+                stroke={chartColor}
                 strokeWidth={2}
-                fill="url(#sparklineGradient)"
+                fill={`url(#${gradientId})`}
                 isAnimationActive={false}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--popover))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  color: 'hsl(var(--popover-foreground))',
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const value = payload[0].value as number;
+                  return (
+                    <div className="rounded-md border border-border bg-popover px-3 py-2 text-popover-foreground">
+                      <p className="text-sm font-semibold">
+                        {formatNumber(value, { decimals: 1 })}
+                      </p>
+                    </div>
+                  );
                 }}
-                formatter={(value: number) => [fNumber(value), '']}
-                labelStyle={{ display: 'none' }}
               />
             </AreaChart>
           </ResponsiveContainer>

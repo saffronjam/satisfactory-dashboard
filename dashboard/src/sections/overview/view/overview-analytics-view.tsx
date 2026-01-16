@@ -2,6 +2,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Iconify } from '@/components/iconify';
 import { ApiContext } from '@/contexts/api/useApi';
 import { useContextSelector } from 'use-context-selector';
+import { WattUnits } from 'src/utils/format-number';
 import { AnalyticsPieChart } from '../analytics-pie-chart';
 import { AnalyticsSpaceElevatorProgress } from '../analytics-space-elevator-progress';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
@@ -61,6 +62,7 @@ export function OverviewAnalyticsView() {
             series: api.history.map((data) => data.prodStats.itemsConsumedPerMinute) || [],
           }}
           units={wUnits}
+          color="1"
         />
       </div>
 
@@ -74,6 +76,7 @@ export function OverviewAnalyticsView() {
             series: api.history.map((data) => data.prodStats.minableProducedPerMinute) || [],
           }}
           units={mPerMinUnits}
+          color="2"
         />
       </div>
 
@@ -87,6 +90,7 @@ export function OverviewAnalyticsView() {
             series: api.history.map((data) => data.prodStats.itemsProducedPerMinute) || [],
           }}
           units={mPerMinUnits}
+          color="3"
         />
       </div>
 
@@ -103,6 +107,7 @@ export function OverviewAnalyticsView() {
             ['', 'k', 'M', 'B', 'T'],
             ['/min', 'k/min', 'M/min', 'B/min', 'T/min'],
           ]}
+          color="4"
         />
       </div>
 
@@ -110,6 +115,7 @@ export function OverviewAnalyticsView() {
       <div className="col-span-12 md:col-span-6 lg:col-span-4">
         <AnalyticsPieChart
           title="Energy Sources"
+          units={WattUnits}
           chart={{
             series: (() => {
               const data = [
