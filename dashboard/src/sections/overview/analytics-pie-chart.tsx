@@ -1,8 +1,8 @@
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { fNumber } from 'src/utils/format-number';
+import { fShortenNumber, MetricUnits } from 'src/utils/format-number';
 
 type Props = {
   title?: string;
@@ -14,6 +14,7 @@ type Props = {
       value: number;
     }[];
   };
+  units?: string[];
   className?: string;
 };
 
@@ -21,12 +22,18 @@ type Props = {
  * Pie chart component for displaying distribution data.
  * Shows a donut chart with customizable colors and a legend below.
  */
-export function AnalyticsPieChart({ title, subheader, chart, className }: Props) {
+export function AnalyticsPieChart({
+  title,
+  subheader,
+  chart,
+  units = MetricUnits,
+  className,
+}: Props) {
   const chartColors = chart.colors ?? [
-    'hsl(var(--chart-1))',
-    'hsl(var(--chart-2))',
-    'hsl(var(--chart-3))',
-    'hsl(var(--chart-4))',
+    'var(--chart-1)',
+    'var(--chart-2)',
+    'var(--chart-3)',
+    'var(--chart-4)',
   ];
 
   const pieData = chart.series.map((item, index) => ({
@@ -46,34 +53,38 @@ export function AnalyticsPieChart({ title, subheader, chart, className }: Props)
       </CardHeader>
 
       <CardContent className="my-6 flex flex-1 justify-center">
-        <ResponsiveContainer width={260} height={260}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              innerRadius={30}
-              outerRadius={100}
-              paddingAngle={3}
-              cornerRadius={6}
-              dataKey="value"
-              stroke="none"
-            >
-              {pieData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(var(--popover))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px',
-                color: 'hsl(var(--popover-foreground))',
-              }}
-              formatter={(value: number) => [fNumber(value, { decimals: 0 }), '']}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+        <PieChart width={260} height={260}>
+          <Pie
+            data={pieData}
+            cx="50%"
+            cy="50%"
+            innerRadius={30}
+            outerRadius={100}
+            paddingAngle={5}
+            cornerRadius={6}
+            dataKey="value"
+            stroke="none"
+            isAnimationActive={false}
+          >
+            {pieData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              const data = payload[0].payload;
+              return (
+                <div className="rounded-md border border-border bg-popover px-3 py-2 text-popover-foreground">
+                  <p className="text-xs text-muted-foreground">{data.name}</p>
+                  <p className="text-sm font-semibold">
+                    {fShortenNumber(data.value, units, { decimals: 1 })}
+                  </p>
+                </div>
+              );
+            }}
+          />
+        </PieChart>
       </CardContent>
 
       <Separator className="border-dashed" />
