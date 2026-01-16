@@ -76,16 +76,16 @@ export function DronesView() {
 
   return (
     <div className="mx-auto max-w-7xl pt-12">
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="flex flex-col gap-4">
-          <Card className="p-4">
+          <Card className="flex-1 p-4">
             <CardContent className="p-0">
               <h3 className="text-3xl font-bold">{api.drones.length}</h3>
               <p className="text-muted-foreground">Total Drones</p>
             </CardContent>
           </Card>
 
-          <Card className="p-4">
+          <Card className="flex-1 p-4">
             <CardContent className="p-0">
               <h3 className="text-3xl font-bold">{api.droneStations.length}</h3>
               <p className="text-muted-foreground">Total Stations</p>
@@ -93,9 +93,9 @@ export function DronesView() {
           </Card>
         </div>
 
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <h6 className="mb-2 text-lg font-semibold">Status</h6>
+        <Card className="h-full p-4">
+          <CardContent className="flex h-full flex-col justify-center p-0">
+            <h6 className="mb-2 text-sm font-semibold">Status</h6>
             <div className="flex flex-col gap-2">
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Flying</span>
@@ -115,20 +115,18 @@ export function DronesView() {
           </CardContent>
         </Card>
 
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <h6 className="mb-2 text-lg font-semibold">Drone Speed (Average)</h6>
-
-            <Gauge value={(avgSpeed() / maxSpeed()) * 100} />
-
-            <div className="mb-2 flex justify-between">
-              <div className="flex items-center">
-                <span className="text-sm text-muted-foreground">Current</span>
-                <span className="pl-1 font-bold">{fNumber(avgSpeed(), { decimals: 0 })} km/h</span>
+        <Card className="h-full overflow-hidden p-4">
+          <CardContent className="flex h-full flex-col items-center justify-between p-0">
+            <h6 className="text-sm font-semibold">Drone Speed (Average)</h6>
+            <Gauge value={(avgSpeed() / maxSpeed()) * 100} size="sm" />
+            <div className="flex gap-4 text-xs">
+              <div className="flex items-center gap-1">
+                <span className="text-muted-foreground">Current</span>
+                <span className="font-bold">{fNumber(avgSpeed(), { decimals: 0 })} km/h</span>
               </div>
-              <div className="flex items-center">
-                <span className="text-sm text-muted-foreground">Max</span>
-                <span className="pl-1 font-bold">{fNumber(maxSpeed(), { decimals: 0 })} km/h</span>
+              <div className="flex items-center gap-1">
+                <span className="text-muted-foreground">Max</span>
+                <span className="font-bold">{fNumber(maxSpeed(), { decimals: 0 })} km/h</span>
               </div>
             </div>
           </CardContent>
@@ -157,15 +155,13 @@ export function DronesView() {
         />
 
         <Popover open={statusPopoverOpen} onOpenChange={setStatusPopoverOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="min-w-[180px] justify-between">
-              {statusFilter.length === 0 ? (
-                <span className="text-muted-foreground">Filter by status</span>
-              ) : (
-                <span>{statusFilter.length} status selected</span>
-              )}
-              <Icon icon="mdi:chevron-down" className="size-4" />
-            </Button>
+          <PopoverTrigger className="inline-flex h-9 min-w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 text-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            {statusFilter.length === 0 ? (
+              <span className="text-muted-foreground">Filter by status</span>
+            ) : (
+              <span>{statusFilter.length} status selected</span>
+            )}
+            <Icon icon="mdi:chevron-down" className="size-4" />
           </PopoverTrigger>
           <PopoverContent className="w-[200px] p-2">
             <div className="flex flex-col gap-2">
