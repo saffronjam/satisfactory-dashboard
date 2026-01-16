@@ -685,6 +685,7 @@ export interface CreateSessionRequest {
 export interface UpdateSessionRequest {
   name?: string;
   isPaused?: boolean;
+  address?: string;
 }
 /**
  * SessionDTO is the data transfer object for Session with computed fields

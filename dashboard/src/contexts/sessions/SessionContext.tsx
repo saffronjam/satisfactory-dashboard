@@ -13,7 +13,7 @@ export interface SessionContextType {
   createMockSession: (name: string) => Promise<SessionDTO>;
   updateSession: (
     id: string,
-    updates: { name?: string; isPaused?: boolean }
+    updates: { name?: string; isPaused?: boolean; address?: string }
   ) => Promise<SessionDTO>;
   updateSessionFromEvent: (session: SessionDTO) => void;
   deleteSession: (id: string) => Promise<void>;

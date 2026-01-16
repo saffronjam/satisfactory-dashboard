@@ -84,11 +84,11 @@ export const sessionApi = {
   },
 
   /**
-   * Update a session (name and/or paused state)
+   * Update a session (name, paused state, and/or address)
    */
   update: async (
     id: string,
-    updates: { name?: string; isPaused?: boolean }
+    updates: { name?: string; isPaused?: boolean; address?: string }
   ): Promise<SessionDTO> => {
     const response = await fetch(`${API_URL}/sessions/${id}`, {
       method: 'PATCH',

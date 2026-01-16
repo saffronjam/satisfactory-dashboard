@@ -126,7 +126,10 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   );
 
   const updateSession = useCallback(
-    async (id: string, updates: { name?: string; isPaused?: boolean }): Promise<SessionDTO> => {
+    async (
+      id: string,
+      updates: { name?: string; isPaused?: boolean; address?: string }
+    ): Promise<SessionDTO> => {
       const updatedSession = await sessionApi.update(id, updates);
       setSessions((prev) => prev.map((s) => (s.id === id ? updatedSession : s)));
       return updatedSession;
