@@ -5,7 +5,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { AuthGuard } from '@/components/auth-guard/AuthGuard';
 import { GuestGuard } from '@/components/auth-guard/GuestGuard';
 import { DashboardLayout } from '@/layouts/dashboard';
-import { SimpleLayout } from '@/layouts/simple';
 import DebugPage from '@/pages/debug';
 import DebugNodesPage from '@/pages/debug-nodes';
 import DronesPage from '@/pages/drones';
