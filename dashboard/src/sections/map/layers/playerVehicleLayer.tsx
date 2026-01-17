@@ -116,8 +116,13 @@ function PlayerVehicleLayerInner({
   return (
     <>
       {players.map((player, index) => {
-        const animatedPos = animatedPositions.get(player.name);
-        if (!animatedPos) return null;
+        // Use animated position if available, otherwise fall back to player's actual position
+        // This ensures players render immediately on first frame before animation state updates
+        const animatedPos = animatedPositions.get(player.name) ?? {
+          x: player.x,
+          y: player.y,
+          rotation: player.rotation,
+        };
 
         const mapPosition = ConvertToMapCoords2(animatedPos.x, animatedPos.y);
         const isSelected = selectedName === player.name;
