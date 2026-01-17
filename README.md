@@ -43,12 +43,6 @@ The dashboard is designed so that **client browsers never directly communicate w
 
 This architecture means that **many dashboard clients will never affect your Satisfactory game performance** - the game only sees a single polling connection regardless of how many people are viewing the dashboard. The load scales on Redis (which is highly scalable) and the API server, not on your game.
 
-### Current Limitations
-
-> **Single API Instance:** The API should currently run as a single instance. Running multiple instances would create duplicate pollers for the same session. (To be implemented: distributed polling coordination)
-
-> **Server-wide Sessions:** When a session is added, it's visible to all users of that dashboard instance - there are no user-scoped sessions. This dashboard is intended for private/trusted hosting. (To be implemented: user authentication and scoped sessions)
-
 ## Quick Start
 
 ```bash
