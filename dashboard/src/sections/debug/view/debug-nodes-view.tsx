@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Chip } from '@/components/ui/chip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -182,10 +183,10 @@ export function DebugNodesView() {
             </p>
           </div>
 
-          <Badge variant="default" className="bg-green-600">
-            <Icon icon="mdi:server-network" className="size-4 mr-1" />
+          <Chip variant="success" className="gap-1">
+            <Icon icon="mdi:server-network" className="size-3" />
             {nodesData?.liveNodes?.length || 0} Live
-          </Badge>
+          </Chip>
         </div>
 
         <ScrollArea className="flex-grow">
@@ -221,18 +222,17 @@ export function DebugNodesView() {
                               {node.ownedSessions.length} session
                               {node.ownedSessions.length !== 1 ? 's' : ''}
                             </span>
-                            <Badge
+                            <Chip
                               variant={
                                 node.status === 'online'
-                                  ? 'default'
+                                  ? 'success'
                                   : node.status === 'init'
-                                    ? 'secondary'
-                                    : 'outline'
+                                    ? 'warning'
+                                    : 'error'
                               }
-                              className={node.status === 'online' ? 'bg-green-600' : ''}
                             >
                               {node.status.charAt(0).toUpperCase() + node.status.slice(1)}
-                            </Badge>
+                            </Chip>
                           </div>
                         </div>
                       </div>

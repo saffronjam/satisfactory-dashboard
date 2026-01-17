@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react';
 
-import { Badge } from '@/components/ui/badge';
+import { Chip } from '@/components/ui/chip';
 import { Card, CardContent } from '@/components/ui/card';
 import { PopoverMap } from '@/components/popover-map';
 import { cn } from '@/lib/utils';
@@ -79,10 +79,10 @@ const DroneCard = ({ drone }: { drone: Drone }) => {
         {/* Header: Name and Status */}
         <div className="mb-4 flex items-center justify-between">
           <h4 className="text-2xl font-bold">{drone.name}</h4>
-          <Badge className={cn(config.className, 'pl-1.5', config.pulse && 'animate-pulse')}>
+          <Chip className={cn('gap-1', config.className, config.pulse && 'animate-pulse')}>
             {config.icon}
             {config.label}
-          </Badge>
+          </Chip>
         </div>
 
         {/* Route Visualization - Ellipse with bidirectional arrows */}
