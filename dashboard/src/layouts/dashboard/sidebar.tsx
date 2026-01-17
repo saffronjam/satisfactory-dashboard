@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Lock } from 'lucide-react';
 import { RouterLink } from 'src/routes/components';
 import {
   Sidebar,
@@ -23,14 +23,7 @@ import { ScrollArea } from 'src/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'src/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
-type NavItem = {
-  path?: string;
-  title: string;
-  icon: React.ReactNode;
-  group: 'main' | 'sub' | 'debug';
-  info?: React.ReactNode;
-  children?: NavItem[];
-};
+import type { NavItem } from '../config-nav-dashboard';
 
 export type AppSidebarProps = {
   data: NavItem[];
@@ -43,11 +36,13 @@ export type AppSidebarProps = {
 /**
  * Renders a single navigation item using shadcn SidebarMenuButton.
  * For items with children, renders as a collapsible instead of a link.
+ * Locked items display with faded styling and a padlock icon.
  */
 function NavItemComponent({ item, pathname }: { item: NavItem; pathname: string }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasChildren = item.children && item.children.length > 0;
   const isActive = item.path === pathname;
+  const isLocked = item.locked ?? false;
 
   if (hasChildren) {
     return (
@@ -86,10 +81,20 @@ function NavItemComponent({ item, pathname }: { item: NavItem; pathname: string 
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+      <SidebarMenuButton
+        asChild
+        isActive={isActive}
+        tooltip={isLocked ? `${item.title} (Locked)` : item.title}
+        className={cn(isLocked && 'opacity-50')}
+      >
         <RouterLink href={item.path || '#'}>
-          {item.icon}
-          <span>{item.title}</span>
+          <span className={cn('relative', isLocked && 'text-muted-foreground')}>
+            {item.icon}
+            {isLocked && (
+              <Lock size={12} className="absolute -right-1 -top-1 text-muted-foreground" />
+            )}
+          </span>
+          <span className={cn(isLocked && 'text-muted-foreground')}>{item.title}</span>
         </RouterLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
