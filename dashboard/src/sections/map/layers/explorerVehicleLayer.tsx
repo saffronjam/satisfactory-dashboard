@@ -224,8 +224,13 @@ function ExplorerVehicleLayerInner({
   return (
     <>
       {explorers.map((explorer) => {
-        const animatedPos = animatedPositions.get(explorer.name);
-        if (!animatedPos) return null;
+        // Use animated position if available, otherwise fall back to explorer's actual position
+        // This ensures explorers render immediately on first frame before animation state updates
+        const animatedPos = animatedPositions.get(explorer.name) ?? {
+          x: explorer.x,
+          y: explorer.y,
+          rotation: explorer.rotation,
+        };
 
         const isSelected = selectedName === explorer.name;
         // Determine color override for grid mode

@@ -224,8 +224,13 @@ function TractorVehicleLayerInner({
   return (
     <>
       {tractors.map((tractor) => {
-        const animatedPos = animatedPositions.get(tractor.name);
-        if (!animatedPos) return null;
+        // Use animated position if available, otherwise fall back to tractor's actual position
+        // This ensures tractors render immediately on first frame before animation state updates
+        const animatedPos = animatedPositions.get(tractor.name) ?? {
+          x: tractor.x,
+          y: tractor.y,
+          rotation: tractor.rotation,
+        };
 
         const isSelected = selectedName === tractor.name;
         // Determine color override for grid mode

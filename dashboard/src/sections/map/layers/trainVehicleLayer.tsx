@@ -227,8 +227,13 @@ function TrainVehicleLayerInner({
   return (
     <>
       {trains.map((train) => {
-        const animatedPos = animatedPositions.get(train.name);
-        if (!animatedPos) return null;
+        // Use animated position if available, otherwise fall back to train's actual position
+        // This ensures trains render immediately on first frame before animation state updates
+        const animatedPos = animatedPositions.get(train.name) ?? {
+          x: train.x,
+          y: train.y,
+          rotation: train.rotation,
+        };
 
         const isSelected = selectedName === train.name;
         // Determine color override for grid mode

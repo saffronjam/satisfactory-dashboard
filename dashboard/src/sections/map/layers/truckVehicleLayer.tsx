@@ -224,8 +224,13 @@ function TruckVehicleLayerInner({
   return (
     <>
       {trucks.map((truck) => {
-        const animatedPos = animatedPositions.get(truck.name);
-        if (!animatedPos) return null;
+        // Use animated position if available, otherwise fall back to truck's actual position
+        // This ensures trucks render immediately on first frame before animation state updates
+        const animatedPos = animatedPositions.get(truck.name) ?? {
+          x: truck.x,
+          y: truck.y,
+          rotation: truck.rotation,
+        };
 
         const isSelected = selectedName === truck.name;
         // Determine color override for grid mode

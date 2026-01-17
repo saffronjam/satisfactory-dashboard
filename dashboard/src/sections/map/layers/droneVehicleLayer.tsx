@@ -220,8 +220,13 @@ function DroneVehicleLayerInner({
   return (
     <>
       {drones.map((drone) => {
-        const animatedPos = animatedPositions.get(drone.name);
-        if (!animatedPos) return null;
+        // Use animated position if available, otherwise fall back to drone's actual position
+        // This ensures drones render immediately on first frame before animation state updates
+        const animatedPos = animatedPositions.get(drone.name) ?? {
+          x: drone.x,
+          y: drone.y,
+          rotation: drone.rotation,
+        };
 
         const isSelected = selectedName === drone.name;
         // Determine color override for grid mode
