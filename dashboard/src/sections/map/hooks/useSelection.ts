@@ -139,6 +139,8 @@ export function getEntityId(entity: SelectableEntity): string {
     case 'machine':
       // Machines don't have id - use position as unique key
       return coordsToId(entity.data.x, entity.data.y, entity.data.z);
+    case 'storage':
+      return entity.data.id;
     case 'trainStation':
       return entity.data.name;
     case 'droneStation':
@@ -184,6 +186,9 @@ function selectionToEntities(selection: Selection): SelectableEntity[] {
 
   for (const machine of selection.entities.machines) {
     entities.push({ type: 'machine', data: machine });
+  }
+  for (const storage of selection.entities.storages) {
+    entities.push({ type: 'storage', data: storage });
   }
   for (const station of selection.entities.trainStations) {
     entities.push({ type: 'trainStation', data: station });
@@ -255,6 +260,7 @@ export function createSelection(
     bounds,
     entities: {
       machines: [],
+      storages: [],
       trainStations: [],
       droneStations: [],
       radarTowers: [],
@@ -276,15 +282,20 @@ export function createSelection(
     power: { consumption: 0, production: 0 },
     items: { production: Object.create(null), consumption: Object.create(null) },
     buildingCounts: Object.create(null),
+    inventory: Object.create(null),
     hasItems: false,
     hasPower: false,
     hasVehicles: false,
+    hasInventory: false,
   };
 
   for (const entity of entities) {
     switch (entity.type) {
       case 'machine':
         selection.entities.machines.push(entity.data);
+        break;
+      case 'storage':
+        selection.entities.storages.push(entity.data);
         break;
       case 'trainStation':
         selection.entities.trainStations.push(entity.data);
@@ -369,6 +380,8 @@ export function isEntityInSelection(
     case 'machine':
       // Machines use coordinate-based ID
       return selection.entities.machines.some((m) => coordsToId(m.x, m.y, m.z) === entityId);
+    case 'storage':
+      return selection.entities.storages.some((s) => s.id === entityId);
     case 'trainStation':
       return selection.entities.trainStations.some((s) => s.name === entityId);
     case 'droneStation':
@@ -484,6 +497,7 @@ export function filterSelectionByGameState(
   selection: Selection,
   gameState: {
     machines?: { x: number; y: number; z: number }[];
+    storages?: { id: string }[];
     trainStations?: { name: string }[];
     droneStations?: { name: string }[];
     radarTowers?: { id: string }[];
@@ -506,6 +520,7 @@ export function filterSelectionByGameState(
 
   // Machines use coordinate-based IDs
   const machineIds = new Set(gameState.machines?.map((m) => coordsToId(m.x, m.y, m.z)) ?? []);
+  const storageIds = new Set(gameState.storages?.map((s) => s.id) ?? []);
   const trainStationNames = new Set(gameState.trainStations?.map((s) => s.name) ?? []);
   // DroneStations use name as identifier
   const droneStationNames = new Set(gameState.droneStations?.map((s) => s.name) ?? []);
@@ -529,6 +544,8 @@ export function filterSelectionByGameState(
     switch (entity.type) {
       case 'machine':
         return machineIds.has(coordsToId(entity.data.x, entity.data.y, entity.data.z));
+      case 'storage':
+        return storageIds.has(entity.data.id);
       case 'trainStation':
         return trainStationNames.has(entity.data.name);
       case 'droneStation':
@@ -576,8 +593,8 @@ export function filterSelectionByGameState(
 }
 
 /**
- * Computes aggregated statistics for a selection based on its machines.
- * Mutates the selection object to populate power, items, buildingCounts, and visibility flags.
+ * Computes aggregated statistics for a selection based on its entities.
+ * Mutates the selection object to populate power, items, buildingCounts, inventory, and visibility flags.
  *
  * @param selection - The selection object to compute aggregates for (mutated in place)
  */
@@ -589,6 +606,7 @@ export function computeSelectionAggregates(selection: Selection): void {
   const itemProduction: Record<string, number> = Object.create(null);
   const itemConsumption: Record<string, number> = Object.create(null);
   const buildingCounts: Record<string, number> = Object.create(null);
+  const inventory: Record<string, number> = Object.create(null);
 
   for (const machine of machines) {
     const isGenerator = machine.category === MachineCategoryGenerator;
@@ -606,15 +624,15 @@ export function computeSelectionAggregates(selection: Selection): void {
       }
     }
 
-    // Item production (exclude Power)
+    // Item production (exclude Power and Unassigned)
     for (const output of machine.output) {
-      if (output.name === 'Power') continue;
+      if (output.name === 'Power' || output.name === 'Unassigned') continue;
       itemProduction[output.name] = (itemProduction[output.name] || 0) + output.current;
     }
 
-    // Item consumption (exclude Power)
+    // Item consumption (exclude Power and Unassigned)
     for (const input of machine.input) {
-      if (input.name === 'Power') continue;
+      if (input.name === 'Power' || input.name === 'Unassigned') continue;
       itemConsumption[input.name] = (itemConsumption[input.name] || 0) + input.current;
     }
 
@@ -627,13 +645,67 @@ export function computeSelectionAggregates(selection: Selection): void {
     power.consumption += train.powerConsumption;
   }
 
+  // Aggregate inventory from storage containers
+  for (const storage of selection.entities.storages) {
+    for (const item of storage.inventory) {
+      inventory[item.name] = (inventory[item.name] || 0) + item.count;
+    }
+  }
+
+  // Aggregate inventory from trains (vehicles have inventory)
+  for (const train of selection.entities.trains) {
+    for (const vehicle of train.vehicles) {
+      for (const item of vehicle.inventory) {
+        inventory[item.name] = (inventory[item.name] || 0) + item.count;
+      }
+    }
+  }
+
+  // Aggregate inventory from train station platforms
+  for (const station of selection.entities.trainStations) {
+    for (const platform of station.platforms) {
+      for (const item of platform.inventory) {
+        inventory[item.name] = (inventory[item.name] || 0) + item.count;
+      }
+    }
+  }
+
+  // Aggregate inventory from ground vehicles
+  for (const explorer of selection.entities.explorers) {
+    for (const item of explorer.inventory) {
+      inventory[item.name] = (inventory[item.name] || 0) + item.count;
+    }
+  }
+  for (const truck of selection.entities.trucks) {
+    for (const item of truck.inventory) {
+      inventory[item.name] = (inventory[item.name] || 0) + item.count;
+    }
+  }
+  for (const tractor of selection.entities.tractors) {
+    for (const item of tractor.inventory) {
+      inventory[item.name] = (inventory[item.name] || 0) + item.count;
+    }
+  }
+
+  // Aggregate inventory from drone stations (input + output inventory)
+  for (const station of selection.entities.droneStations) {
+    for (const item of station.inputInventory ?? []) {
+      inventory[item.name] = (inventory[item.name] || 0) + item.count;
+    }
+    for (const item of station.outputInventory ?? []) {
+      inventory[item.name] = (inventory[item.name] || 0) + item.count;
+    }
+  }
+
   selection.power = power;
   selection.items = { production: itemProduction, consumption: itemConsumption };
   selection.buildingCounts = buildingCounts;
+  selection.inventory = inventory;
 
   // Compute visibility flags
   selection.hasItems =
     Object.keys(itemProduction).length > 0 || Object.keys(itemConsumption).length > 0;
   selection.hasPower =
     power.consumption > 0 || power.production > 0 || selection.entities.trains.length > 0;
+  selection.hasInventory = Object.keys(inventory).length > 0;
 }

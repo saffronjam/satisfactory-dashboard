@@ -39,10 +39,6 @@ export function getEntityPosition(entity: SelectableEntity): { x: number; y: num
     case 'pipe':
     case 'cable':
     case 'rail':
-      return {
-        x: (entity.data.location0.x + entity.data.location1.x) / 2,
-        y: (entity.data.location0.y + entity.data.location1.y) / 2,
-      };
     case 'hypertube':
       return {
         x: (entity.data.location0.x + entity.data.location1.x) / 2,
@@ -62,6 +58,7 @@ export function getEntityPosition(entity: SelectableEntity): { x: number; y: num
 export function getEntityBounds(entity: SelectableEntity): BoundingBox {
   switch (entity.type) {
     case 'machine':
+    case 'storage':
     case 'trainStation':
     case 'droneStation':
     case 'radarTower':

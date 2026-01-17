@@ -378,6 +378,7 @@ export function MapView() {
 
         const filteredSelection = filterSelectionByGameState(item.data, {
           machines: api.machines,
+          storages: api.storages,
           trainStations: api.trainStations,
           droneStations: api.droneStations,
           radarTowers: api.radarTowers,
@@ -430,6 +431,7 @@ export function MapView() {
     });
   }, [
     api.machines,
+    api.storages,
     api.trainStations,
     api.droneStations,
     api.radarTowers,
