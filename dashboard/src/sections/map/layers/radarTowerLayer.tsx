@@ -68,6 +68,7 @@ type RadarTowerLayerProps = {
   radarTowers: RadarTower[];
   selectedIds: string[];
   onRadarTowerClick?: (tower: RadarTower, containerPoint: { x: number; y: number }) => void;
+  onCtrlClick?: (tower: RadarTower) => void;
   onResourceNodeHover?: (event: ResourceNodeHoverEvent) => void;
   opacity?: number;
 };
@@ -76,6 +77,7 @@ function RadarTowerLayerInner({
   radarTowers,
   selectedIds,
   onRadarTowerClick,
+  onCtrlClick,
   onResourceNodeHover,
   opacity: _opacity = 0.5,
 }: RadarTowerLayerProps) {
@@ -107,7 +109,12 @@ function RadarTowerLayerInner({
             eventHandlers={{
               click: (e) => {
                 e.originalEvent.stopPropagation();
-                onRadarTowerClick?.(tower, { x: e.containerPoint.x, y: e.containerPoint.y });
+                const isCtrlOrCmd = e.originalEvent.ctrlKey || e.originalEvent.metaKey;
+                if (isCtrlOrCmd && onCtrlClick) {
+                  onCtrlClick(tower);
+                } else {
+                  onRadarTowerClick?.(tower, { x: e.containerPoint.x, y: e.containerPoint.y });
+                }
               },
               dblclick: (e) => {
                 // Prevent map zoom and pan on double-click

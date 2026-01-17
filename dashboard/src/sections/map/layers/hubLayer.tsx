@@ -64,10 +64,17 @@ type HubLayerProps = {
   hub?: Hub;
   selectedId?: string;
   onHubClick?: (hub: Hub, containerPoint: { x: number; y: number }) => void;
+  onCtrlClick?: (hub: Hub) => void;
   opacity?: number;
 };
 
-function HubLayerInner({ hub, selectedId, onHubClick, opacity: _opacity = 0.5 }: HubLayerProps) {
+function HubLayerInner({
+  hub,
+  selectedId,
+  onHubClick,
+  onCtrlClick,
+  opacity: _opacity = 0.5,
+}: HubLayerProps) {
   if (!hub) return null;
 
   const centerX = (hub.boundingBox.min.x + hub.boundingBox.max.x) / 2;
@@ -84,7 +91,12 @@ function HubLayerInner({ hub, selectedId, onHubClick, opacity: _opacity = 0.5 }:
       eventHandlers={{
         click: (e) => {
           e.originalEvent.stopPropagation();
-          onHubClick?.(hub, { x: e.containerPoint.x, y: e.containerPoint.y });
+          const isCtrlOrCmd = e.originalEvent.ctrlKey || e.originalEvent.metaKey;
+          if (isCtrlOrCmd && onCtrlClick) {
+            onCtrlClick(hub);
+          } else {
+            onHubClick?.(hub, { x: e.containerPoint.x, y: e.containerPoint.y });
+          }
         },
       }}
     />

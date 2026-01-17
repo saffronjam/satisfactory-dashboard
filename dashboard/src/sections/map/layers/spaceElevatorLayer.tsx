@@ -67,6 +67,7 @@ type SpaceElevatorLayerProps = {
     spaceElevator: SpaceElevator,
     containerPoint: { x: number; y: number }
   ) => void;
+  onCtrlClick?: (spaceElevator: SpaceElevator) => void;
   opacity?: number;
 };
 
@@ -74,6 +75,7 @@ function SpaceElevatorLayerInner({
   spaceElevator,
   selectedId,
   onSpaceElevatorClick,
+  onCtrlClick,
   opacity: _opacity = 0.5,
 }: SpaceElevatorLayerProps) {
   if (!spaceElevator) return null;
@@ -93,7 +95,12 @@ function SpaceElevatorLayerInner({
       eventHandlers={{
         click: (e) => {
           e.originalEvent.stopPropagation();
-          onSpaceElevatorClick?.(spaceElevator, { x: e.containerPoint.x, y: e.containerPoint.y });
+          const isCtrlOrCmd = e.originalEvent.ctrlKey || e.originalEvent.metaKey;
+          if (isCtrlOrCmd && onCtrlClick) {
+            onCtrlClick(spaceElevator);
+          } else {
+            onSpaceElevatorClick?.(spaceElevator, { x: e.containerPoint.x, y: e.containerPoint.y });
+          }
         },
       }}
     />
