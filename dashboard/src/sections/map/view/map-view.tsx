@@ -5,9 +5,6 @@ import { CRS } from 'leaflet';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   MachineCategory,
-  MachineCategoryExtractor,
-  MachineCategoryFactory,
-  MachineCategoryGenerator,
   ResourceNodePurity,
   ResourceNodePurityImpure,
   ResourceNodePurityNormal,
@@ -29,13 +26,20 @@ import {
 } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
 import { ApiContext } from 'src/contexts/api/useApi';
-import { MachineGroup, SelectedMapItem } from 'src/types';
+import { SelectableEntity, SelectedMapItem, Selection } from 'src/types';
 import { BuildingColorMode } from 'src/utils/gridColors';
 import { useContextSelector } from 'use-context-selector';
 import { MapBounds } from '../bounds';
-import { FilterCategory, Overlay } from '../overlay';
+import {
+  addEntityToSelection,
+  createSelection,
+  filterSelectionByGameState,
+  getEntityId,
+  isEntityInSelection,
+  removeEntityFromSelection,
+} from '../hooks/useSelection';
+import { Overlay } from '../overlay';
 import { SelectionSidebar } from '../selectionSidebar';
-import { computeUnifiedGroups, zoomToGroupDistance } from '../utils';
 import { computeTowerVisibilityData } from '../utils/resourceNodeUtils';
 
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +81,7 @@ type PersistedMapState = {
     exploitedFilter: string;
     radarVisibilityFilter: string;
   };
+  showSelection: boolean;
 };
 
 const loadMapState = (): PersistedMapState | null => {
@@ -98,36 +103,7 @@ const saveMapState = (state: PersistedMapState) => {
   }
 };
 
-const groupingValues = [
-  0, 1, 2, 4, 8, 16, 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000,
-];
-
-const groupingMarks = groupingValues.map((val, idx) => ({
-  value: idx,
-  label: val === 0 ? 'None' : val >= 1000 ? `${val / 1000}K` : `${val}`,
-}));
-
-const visibleLabelIndices = [0, 4, 7, 10, 12, 15, 16];
-const groupingMarksWithLabels = groupingMarks.map((mark, idx) => ({
-  ...mark,
-  label: visibleLabelIndices.includes(idx) ? mark.label : undefined,
-}));
-
-const filterCategories: { key: FilterCategory; label: string }[] = [
-  { key: 'production', label: 'Production' },
-  { key: 'power', label: 'Power' },
-  { key: 'resource', label: 'Resource' },
-  { key: 'train', label: 'Trains' },
-  { key: 'drone', label: 'Drones' },
-];
-
-export type MapLayer =
-  | 'machineGroups'
-  | 'buildings'
-  | 'infrastructure'
-  | 'vehicles'
-  | 'power'
-  | 'resources';
+export type MapLayer = 'buildings' | 'infrastructure' | 'vehicles' | 'power' | 'resources';
 
 export type ResourceNodeFilter = {
   enabledCells: Set<string>;
@@ -185,7 +161,6 @@ export type VehicleSubLayer =
   | 'paths';
 
 const layerOptions: { key: MapLayer; label: string; expandable?: boolean }[] = [
-  { key: 'machineGroups', label: 'Machine groups', expandable: true },
   { key: 'buildings', label: 'Buildings', expandable: true },
   { key: 'infrastructure', label: 'Infrastructure', expandable: true },
   { key: 'vehicles', label: 'Vehicles', expandable: true },
@@ -267,7 +242,6 @@ export function MapView() {
       hypertubeEntrances: v.hypertubeEntrances,
     };
   });
-  const [machineGroups, setMachineGroups] = useState<MachineGroup[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedMapItem[]>([]);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [zoom, setZoom] = useState(() => {
@@ -278,11 +252,6 @@ export function MapView() {
     const saved = loadMapState();
     return saved?.center ?? [-80, 80];
   });
-  const [autoGroup, setAutoGroup] = useState(false);
-  const [manualGroupIndex, setManualGroupIndex] = useState(15);
-  const [visibleCategories, setVisibleCategories] = useState<Set<FilterCategory>>(
-    new Set(['production', 'power', 'resource', 'train', 'drone'])
-  );
   const [helpPopoverOpen, setHelpPopoverOpen] = useState(false);
   const [layersPopoverOpen, setLayersPopoverOpen] = useState(false);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
@@ -339,6 +308,10 @@ export function MapView() {
     const saved = loadMapState();
     return saved?.useGameMapStyle ?? false;
   });
+  const [showSelection, setShowSelection] = useState(() => {
+    const saved = loadMapState();
+    return saved?.showSelection ?? true;
+  });
   const [mapKey, setMapKey] = useState(0);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -358,8 +331,6 @@ export function MapView() {
     setIsDragging(false);
   }, []);
 
-  const groupDistance = autoGroup ? zoomToGroupDistance(zoom) : groupingValues[manualGroupIndex];
-
   useEffect(() => {
     saveMapState({
       enabledLayers: [...enabledLayers],
@@ -377,6 +348,7 @@ export function MapView() {
         exploitedFilter: resourceNodeFilter.exploitedFilter,
         radarVisibilityFilter: resourceNodeFilter.radarVisibilityFilter,
       },
+      showSelection,
     });
   }, [
     enabledLayers,
@@ -390,6 +362,90 @@ export function MapView() {
     zoom,
     center,
     resourceNodeFilter,
+    showSelection,
+  ]);
+
+  // Auto-remove entities from selection when they are removed from the game state
+  useEffect(() => {
+    setSelectedItems((prev) => {
+      let hasChanges = false;
+      const indicesToRemove: number[] = [];
+
+      const newItems = prev.map((item, index) => {
+        if (item.type !== 'selection') {
+          return item;
+        }
+
+        const filteredSelection = filterSelectionByGameState(item.data, {
+          machines: api.machines,
+          trainStations: api.trainStations,
+          droneStations: api.droneStations,
+          radarTowers: api.radarTowers,
+          hub: api.hub,
+          spaceElevator: api.spaceElevator,
+          trains: api.trains,
+          drones: api.drones,
+          trucks: api.trucks,
+          tractors: api.tractors,
+          explorers: api.explorers,
+          players: api.players,
+          belts: api.belts,
+          pipes: api.pipes,
+          cables: api.cables,
+          trainRails: api.trainRails,
+          hypertubes: api.hypertubes,
+        });
+
+        if (filteredSelection === null) {
+          indicesToRemove.push(index);
+          hasChanges = true;
+          return item;
+        }
+
+        if (filteredSelection !== item.data) {
+          hasChanges = true;
+          return { type: 'selection' as const, data: filteredSelection };
+        }
+
+        return item;
+      });
+
+      if (!hasChanges) {
+        return prev;
+      }
+
+      const filteredItems = newItems.filter((_, idx) => !indicesToRemove.includes(idx));
+
+      if (indicesToRemove.length > 0) {
+        setActiveTabIndex((prevIndex) => {
+          if (filteredItems.length === 0) return 0;
+          const removedBefore = indicesToRemove.filter((i) => i < prevIndex).length;
+          const newIndex = prevIndex - removedBefore;
+          if (newIndex >= filteredItems.length) return filteredItems.length - 1;
+          return Math.max(0, newIndex);
+        });
+      }
+
+      return filteredItems;
+    });
+  }, [
+    api.machines,
+    api.trainStations,
+    api.droneStations,
+    api.radarTowers,
+    api.hub,
+    api.spaceElevator,
+    api.trains,
+    api.drones,
+    api.trucks,
+    api.tractors,
+    api.explorers,
+    api.players,
+    api.belts,
+    api.pipes,
+    api.cables,
+    api.trainRails,
+    api.hypertubes,
   ]);
 
   const resetMapState = useCallback(() => {
@@ -409,19 +465,13 @@ export function MapView() {
       exploitedFilter: 'all',
       radarVisibilityFilter: 'all',
     });
+    setShowSelection(true);
     setMapKey((k) => k + 1);
   }, []);
 
   const isSameSelection = (a: SelectedMapItem, b: SelectedMapItem): boolean => {
     if (a.type !== b.type) return false;
     switch (a.type) {
-      case 'machineGroup':
-        return a.data.hash === (b as typeof a).data.hash;
-      case 'machineGroups':
-        return (
-          a.data.length === (b as typeof a).data.length &&
-          a.data.every((g, i) => g.hash === (b as typeof a).data[i].hash)
-        );
       case 'trainStation':
         return a.data.station.name === (b as typeof a).data.station.name;
       case 'droneStation':
@@ -432,8 +482,8 @@ export function MapView() {
         return a.data.id === (b as typeof a).data.id;
       case 'spaceElevator':
         return a.data.name === (b as typeof a).data.name;
-      case 'multiSelection':
-        return false;
+      case 'selection':
+        return a.data.id === (b as typeof a).data.id;
       default:
         return false;
     }
@@ -469,38 +519,11 @@ export function MapView() {
     setActiveTabIndex(0);
   }, []);
 
-  const toggleCategory = (category: FilterCategory) => {
-    setVisibleCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
-      } else {
-        next.add(category);
-      }
-      return next;
-    });
-  };
-
   const toggleLayer = (layer: MapLayer) => {
     setEnabledLayers((prev) => {
       const next = new Set(prev);
       if (next.has(layer)) {
         next.delete(layer);
-        if (layer === 'machineGroups') {
-          setMultiSelectMode(false);
-          setSelectedItems((prev) => {
-            const filtered = prev.filter(
-              (s) =>
-                s.type !== 'machineGroup' &&
-                s.type !== 'machineGroups' &&
-                s.type !== 'multiSelection'
-            );
-            if (filtered.length !== prev.length) {
-              setActiveTabIndex((i) => Math.min(i, Math.max(0, filtered.length - 1)));
-            }
-            return filtered;
-          });
-        }
         if (layer === 'buildings') {
           setBuildingSubLayers(new Set());
           setSelectedItems((prev) => {
@@ -719,82 +742,86 @@ export function MapView() {
       .filter((cat): cat is MachineCategory => cat !== null)
   );
 
-  useEffect(() => {
-    if (!enabledLayers.has('machineGroups')) {
-      setMachineGroups([]);
-      return;
-    }
-
-    if (isDragging) {
-      return;
-    }
-
-    if (!displayData.isLoading && displayData.isOnline) {
-      const allMachines = displayData.machines || [];
-      const filteredMachines = allMachines.filter((m) => {
-        if (m.category === MachineCategoryFactory && visibleCategories.has('production'))
-          return true;
-        if (m.category === MachineCategoryGenerator && visibleCategories.has('power')) return true;
-        if (m.category === MachineCategoryExtractor && visibleCategories.has('resource'))
-          return true;
-        return false;
-      });
-
-      const filteredTrainStations = visibleCategories.has('train')
-        ? displayData.trainStations || []
-        : [];
-      const filteredDroneStations = visibleCategories.has('drone')
-        ? displayData.droneStations || []
-        : [];
-      const groups = computeUnifiedGroups(
-        filteredMachines,
-        filteredTrainStations,
-        filteredDroneStations,
-        groupDistance
-      );
-      setMachineGroups(groups);
-
-      setSelectedItems((prevItems) =>
-        prevItems.map((item) => {
-          if (item.type === 'machineGroup') {
-            const newActiveGroup = groups.find((g) => g.hash === item.data.hash);
-            if (newActiveGroup) {
-              return { type: 'machineGroup', data: newActiveGroup };
-            }
-          }
-          return item;
-        })
-      );
-    }
-  }, [
-    displayData.factoryStats,
-    displayData.generatorStats,
-    displayData.trainStations,
-    displayData.droneStations,
-    displayData.isLoading,
-    displayData.isOnline,
-    groupDistance,
-    visibleCategories,
-    enabledLayers,
-    isDragging,
-  ]);
-
   const handleSelectItem = (item: SelectedMapItem | null) => {
     console.log('handleSelectItem called with:', item?.type, item);
     if (item === null) {
-      clearSelections();
-    } else {
-      const existingIndex = selectedItems.findIndex((s) => isSameSelection(s, item));
-      if (existingIndex >= 0) {
-        removeSelection(existingIndex);
-      } else {
-        addSelection(item);
-      }
+      // Empty selection (e.g., selection rectangle with no entities) - do nothing
+      // This preserves existing selections instead of clearing them
+      return;
     }
-    if (item && multiSelectMode) {
+    const existingIndex = selectedItems.findIndex((s) => isSameSelection(s, item));
+    if (existingIndex >= 0) {
+      removeSelection(existingIndex);
+    } else {
+      addSelection(item);
+    }
+    if (multiSelectMode) {
       setMultiSelectMode(false);
     }
   };
+
+  /**
+   * Handles Ctrl+click (or Cmd+click on Mac) to add an entity to the current selection.
+   * If no selection exists, creates a new selection with the entity.
+   * If a selection exists, adds the entity to it (or removes it if already selected).
+   */
+  const handleCtrlClickEntity = useCallback(
+    (entity: SelectableEntity) => {
+      const entityId = getEntityId(entity);
+
+      // Find existing selection in selectedItems
+      const existingSelectionIndex = selectedItems.findIndex((item) => item.type === 'selection');
+      const existingSelection =
+        existingSelectionIndex >= 0
+          ? (selectedItems[existingSelectionIndex] as { type: 'selection'; data: Selection })
+          : null;
+
+      if (existingSelection) {
+        // Check if entity is already in the selection
+        const isAlreadySelected = isEntityInSelection(
+          existingSelection.data,
+          entity.type,
+          entityId
+        );
+
+        if (isAlreadySelected) {
+          // Remove the entity from selection
+          const updatedSelection = removeEntityFromSelection(
+            existingSelection.data,
+            entity.type,
+            entityId
+          );
+          if (updatedSelection.totalCount === 0) {
+            // Selection is now empty, remove the selection tab
+            removeSelection(existingSelectionIndex);
+          } else {
+            // Update the selection in place
+            setSelectedItems((prev) =>
+              prev.map((item, idx) =>
+                idx === existingSelectionIndex
+                  ? { type: 'selection', data: updatedSelection }
+                  : item
+              )
+            );
+          }
+        } else {
+          // Add the entity to the existing selection
+          const updatedSelection = addEntityToSelection(existingSelection.data, entity);
+          setSelectedItems((prev) =>
+            prev.map((item, idx) =>
+              idx === existingSelectionIndex ? { type: 'selection', data: updatedSelection } : item
+            )
+          );
+          setActiveTabIndex(existingSelectionIndex);
+        }
+      } else {
+        // No existing selection - create a new one with this entity
+        const newSelection = createSelection([entity]);
+        addSelection({ type: 'selection', data: newSelection });
+      }
+    },
+    [selectedItems, addSelection, removeSelection]
+  );
 
   return (
     <div className="relative flex flex-1 min-h-0 overflow-hidden">
@@ -863,9 +890,8 @@ export function MapView() {
             <Tooltip>
               <TooltipTrigger
                 onClick={() => setMultiSelectMode(!multiSelectMode)}
-                disabled={!enabledLayers.has('machineGroups')}
                 className={cn(
-                  'inline-flex size-8 items-center justify-center rounded-md border border-input backdrop-blur-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:pointer-events-none disabled:opacity-50',
+                  'inline-flex size-8 items-center justify-center rounded-md border border-input backdrop-blur-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring',
                   multiSelectMode
                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                     : 'bg-popover/90'
@@ -874,11 +900,7 @@ export function MapView() {
                 <Iconify icon="mdi:selection-drag" className="size-5" />
               </TooltipTrigger>
               <TooltipContent>
-                {!enabledLayers.has('machineGroups')
-                  ? 'Enable Machine Groups layer to use multi-select'
-                  : multiSelectMode
-                    ? 'Disable multi-select mode'
-                    : 'Enable multi-select mode'}
+                {multiSelectMode ? 'Disable multi-select mode' : 'Enable multi-select mode'}
               </TooltipContent>
             </Tooltip>
 
@@ -918,61 +940,6 @@ export function MapView() {
                             </Button>
                           )}
                         </div>
-
-                        {/* Machine Groups settings */}
-                        {layer.key === 'machineGroups' && (
-                          <Collapsible open={expandedLayers.has('machineGroups')}>
-                            <CollapsibleContent className="pl-4 pt-2">
-                              <p className="text-xs text-muted-foreground mb-1">Filters</p>
-                              <div className="flex flex-wrap gap-1 mb-3">
-                                {filterCategories.map((cat) => (
-                                  <Badge
-                                    key={cat.key}
-                                    variant={visibleCategories.has(cat.key) ? 'default' : 'outline'}
-                                    className="cursor-pointer text-xs"
-                                    onClick={() => toggleCategory(cat.key)}
-                                  >
-                                    {cat.label}
-                                  </Badge>
-                                ))}
-                              </div>
-
-                              <p className="text-xs text-muted-foreground mb-1">Grouping</p>
-                              <div className="flex items-center gap-2 mb-2">
-                                <Checkbox
-                                  id="auto-group"
-                                  checked={autoGroup}
-                                  onCheckedChange={(checked) => setAutoGroup(checked === true)}
-                                />
-                                <Label htmlFor="auto-group" className="text-xs">
-                                  Auto-group by zoom
-                                </Label>
-                              </div>
-                              <div className="px-1">
-                                <Slider
-                                  disabled={autoGroup}
-                                  value={[manualGroupIndex]}
-                                  onValueChange={([value]) => setManualGroupIndex(value)}
-                                  step={1}
-                                  min={0}
-                                  max={groupingValues.length - 1}
-                                />
-                                <div className="flex justify-between mt-1">
-                                  {groupingMarksWithLabels
-                                    .filter((m) => m.label)
-                                    .map((mark) => (
-                                      <span
-                                        key={mark.value}
-                                        className="text-[0.55rem] text-muted-foreground"
-                                      >
-                                        {mark.label}
-                                      </span>
-                                    ))}
-                                </div>
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        )}
 
                         {/* Building sub-layers */}
                         {layer.key === 'buildings' && (
@@ -1316,6 +1283,11 @@ export function MapView() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Show Selection</Label>
+                    <Switch checked={showSelection} onCheckedChange={setShowSelection} />
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>
@@ -1350,9 +1322,9 @@ export function MapView() {
               noWrap={true}
             />
             <Overlay
-              machineGroups={machineGroups}
               selectedItems={selectedItems}
               onSelectItem={handleSelectItem}
+              onCtrlClickEntity={handleCtrlClickEntity}
               onZoomEnd={setZoom}
               onMoveEnd={setCenter}
               onDragStart={handleDragStart}
@@ -1393,6 +1365,13 @@ export function MapView() {
               towerVisibilityData={towerVisibilityData}
               hypertubes={displayData.hypertubes}
               hypertubeEntrances={displayData.hypertubeEntrances}
+              selection={
+                selectedItems[activeTabIndex]?.type === 'selection'
+                  ? selectedItems[activeTabIndex].data
+                  : undefined
+              }
+              showSelection={showSelection}
+              isSelectionTabActive={selectedItems[activeTabIndex]?.type === 'selection'}
             />
           </MapContainer>
 
