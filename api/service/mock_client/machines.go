@@ -11,30 +11,40 @@ func (c *Client) GetMachines(_ context.Context) ([]models.Machine, error) {
 	time.Sleep(time.Duration(rand.Float64()*50) * time.Millisecond)
 
 	machines := []models.Machine{
-		// Factory machines - Smelters
+		// Factory machines - Smelters (4 MW)
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeSmelter, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(5000, 500, 5000, 0),
-			inputs:   []models.MachineProdStats{prodStatsRand("Iron Ore", 28, 2, 30, 450, 100, 0.93, 0.05)},
-			outputs:  []models.MachineProdStats{prodStatsRand("Iron Ingot", 28, 2, 30, 120, 50, 0.93, 0.05)},
+			inputs: []models.MachineProdStats{
+				prodStats("Power", 4, 4, 0, 1.0),
+				prodStatsRand("Iron Ore", 28, 2, 30, 450, 100, 0.93, 0.05),
+			},
+			outputs: []models.MachineProdStats{prodStatsRand("Iron Ingot", 28, 2, 30, 120, 50, 0.93, 0.05)},
 		}),
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeSmelter, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(20000, 2200, 15000, 30),
-			inputs:   []models.MachineProdStats{prodStatsRand("Copper Ore", 26, 4, 30, 380, 80, 0.87, 0.1)},
-			outputs:  []models.MachineProdStats{prodStatsRand("Copper Ingot", 26, 4, 30, 95, 40, 0.87, 0.1)},
+			inputs: []models.MachineProdStats{
+				prodStats("Power", 4, 4, 0, 1.0),
+				prodStatsRand("Copper Ore", 26, 4, 30, 380, 80, 0.87, 0.1),
+			},
+			outputs: []models.MachineProdStats{prodStatsRand("Copper Ingot", 26, 4, 30, 95, 40, 0.87, 0.1)},
 		}),
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeSmelter, category: models.MachineCategoryFactory, status: models.MachineStatusIdle,
 			location: loc(-15000, 1500, 20000, 45),
-			inputs:   []models.MachineProdStats{prodStats("Caterium Ore", 0, 45, randRange(12, 8), 0)},
-			outputs:  []models.MachineProdStats{prodStats("Caterium Ingot", 0, 15, randRange(5, 3), 0)},
+			inputs: []models.MachineProdStats{
+				prodStats("Power", 0, 4, 0, 0),
+				prodStats("Caterium Ore", 0, 45, randRange(12, 8), 0),
+			},
+			outputs: []models.MachineProdStats{prodStats("Caterium Ingot", 0, 15, randRange(5, 3), 0)},
 		}),
-		// Foundries
+		// Foundries (16 MW)
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeFoundry, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(40000, 5500, 35000, 90),
 			inputs: []models.MachineProdStats{
+				prodStats("Power", 16, 16, 0, 1.0),
 				prodStatsRand("Iron Ore", 42, 3, 45, 600, 150, 0.93, 0.05),
 				prodStatsRand("Coal", 42, 3, 45, 500, 120, 0.93, 0.05),
 			},
@@ -44,43 +54,57 @@ func (c *Client) GetMachines(_ context.Context) ([]models.Machine, error) {
 			machineType: models.MachineTypeFoundry, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(50000, 8500, -20000, 270),
 			inputs: []models.MachineProdStats{
+				prodStats("Power", 16, 16, 0, 1.0),
 				prodStatsRand("Aluminum Scrap", 85, 5, 90, 420, 100, 0.94, 0.04),
 				prodStatsRand("Silica", 72, 3, 75, 350, 80, 0.96, 0.03),
 			},
 			outputs: []models.MachineProdStats{prodStatsRand("Aluminum Ingot", 28, 2, 30, 180, 60, 0.93, 0.05)},
 		}),
-		// Constructors
+		// Constructors (4 MW)
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeConstructor, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(12000, 800, 8000, 90),
-			inputs:   []models.MachineProdStats{prodStatsRand("Iron Ingot", 28, 2, 30, 200, 50, 0.93, 0.05)},
-			outputs:  []models.MachineProdStats{prodStatsRand("Iron Plate", 18, 2, 20, 150, 40, 0.9, 0.08)},
+			inputs: []models.MachineProdStats{
+				prodStats("Power", 4, 4, 0, 1.0),
+				prodStatsRand("Iron Ingot", 28, 2, 30, 200, 50, 0.93, 0.05),
+			},
+			outputs: []models.MachineProdStats{prodStatsRand("Iron Plate", 18, 2, 20, 150, 40, 0.9, 0.08)},
 		}),
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeConstructor, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(28000, 3000, 22000, 120),
-			inputs:   []models.MachineProdStats{prodStatsRand("Iron Rod", 9, 1, 10, 90, 25, 0.9, 0.08)},
-			outputs:  []models.MachineProdStats{prodStatsRand("Screw", 36, 4, 40, 800, 200, 0.9, 0.08)},
+			inputs: []models.MachineProdStats{
+				prodStats("Power", 4, 4, 0, 1.0),
+				prodStatsRand("Iron Rod", 9, 1, 10, 90, 25, 0.9, 0.08),
+			},
+			outputs: []models.MachineProdStats{prodStatsRand("Screws", 36, 4, 40, 800, 200, 0.9, 0.08)},
 		}),
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeConstructor, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(-12000, 1000, 40000, 180),
-			inputs:   []models.MachineProdStats{prodStatsRand("Copper Ingot", 14, 1, 15, 150, 40, 0.93, 0.05)},
-			outputs:  []models.MachineProdStats{prodStatsRand("Wire", 28, 2, 30, 400, 100, 0.93, 0.05)},
+			inputs: []models.MachineProdStats{
+				prodStats("Power", 4, 4, 0, 1.0),
+				prodStatsRand("Copper Ingot", 14, 1, 15, 150, 40, 0.93, 0.05),
+			},
+			outputs: []models.MachineProdStats{prodStatsRand("Wire", 28, 2, 30, 400, 100, 0.93, 0.05)},
 		}),
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeConstructor, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(55000, 9500, 45000, 150),
-			inputs:   []models.MachineProdStats{prodStatsRand("Limestone", 42, 3, 45, 550, 120, 0.93, 0.05)},
-			outputs:  []models.MachineProdStats{prodStatsRand("Concrete", 14, 1, 15, 300, 80, 0.93, 0.05)},
+			inputs: []models.MachineProdStats{
+				prodStats("Power", 4, 4, 0, 1.0),
+				prodStatsRand("Limestone", 42, 3, 45, 550, 120, 0.93, 0.05),
+			},
+			outputs: []models.MachineProdStats{prodStatsRand("Concrete", 14, 1, 15, 300, 80, 0.93, 0.05)},
 		}),
-		// Assemblers
+		// Assemblers (15 MW)
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeAssembler, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(35000, 4000, 30000, 135),
 			inputs: []models.MachineProdStats{
+				prodStats("Power", 15, 15, 0, 1.0),
 				prodStatsRand("Iron Plate", 28, 2, 30, 200, 50, 0.93, 0.05),
-				prodStatsRand("Screw", 55, 5, 60, 600, 150, 0.92, 0.06),
+				prodStatsRand("Screws", 55, 5, 60, 600, 150, 0.92, 0.06),
 			},
 			outputs: []models.MachineProdStats{prodStatsRand("Reinforced Iron Plate", 4.5, 0.5, 5, 45, 15, 0.9, 0.08)},
 		}),
@@ -88,6 +112,7 @@ func (c *Client) GetMachines(_ context.Context) ([]models.Machine, error) {
 			machineType: models.MachineTypeAssembler, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(60000, 10500, 50000, 140),
 			inputs: []models.MachineProdStats{
+				prodStats("Power", 15, 15, 0, 1.0),
 				prodStatsRand("Rotor", 1.8, 0.2, 2, 18, 6, 0.9, 0.08),
 				prodStatsRand("Stator", 1.8, 0.2, 2, 16, 6, 0.9, 0.08),
 			},
@@ -97,20 +122,22 @@ func (c *Client) GetMachines(_ context.Context) ([]models.Machine, error) {
 			machineType: models.MachineTypeAssembler, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(-30000, 1500, 55000, 200),
 			inputs: []models.MachineProdStats{
+				prodStats("Power", 15, 15, 0, 1.0),
 				prodStatsRand("Circuit Board", 3.6, 0.4, 4, 35, 12, 0.9, 0.08),
 				prodStatsRand("Quickwire", 45, 5, 50, 400, 100, 0.9, 0.08),
 			},
 			outputs: []models.MachineProdStats{prodStatsRand("AI Limiter", 0.9, 0.1, 1, 12, 5, 0.9, 0.08)},
 		}),
-		// Manufacturers
+		// Manufacturers (55 MW)
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeManufacturer, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(58000, 11000, 48000, 225),
 			inputs: []models.MachineProdStats{
+				prodStats("Power", 55, 55, 0, 1.0),
 				prodStatsRand("Modular Frame", 4.5, 0.5, 5, 45, 15, 0.9, 0.08),
 				prodStatsRand("Steel Pipe", 28, 2, 30, 250, 60, 0.93, 0.05),
 				prodStatsRand("Encased Industrial Beam", 9, 1, 10, 80, 25, 0.9, 0.08),
-				prodStatsRand("Screw", 180, 20, 200, 1800, 400, 0.9, 0.08),
+				prodStatsRand("Screws", 180, 20, 200, 1800, 400, 0.9, 0.08),
 			},
 			outputs: []models.MachineProdStats{prodStatsRand("Heavy Modular Frame", 0.9, 0.1, 1, 8, 4, 0.9, 0.08)},
 		}),
@@ -118,6 +145,7 @@ func (c *Client) GetMachines(_ context.Context) ([]models.Machine, error) {
 			machineType: models.MachineTypeManufacturer, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(62000, 11500, 52000, 230),
 			inputs: []models.MachineProdStats{
+				prodStats("Power", 55, 55, 0, 1.0),
 				prodStatsRand("Computer", 1.8, 0.2, 2, 15, 6, 0.9, 0.08),
 				prodStatsRand("AI Limiter", 1.8, 0.2, 2, 18, 6, 0.9, 0.08),
 				prodStatsRand("High-Speed Connector", 2.7, 0.3, 3, 25, 8, 0.9, 0.08),
@@ -125,24 +153,31 @@ func (c *Client) GetMachines(_ context.Context) ([]models.Machine, error) {
 			},
 			outputs: []models.MachineProdStats{prodStatsRand("Supercomputer", 0.45, 0.05, 0.5, 5, 2, 0.9, 0.08)},
 		}),
-		// Refineries
+		// Refineries (30 MW)
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeRefinery, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(-35000, 1200, 50000, 270),
-			inputs:   []models.MachineProdStats{prodStatsRand("Crude Oil", 27, 3, 30, 0, 0, 0.9, 0.08)},
-			outputs:  []models.MachineProdStats{prodStatsRand("Plastic", 18, 2, 20, 180, 50, 0.9, 0.08), prodStatsRand("Heavy Oil Residue", 9, 1, 10, 85, 25, 0.9, 0.08)},
+			inputs: []models.MachineProdStats{
+				prodStats("Power", 30, 30, 0, 1.0),
+				prodStatsRand("Crude Oil", 27, 3, 30, 0, 0, 0.9, 0.08),
+			},
+			outputs: []models.MachineProdStats{prodStatsRand("Plastic", 18, 2, 20, 180, 50, 0.9, 0.08), prodStatsRand("Heavy Oil Residue", 9, 1, 10, 85, 25, 0.9, 0.08)},
 		}),
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeRefinery, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(-38000, 1300, 55000, 275),
-			inputs:   []models.MachineProdStats{prodStatsRand("Heavy Oil Residue", 54, 6, 60, 0, 0, 0.9, 0.08)},
-			outputs:  []models.MachineProdStats{prodStatsRand("Fuel", 36, 4, 40, 350, 80, 0.9, 0.08)},
+			inputs: []models.MachineProdStats{
+				prodStats("Power", 30, 30, 0, 1.0),
+				prodStatsRand("Heavy Oil Residue", 54, 6, 60, 0, 0, 0.9, 0.08),
+			},
+			outputs: []models.MachineProdStats{prodStatsRand("Fuel", 36, 4, 40, 350, 80, 0.9, 0.08)},
 		}),
-		// Blenders
+		// Blenders (75 MW)
 		generateMachine(machineConfig{
 			machineType: models.MachineTypeBlender, category: models.MachineCategoryFactory, status: models.MachineStatusOperating,
 			location: loc(52000, 9000, -15000, 315),
 			inputs: []models.MachineProdStats{
+				prodStats("Power", 75, 75, 0, 1.0),
 				prodStatsRand("Bauxite", 108, 12, 120, 1000, 250, 0.9, 0.08),
 				prodStatsRand("Water", 162, 18, 180, 0, 0, 0.9, 0.08),
 			},

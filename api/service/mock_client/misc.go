@@ -25,7 +25,7 @@ func (c *Client) ListStorageContainers(_ context.Context) ([]models.Storage, err
 			Inventory: []models.ItemStats{
 				itemStats("Iron Plate", 2400, 800),
 				itemStats("Iron Rod", 1800, 600),
-				itemStats("Screw", 8000, 2000),
+				itemStats("Screws", 8000, 2000),
 			},
 		},
 		{
@@ -202,15 +202,44 @@ func (c *Client) GetSpaceElevator(_ context.Context) (*models.SpaceElevator, err
 func (c *Client) GetHub(_ context.Context) (*models.Hub, error) {
 	time.Sleep(time.Duration(rand.Float64()*50) * time.Millisecond)
 
-	return &models.Hub{
-		ID:       "hub-1",
-		HubLevel: 4,
-		Location: loc(8000, 500, 3000, 0),
+	// Cycle every 20 seconds: 10s docked, 10s away
+	cycleTime := 20.0
+	elapsed := float64(time.Now().UnixMilli()-now) / 1000.0
+	cyclePosition := math.Mod(elapsed, cycleTime)
+	shipDocked := cyclePosition < 10.0
+
+	hub := &models.Hub{
+		ID:                 "Build_HubTerminal_C_2147353308",
+		Name:               "HUB Terminal",
+		HasActiveMilestone: true,
+		ActiveMilestone: &models.HubMilestone{
+			Name:     "Expanded Power Infrastructure",
+			TechTier: 4,
+			Type:     "Milestone",
+			Cost: []models.HubMilestoneCost{
+				{Name: "Encased Industrial Beam", Amount: 25, RemainingCost: 25, TotalCost: 50},
+				{Name: "Steel Beam", Amount: 60, RemainingCost: 40, TotalCost: 100},
+				{Name: "Modular Frame", Amount: 150, RemainingCost: 50, TotalCost: 200},
+				{Name: "Wire", Amount: 1200, RemainingCost: 800, TotalCost: 2000},
+			},
+		},
+		ShipDocked: shipDocked,
+		Location:   loc(8000, 500, 3000, 0),
 		BoundingBox: models.BoundingBox{
 			Min: models.Location{X: 7500, Y: 0, Z: 2500},
 			Max: models.Location{X: 8500, Y: 1000, Z: 3500},
 		},
-	}, nil
+	}
+
+	// If ship is away, set return time to 10 seconds from the start of this "away" phase
+	if !shipDocked {
+		// Time remaining in this away phase
+		timeRemaining := cycleTime - cyclePosition
+		returnTime := time.Now().Add(time.Duration(timeRemaining * float64(time.Second))).UnixMilli()
+		hub.ShipReturnTime = &returnTime
+	}
+
+	return hub, nil
 }
 
 func (c *Client) ListRadarTowers(_ context.Context) ([]models.RadarTower, error) {

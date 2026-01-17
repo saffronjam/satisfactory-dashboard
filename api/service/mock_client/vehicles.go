@@ -3,6 +3,7 @@ package mock_client
 import (
 	"api/models/models"
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -143,6 +144,7 @@ func (c *Client) ListTrucks(_ context.Context) ([]models.Truck, error) {
 		}
 
 		trucks[i] = models.Truck{
+			ID:     fmt.Sprintf("truck-%d", i+1),
 			Name:   cfg.name,
 			Speed:  speed,
 			Status: status,
@@ -216,6 +218,7 @@ func (c *Client) ListTractors(_ context.Context) ([]models.Tractor, error) {
 		}
 
 		tractors[i] = models.Tractor{
+			ID:     fmt.Sprintf("tractor-%d", i+1),
 			Name:   cfg.name,
 			Speed:  speed,
 			Status: status,
@@ -289,6 +292,7 @@ func (c *Client) ListExplorers(_ context.Context) ([]models.Explorer, error) {
 		}
 
 		explorers[i] = models.Explorer{
+			ID:     fmt.Sprintf("explorer-%d", i+1),
 			Name:   cfg.name,
 			Speed:  speed,
 			Status: status,
