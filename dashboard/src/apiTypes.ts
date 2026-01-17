@@ -181,6 +181,11 @@ export type SplitterMergerDTO = SplitterMerger;
 export type CableDTO = Cable;
 export type VehiclesDTO = Vehicles;
 export type VehicleStationsDTO = VehicleStations;
+export type SchematicDTO = Schematic;
+export type StorageDTO = Storage;
+export type SpaceElevatorDTO = SpaceElevator;
+export type HubDTO = Hub;
+export type RadarTowerDTO = RadarTower;
 export interface DroneSetupDTO {
   drones: DroneDTO[];
   droneStations: DroneStationDTO[];
@@ -630,6 +635,7 @@ export const SatisfactoryEventHub: SatisfactoryEventType = 'hub';
 export const SatisfactoryEventRadarTowers: SatisfactoryEventType = 'radarTowers';
 export const SatisfactoryEventResourceNodes: SatisfactoryEventType = 'resourceNodes';
 export const SatisfactoryEventHypertubes: SatisfactoryEventType = 'hypertubes';
+export const SatisfactoryEventSchematics: SatisfactoryEventType = 'schematics';
 export const SatisfactoryEventKey: string = 'satisfactory_events';
 export interface SatisfactoryEvent {
   type: SatisfactoryEventType;
@@ -637,6 +643,25 @@ export interface SatisfactoryEvent {
 }
 export interface SseSatisfactoryEvent extends SatisfactoryEvent {
   clientId: number /* int64 */;
+}
+
+//////////
+// source: schematic.go
+
+export interface SchematicCost {
+  name: string;
+  amount: number /* float64 */;
+  totalCost: number /* float64 */;
+}
+export interface Schematic {
+  id: string;
+  name: string;
+  tier: number /* int */;
+  type: string;
+  purchased: boolean;
+  locked: boolean;
+  lockedPhase: boolean;
+  cost: SchematicCost[];
 }
 
 //////////
@@ -838,6 +863,7 @@ export interface State {
   hub?: Hub;
   radarTowers: RadarTower[];
   resourceNodes: ResourceNode[];
+  schematics: Schematic[];
 }
 
 //////////

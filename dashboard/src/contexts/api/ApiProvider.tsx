@@ -9,6 +9,7 @@ const API_URL = config.apiUrl;
 const DEFAULT_DATA: ApiData = {
   isLoading: true,
   isOnline: false,
+  satisfactoryApiStatus: undefined,
   circuits: [],
   factoryStats: {} as API.FactoryStats,
   prodStats: {} as API.ProdStats,
@@ -38,6 +39,7 @@ const DEFAULT_DATA: ApiData = {
   hub: undefined,
   radarTowers: [],
   resourceNodes: [],
+  schematics: [],
 };
 
 interface ApiProviderProps {
@@ -105,6 +107,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             return response.json() as Promise<API.State>;
           })
           .then((fullState) => {
+            dataRef.current.satisfactoryApiStatus = fullState.satisfactoryApiStatus;
             dataRef.current.isOnline = fullState.satisfactoryApiStatus.running;
             dataRef.current.circuits = fullState.circuits;
             dataRef.current.factoryStats = fullState.factoryStats;
@@ -133,6 +136,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             dataRef.current.hub = fullState.hub;
             dataRef.current.radarTowers = fullState.radarTowers ?? [];
             dataRef.current.resourceNodes = fullState.resourceNodes ?? [];
+            dataRef.current.schematics = fullState.schematics ?? [];
             dataRef.current.isLoading = false;
             setData({ ...dataRef.current });
           })
@@ -163,6 +167,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
               void fetchStateRef.current();
               dataRef.current.isLoading = false;
             }
+            dataRef.current.satisfactoryApiStatus = parsed.data;
             dataRef.current.isOnline = parsed.data.running;
             // Immediately update state when going offline for quick UI feedback
             if (!parsed.data.running) {
@@ -243,6 +248,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
             break;
           case API.SatisfactoryEventResourceNodes:
             dataRef.current.resourceNodes = parsed.data;
+            break;
+          case API.SatisfactoryEventSchematics:
+            dataRef.current.schematics = parsed.data;
             break;
           case API.SatisfactoryEventSessionUpdate:
             if (onSessionUpdateRef.current) {

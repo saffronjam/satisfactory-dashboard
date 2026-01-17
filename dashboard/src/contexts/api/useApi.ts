@@ -17,6 +17,8 @@ import {
   ProdStats,
   RadarTower,
   ResourceNode,
+  SatisfactoryApiStatus,
+  Schematic,
   SinkStats,
   SpaceElevator,
   SplitterMerger,
@@ -34,6 +36,7 @@ import { createContext } from 'use-context-selector';
 export type ApiData = {
   isLoading: boolean;
   isOnline: boolean;
+  satisfactoryApiStatus?: SatisfactoryApiStatus;
 
   circuits: Circuit[];
   factoryStats: FactoryStats;
@@ -64,6 +67,7 @@ export type ApiData = {
   hub?: Hub;
   radarTowers: RadarTower[];
   resourceNodes: ResourceNode[];
+  schematics: Schematic[];
 };
 
 export type ApiContextType = ApiData & {
@@ -73,6 +77,7 @@ export type ApiContextType = ApiData & {
 export const DefaultApiContext: ApiContextType = {
   isLoading: true,
   isOnline: false,
+  satisfactoryApiStatus: undefined,
 
   circuits: [],
   factoryStats: {} as FactoryStats,
@@ -103,10 +108,14 @@ export const DefaultApiContext: ApiContextType = {
   hub: undefined,
   radarTowers: [],
   resourceNodes: [],
+  schematics: [],
 
   history: [
     {
       timestamp: new Date(),
+      isLoading: true,
+      isOnline: false,
+      satisfactoryApiStatus: undefined,
       circuits: [],
       factoryStats: {} as FactoryStats,
       prodStats: {} as ProdStats,
@@ -136,6 +145,7 @@ export const DefaultApiContext: ApiContextType = {
       hub: undefined,
       radarTowers: [],
       resourceNodes: [],
+      schematics: [],
     },
   ] as any,
 };
