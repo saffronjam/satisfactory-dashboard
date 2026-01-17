@@ -5,7 +5,9 @@ import (
 	"api/service/frm_client/frm_models"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // ListStorageContainers fetches storage container inventory data
@@ -65,6 +67,7 @@ func (client *Client) GetSpaceElevator(ctx context.Context) (*models.SpaceElevat
 	}
 
 	return &models.SpaceElevator{
+		ID:            raw.ID,
 		Name:          raw.Name,
 		Location:      parseLocation(raw.Location),
 		BoundingBox:   parseBoundingBox(raw.BoundingBox),
@@ -74,12 +77,12 @@ func (client *Client) GetSpaceElevator(ctx context.Context) (*models.SpaceElevat
 	}, nil
 }
 
-// GetHub fetches HUB data (single object, not array)
+// GetHub fetches HUB Terminal data including active milestone information
 func (client *Client) GetHub(ctx context.Context) (*models.Hub, error) {
-	var rawList []frm_models.Hub
-	err := client.makeSatisfactoryCallWithTimeout(ctx, "/getTradingPost", &rawList, infraApiTimeout)
+	var rawList []frm_models.HubTerminal
+	err := client.makeSatisfactoryCallWithTimeout(ctx, "/getHubTerminal", &rawList, infraApiTimeout)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get hub. details: %w", err)
+		return nil, fmt.Errorf("failed to get hub terminal: %w", err)
 	}
 
 	if len(rawList) == 0 {
@@ -92,12 +95,58 @@ func (client *Client) GetHub(ctx context.Context) (*models.Hub, error) {
 		return nil, nil
 	}
 
-	return &models.Hub{
-		ID:          raw.ID,
-		HubLevel:    raw.HubLevel,
-		Location:    parseLocation(raw.Location),
-		BoundingBox: parseBoundingBox(raw.BoundingBox),
-	}, nil
+	hub := &models.Hub{
+		ID:                 raw.ID,
+		Name:               raw.Name,
+		HasActiveMilestone: raw.HasActiveMilestone,
+		ShipDocked:         raw.ShipDock,
+		Location:           parseLocation(raw.Location),
+		BoundingBox:        parseBoundingBox(raw.BoundingBox),
+	}
+
+	// If ship is not docked, parse the return duration and convert to timestamp
+	if !raw.ShipDock && raw.ShipReturn != "" && raw.ShipReturn != "00:00:00" {
+		if duration := parseDuration(raw.ShipReturn); duration > 0 {
+			returnTime := time.Now().Add(duration).UnixMilli()
+			hub.ShipReturnTime = &returnTime
+		}
+	}
+
+	// Only include milestone data if there's an active milestone
+	if raw.HasActiveMilestone && raw.ActiveMilestone.Type != "No Milestone Selected" {
+		costs := make([]models.HubMilestoneCost, len(raw.ActiveMilestone.Cost))
+		for i, c := range raw.ActiveMilestone.Cost {
+			costs[i] = models.HubMilestoneCost{
+				Name:          c.Name,
+				Amount:        c.Amount,
+				RemainingCost: c.RemainingCost,
+				TotalCost:     c.TotalCost,
+			}
+		}
+		hub.ActiveMilestone = &models.HubMilestone{
+			Name:     raw.ActiveMilestone.Name,
+			TechTier: raw.ActiveMilestone.TechTier,
+			Type:     raw.ActiveMilestone.Type,
+			Cost:     costs,
+		}
+	}
+
+	return hub, nil
+}
+
+// parseDuration parses a duration string in "HH:MM:SS" format and returns a time.Duration
+func parseDuration(s string) time.Duration {
+	parts := strings.Split(s, ":")
+	if len(parts) != 3 {
+		return 0
+	}
+	hours, err1 := strconv.Atoi(parts[0])
+	minutes, err2 := strconv.Atoi(parts[1])
+	seconds, err3 := strconv.Atoi(parts[2])
+	if err1 != nil || err2 != nil || err3 != nil {
+		return 0
+	}
+	return time.Duration(hours)*time.Hour + time.Duration(minutes)*time.Minute + time.Duration(seconds)*time.Second
 }
 
 // ListRadarTowers fetches radar tower data
@@ -126,14 +175,17 @@ func (client *Client) ListRadarTowers(ctx context.Context) ([]models.RadarTower,
 			}
 		}
 
-		// Convert fauna
-		fauna := make([]models.ScannedFauna, len(raw.Fauna))
-		for j, f := range raw.Fauna {
-			fauna[j] = models.ScannedFauna{
+		// Convert fauna (skip garbage data with "Unknown File Error")
+		fauna := make([]models.ScannedFauna, 0, len(raw.Fauna))
+		for _, f := range raw.Fauna {
+			if containsIgnoreCase(f.Name, "Unknown File Error") {
+				continue
+			}
+			fauna = append(fauna, models.ScannedFauna{
 				Name:      models.FaunaType(f.Name),
 				ClassName: f.ClassName,
 				Amount:    f.Amount,
-			}
+			})
 		}
 
 		// Convert flora

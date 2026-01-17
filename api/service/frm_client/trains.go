@@ -101,6 +101,7 @@ func (client *Client) ListTrains(ctx context.Context) ([]models.Train, error) {
 			}
 
 			platforms = append(platforms, models.TrainStationPlatform{
+				ID:           rawPlatform.ID,
 				Type:         platformType,
 				Mode:         platformMode,
 				Status:       platformStatus,
@@ -259,6 +260,7 @@ func (client *Client) ListTrainStations(ctx context.Context) ([]models.TrainStat
 			}
 
 			platforms[j] = models.TrainStationPlatform{
+				ID:           rawPlatform.ID,
 				Type:         platformType,
 				Mode:         platformMode,
 				Status:       platformStatus,

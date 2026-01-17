@@ -22,6 +22,7 @@ const (
 )
 
 type TrainStationPlatform struct {
+	ID           string                     `json:"id"`
 	Type         TrainStationPlatformType   `json:"type"`
 	Mode         TrainStationPlatformMode   `json:"mode"`
 	Status       TrainStationPlatformStatus `json:"status"`

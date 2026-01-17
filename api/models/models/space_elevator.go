@@ -7,6 +7,7 @@ type SpaceElevatorPhaseObjective struct {
 }
 
 type SpaceElevator struct {
+	ID            string                        `json:"id"`
 	Name          string                        `json:"name"`
 	BoundingBox   BoundingBox                   `json:"boundingBox"`
 	CurrentPhase  []SpaceElevatorPhaseObjective `json:"currentPhase"`

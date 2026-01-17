@@ -453,9 +453,36 @@ type HypertubeEntrance struct {
 	PowerInfo   PowerInfo   `json:"PowerInfo"`
 }
 
-type Hub struct {
-	ID          string      `json:"ID"`
-	HubLevel    int         `json:"HUBLevel"`
-	Location    Location    `json:"location"`
-	BoundingBox BoundingBox `json:"features"`
+// HubTerminalCostItem represents an item required for milestone completion
+type HubTerminalCostItem struct {
+	Name          string  `json:"Name"`
+	ClassName     string  `json:"ClassName"`
+	Amount        float64 `json:"Amount"` // Amount submitted so far
+	MaxAmount     float64 `json:"MaxAmount"`
+	RemainingCost float64 `json:"RemainingCost"` // How much left to submit
+	TotalCost     float64 `json:"TotalCost"`     // Total required
+}
+
+// HubTerminalMilestone represents the active milestone
+type HubTerminalMilestone struct {
+	ID        string                `json:"ID"`
+	Name      string                `json:"Name"`
+	ClassName string                `json:"ClassName"`
+	TechTier  int                   `json:"TechTier"`
+	Type      string                `json:"Type"` // "Milestone" or "No Milestone Selected"
+	Cost      []HubTerminalCostItem `json:"Cost"`
+}
+
+// HubTerminal is the FRM API response structure for /getHubTerminal
+type HubTerminal struct {
+	ID                 string               `json:"ID"`
+	Name               string               `json:"Name"`
+	ClassName          string               `json:"ClassName"`
+	Location           Location             `json:"location"`
+	BoundingBox        BoundingBox          `json:"BoundingBox"`
+	HasActiveMilestone bool                 `json:"HasActiveMilestone"`
+	ActiveMilestone    HubTerminalMilestone `json:"ActiveMilestone"`
+	ShipDock           bool                 `json:"ShipDock"`   // Is ship docked?
+	ShipReturn         string               `json:"ShipReturn"` // "00:00:00" format
+	SchName            string               `json:"SchName"`    // Schematic name
 }
