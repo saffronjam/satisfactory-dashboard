@@ -4,6 +4,9 @@ Scale images from output/original to multiple resolutions.
 
 This script reads images from the original directory and creates scaled versions
 at various resolutions (16x16, 32x32, 64x64, 128x128, 256x256, 512x512).
+
+It also supports an optional manual directory (output_manual by default) for
+custom images that should be included in the scaled output.
 """
 
 import argparse
@@ -95,11 +98,13 @@ class ImageScaler:
         self,
         input_dir: str,
         output_dir: str,
+        manual_dir: str = None,
         scales: List[int] = None,
         force: bool = False,
     ):
         self.input_dir = Path(input_dir)
         self.output_dir = Path(output_dir)
+        self.manual_dir = Path(manual_dir) if manual_dir else None
         self.scales = scales or self.DEFAULT_SCALES
         self.force = force
         self.interrupted = False
@@ -130,15 +135,27 @@ class ImageScaler:
             ColoredLogger.info("Run 'python download_images.py' first to download images.")
             return 1
 
-        # Get list of images
-        images = self._get_image_files()
-        if not images:
+        # Get list of images from main input directory
+        images = self._get_image_files_from_dir(self.input_dir)
+
+        # Also get images from manual directory if it exists
+        manual_images = []
+        if self.manual_dir and self.manual_dir.exists():
+            manual_images = self._get_image_files_from_dir(self.manual_dir)
+
+        all_images = images + manual_images
+        if not all_images:
             ColoredLogger.error(f"No images found in {self.input_dir}")
             return 1
 
-        total = len(images)
+        total = len(all_images)
         ColoredLogger.info(f"Scaling {total} images to {len(self.scales)} resolutions")
         ColoredLogger.plain(f"  Input:  {self.input_dir}")
+        if self.manual_dir:
+            if self.manual_dir.exists():
+                ColoredLogger.plain(f"  Manual: {self.manual_dir} ({len(manual_images)} images)")
+            else:
+                ColoredLogger.plain(f"  Manual: {self.manual_dir} (not found, skipping)")
         ColoredLogger.plain(f"  Output: {self.output_dir}")
         ColoredLogger.plain(f"  Scales: {', '.join(f'{s}x{s}' for s in self.scales)}\n")
 
@@ -148,7 +165,7 @@ class ImageScaler:
             scale_dir.mkdir(parents=True, exist_ok=True)
 
         # Process each image
-        for idx, image_file in enumerate(images, start=1):
+        for idx, image_file in enumerate(all_images, start=1):
             if self.interrupted:
                 break
 
@@ -159,12 +176,12 @@ class ImageScaler:
 
         return 0 if self.stats["failed"] == 0 else 1
 
-    def _get_image_files(self) -> List[Path]:
-        """Get list of image files from input directory."""
+    def _get_image_files_from_dir(self, directory: Path) -> List[Path]:
+        """Get list of image files from a directory."""
         extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
         images = []
 
-        for file in sorted(self.input_dir.iterdir()):
+        for file in sorted(directory.iterdir()):
             if file.suffix.lower() in extensions and file.is_file():
                 images.append(file)
 
@@ -260,6 +277,7 @@ Examples:
   python scale_images.py --force            # Re-scale all images even if they exist
   python scale_images.py --scales 32 64 128 # Only create specific sizes
   python scale_images.py --input ./my_images --output ./scaled
+  python scale_images.py --manual ./my_custom_images  # Include custom images
 
 Default scales: 16x16, 32x32, 64x64, 128x128, 256x256, 512x512
         """,
@@ -270,6 +288,13 @@ Default scales: 16x16, 32x32, 64x64, 128x128, 256x256, 512x512
         type=str,
         default="output/original",
         help="Input directory with original images (default: output/original)",
+    )
+
+    parser.add_argument(
+        "--manual",
+        type=str,
+        default="output_manual",
+        help="Additional directory with manual/custom images (default: output_manual)",
     )
 
     parser.add_argument(
@@ -298,6 +323,7 @@ Default scales: 16x16, 32x32, 64x64, 128x128, 256x256, 512x512
     scaler = ImageScaler(
         input_dir=args.input,
         output_dir=args.output,
+        manual_dir=args.manual,
         scales=args.scales,
         force=args.force,
     )
