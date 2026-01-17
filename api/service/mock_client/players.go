@@ -24,7 +24,7 @@ func (c *Client) ListPlayers(_ context.Context) ([]models.Player, error) {
 		}},
 		{"2", "ellaurgor", randRange(90, 10), []models.ItemStats{
 			itemStats("Steel Beam", 100, 30), itemStats("Concrete", 300, 50),
-			itemStats("Iron Plate", 250, 50), itemStats("Screw", 800, 200),
+			itemStats("Iron Plate", 250, 50), itemStats("Screws", 800, 200),
 		}},
 		{"3", "FactoryBot9000", randRange(60, 40), []models.ItemStats{
 			itemStats("Heavy Modular Frame", 15, 10), itemStats("Motor", 40, 15),

@@ -249,14 +249,24 @@ func calculateTrainCycle(stations []models.Location, segmentDuration int64, dock
 // Event Stream
 // ============================================================================
 
-func Publish[T any](ctx context.Context, eventType models.SatisfactoryEventType, generator func(ctx context.Context) (T, error), onEvent func(*models.SatisfactoryEvent)) {
+func Publish[T any](ctx context.Context, eventType models.SatisfactoryEventType, interval time.Duration, generator func(ctx context.Context) (T, error), onEvent func(*models.SatisfactoryEvent)) {
 	go func() {
+		// Fetch immediately on start
+		generated, err := generator(ctx)
+		if err != nil {
+			log.PrettyError(fmt.Errorf("failed to generate event, details: %w", err))
+		} else {
+			onEvent(&models.SatisfactoryEvent{Type: eventType, Data: generated})
+		}
+
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			default:
-				time.Sleep(time.Duration(rand.Float64()*1000) * time.Millisecond)
+			case <-ticker.C:
 				generated, err := generator(ctx)
 				if err != nil {
 					log.PrettyError(fmt.Errorf("failed to generate event, details: %w", err))
@@ -269,28 +279,47 @@ func Publish[T any](ctx context.Context, eventType models.SatisfactoryEventType,
 }
 
 func (c *Client) SetupEventStream(ctx context.Context, onEvent func(*models.SatisfactoryEvent)) error {
-	Publish(ctx, models.SatisfactoryEventApiStatus, c.GetSatisfactoryApiStatus, onEvent)
-	Publish(ctx, models.SatisfactoryEventFactoryStats, c.GetFactoryStats, onEvent)
-	Publish(ctx, models.SatisfactoryEventProdStats, c.GetProdStats, onEvent)
-	Publish(ctx, models.SatisfactoryEventGeneratorStats, c.GetGeneratorStats, onEvent)
-	Publish(ctx, models.SatisfactoryEventSinkStats, c.GetSinkStats, onEvent)
-	Publish(ctx, models.SatisfactoryEventCircuits, c.ListCircuits, onEvent)
-	Publish(ctx, models.SatisfactoryEventPlayers, c.ListPlayers, onEvent)
-	Publish(ctx, models.SatisfactoryEventMachines, c.GetMachines, onEvent)
-	Publish(ctx, models.SatisfactoryEventVehicles, c.GetVehicles, onEvent)
-	Publish(ctx, models.SatisfactoryEventVehicleStations, c.GetVehicleStations, onEvent)
-	Publish(ctx, models.SatisfactoryEventBelts, c.GetBelts, onEvent)
-	Publish(ctx, models.SatisfactoryEventPipes, c.GetPipes, onEvent)
-	Publish(ctx, models.SatisfactoryEventTrainRails, c.ListTrainRails, onEvent)
-	Publish(ctx, models.SatisfactoryEventCables, c.ListCables, onEvent)
-	Publish(ctx, models.SatisfactoryEventStorages, c.ListStorageContainers, onEvent)
-	Publish(ctx, models.SatisfactoryEventTractors, c.ListTractors, onEvent)
-	Publish(ctx, models.SatisfactoryEventExplorers, c.ListExplorers, onEvent)
-	Publish(ctx, models.SatisfactoryEventVehiclePaths, c.ListVehiclePaths, onEvent)
-	Publish(ctx, models.SatisfactoryEventSpaceElevator, c.GetSpaceElevator, onEvent)
-	Publish(ctx, models.SatisfactoryEventHub, c.GetHub, onEvent)
-	Publish(ctx, models.SatisfactoryEventRadarTowers, c.ListRadarTowers, onEvent)
-	Publish(ctx, models.SatisfactoryEventResourceNodes, c.ListResourceNodes, onEvent)
+	// Polling intervals matching FRM client behavior
+	const (
+		statusInterval     = 5 * time.Second   // API status check
+		dynamicInterval    = 4 * time.Second   // Dynamic data (vehicles, stats, etc.)
+		semiStaticInterval = 30 * time.Second  // Semi-static data (space elevator, hub, paths)
+		staticInterval     = 120 * time.Second // Static infrastructure (belts, pipes, rails)
+		resourceInterval   = 20 * time.Second  // Resource nodes
+	)
+
+	// Status check
+	Publish(ctx, models.SatisfactoryEventApiStatus, statusInterval, c.GetSatisfactoryApiStatus, onEvent)
+
+	// Dynamic data (4s intervals)
+	Publish(ctx, models.SatisfactoryEventFactoryStats, dynamicInterval, c.GetFactoryStats, onEvent)
+	Publish(ctx, models.SatisfactoryEventProdStats, dynamicInterval, c.GetProdStats, onEvent)
+	Publish(ctx, models.SatisfactoryEventGeneratorStats, dynamicInterval, c.GetGeneratorStats, onEvent)
+	Publish(ctx, models.SatisfactoryEventSinkStats, dynamicInterval, c.GetSinkStats, onEvent)
+	Publish(ctx, models.SatisfactoryEventCircuits, dynamicInterval, c.ListCircuits, onEvent)
+	Publish(ctx, models.SatisfactoryEventPlayers, dynamicInterval, c.ListPlayers, onEvent)
+	Publish(ctx, models.SatisfactoryEventMachines, dynamicInterval, c.GetMachines, onEvent)
+	Publish(ctx, models.SatisfactoryEventVehicles, dynamicInterval, c.GetVehicles, onEvent)
+	Publish(ctx, models.SatisfactoryEventVehicleStations, dynamicInterval, c.GetVehicleStations, onEvent)
+	Publish(ctx, models.SatisfactoryEventTractors, dynamicInterval, c.ListTractors, onEvent)
+	Publish(ctx, models.SatisfactoryEventExplorers, dynamicInterval, c.ListExplorers, onEvent)
+	Publish(ctx, models.SatisfactoryEventRadarTowers, dynamicInterval, c.ListRadarTowers, onEvent)
+
+	// Semi-static data (30s intervals)
+	Publish(ctx, models.SatisfactoryEventVehiclePaths, semiStaticInterval, c.ListVehiclePaths, onEvent)
+	Publish(ctx, models.SatisfactoryEventSpaceElevator, semiStaticInterval, c.GetSpaceElevator, onEvent)
+	Publish(ctx, models.SatisfactoryEventHub, semiStaticInterval, c.GetHub, onEvent)
+
+	// Static infrastructure (120s intervals)
+	Publish(ctx, models.SatisfactoryEventBelts, staticInterval, c.GetBelts, onEvent)
+	Publish(ctx, models.SatisfactoryEventPipes, staticInterval, c.GetPipes, onEvent)
+	Publish(ctx, models.SatisfactoryEventTrainRails, staticInterval, c.ListTrainRails, onEvent)
+	Publish(ctx, models.SatisfactoryEventCables, staticInterval, c.ListCables, onEvent)
+	Publish(ctx, models.SatisfactoryEventStorages, staticInterval, c.ListStorageContainers, onEvent)
+
+	// Resource nodes (20s intervals)
+	Publish(ctx, models.SatisfactoryEventResourceNodes, resourceInterval, c.ListResourceNodes, onEvent)
+
 	return nil
 }
 

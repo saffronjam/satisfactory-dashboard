@@ -3,6 +3,7 @@ package mock_client
 import (
 	"api/models/models"
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -168,6 +169,7 @@ func (c *Client) ListTrains(ctx context.Context) ([]models.Train, error) {
 		}
 
 		trains[i] = models.Train{
+			ID:               fmt.Sprintf("train-%d", i+1),
 			Name:             cfg.name,
 			Speed:            cycle.speed,
 			Status:           cycle.status,
