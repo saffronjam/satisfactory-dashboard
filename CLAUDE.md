@@ -131,6 +131,8 @@ docker compose logs -f api          # Follow API logs
 - Go 1.24.1 + go-redis/v9 (existing), gin-gonic (existing), zap (logging) (002-redis-poll-lease)
 - Redis (existing infrastructure, used for sessions and caching) (002-redis-poll-lease)
 - TypeScript 5.6, React 18.3, Bun 1.3 + shadcn/ui, Tailwind CSS v4, Recharts, React Router 6, Leaflet (003-shadcn-migration)
+- TypeScript 5.6 (frontend), React 18.3 + React, Leaflet, Material-UI 6, zustand (for potential state management) (004-universal-map-selection)
+- localStorage (map settings persistence) (004-universal-map-selection)
 
 ## Recent Changes
 - 001-access-key-auth: Added Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), Redis (session store), React 18, Material-UI 6
