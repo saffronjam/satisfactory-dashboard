@@ -116,7 +116,7 @@ export function DronesView() {
         </Card>
 
         <Card className="h-full overflow-hidden p-4">
-          <CardContent className="flex h-full flex-col items-center justify-between p-0">
+          <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-0">
             <h6 className="text-sm font-semibold">Drone Speed (Average)</h6>
             <Gauge value={(avgSpeed() / maxSpeed()) * 100} size="sm" />
             <div className="flex gap-4 text-xs">
