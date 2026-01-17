@@ -17,6 +17,7 @@ import {
   Player,
   RadarTower,
   SpaceElevator,
+  Storage,
   Tractor,
   Train,
   TrainRail,
@@ -210,6 +211,7 @@ interface SelectionRectangleProps {
   onDragEnd?: () => void;
   onMapClick?: () => void;
   machines: Machine[];
+  storages: Storage[];
   trainStations: TrainStation[];
   droneStations: DroneStation[];
   radarTowers: RadarTower[];
@@ -241,6 +243,7 @@ export function SelectionRectangle({
   onDragEnd,
   onMapClick,
   machines,
+  storages,
   trainStations,
   droneStations,
   radarTowers,
@@ -392,6 +395,16 @@ export function SelectionRectangle({
         const entity: SelectableEntity = { type: 'spaceElevator', data: spaceElevator };
         if (isEntityInBounds(entity)) {
           entities.push(entity);
+        }
+      }
+
+      // Collect storage containers if the sublayer is enabled
+      if (buildingSubLayers.has('storage')) {
+        for (const storage of storages) {
+          const entity: SelectableEntity = { type: 'storage', data: storage };
+          if (isEntityInBounds(entity)) {
+            entities.push(entity);
+          }
         }
       }
     }

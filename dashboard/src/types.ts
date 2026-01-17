@@ -11,6 +11,7 @@ import {
   Player,
   RadarTower,
   SpaceElevator,
+  Storage,
   Tractor,
   Train,
   TrainRail,
@@ -25,6 +26,7 @@ import {
 export type SelectableEntity =
   // Buildings
   | { type: 'machine'; data: Machine }
+  | { type: 'storage'; data: Storage }
   // Special structures
   | { type: 'trainStation'; data: TrainStation }
   | { type: 'droneStation'; data: DroneStation }
@@ -62,6 +64,7 @@ export interface Selection {
   /** All selected entities by category */
   entities: {
     machines: Machine[];
+    storages: Storage[];
     trainStations: TrainStation[];
     droneStations: DroneStation[];
     radarTowers: RadarTower[];
@@ -98,10 +101,14 @@ export interface Selection {
   /** Entity counts by type for Buildings sub-tab */
   buildingCounts: Record<string, number>;
 
+  /** Aggregated inventory from all entities with storage (itemName -> total count) */
+  inventory: Record<string, number>;
+
   /** Flags for which sub-tabs should be visible */
   hasItems: boolean;
   hasPower: boolean;
   hasVehicles: boolean;
+  hasInventory: boolean;
 }
 
 export type Settings = {

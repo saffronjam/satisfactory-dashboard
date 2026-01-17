@@ -33,7 +33,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { CircleHelp } from 'lucide-react';
 
-type SidebarView = 'items' | 'buildings' | 'power' | 'vehicles';
+type SidebarView = 'items' | 'buildings' | 'power' | 'vehicles' | 'storage';
 
 /** Formats remaining milliseconds as MM:SS or HH:MM:SS */
 const formatCountdown = (ms: number): string => {
@@ -211,11 +211,12 @@ export const SelectionSidebar = ({
    */
   useEffect(() => {
     if (selectedItem?.type === 'selection') {
-      const { hasItems, hasPower, hasVehicles } = selectedItem.data;
+      const { hasItems, hasPower, hasVehicles, hasInventory } = selectedItem.data;
       const validViews: SidebarView[] = ['buildings'];
       if (hasItems) validViews.push('items');
       if (hasPower) validViews.push('power');
       if (hasVehicles) validViews.push('vehicles');
+      if (hasInventory) validViews.push('storage');
 
       if (!validViews.includes(activeView)) {
         setActiveView(hasItems ? 'items' : 'buildings');
@@ -231,7 +232,8 @@ export const SelectionSidebar = ({
   const renderSelectionViewTabs = (
     showItems: boolean,
     showPower: boolean,
-    showVehicles: boolean
+    showVehicles: boolean,
+    showInventory: boolean
   ) => (
     <div className="flex gap-1 mb-4 flex-wrap">
       {showItems && (
@@ -282,6 +284,19 @@ export const SelectionSidebar = ({
           )}
         >
           Vehicles
+        </button>
+      )}
+      {showInventory && (
+        <button
+          onClick={() => setActiveView('storage')}
+          className={cn(
+            'px-3 py-1 text-xs rounded-full border transition-colors',
+            activeView === 'storage'
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-transparent border-border hover:bg-accent'
+          )}
+        >
+          Storage
         </button>
       )}
     </div>
@@ -370,8 +385,18 @@ export const SelectionSidebar = ({
     if (selectedItem?.type !== 'selection') return null;
     const selection = selectedItem.data;
 
-    const { entities, totalCount, power, items, buildingCounts, hasItems, hasPower, hasVehicles } =
-      selection;
+    const {
+      entities,
+      totalCount,
+      power,
+      items,
+      buildingCounts,
+      inventory,
+      hasItems,
+      hasPower,
+      hasVehicles,
+      hasInventory,
+    } = selection;
 
     const dockedTrainsForStations = entities.trainStations.flatMap((station) =>
       getDockedTrains(station, trains)
@@ -416,6 +441,12 @@ export const SelectionSidebar = ({
           <div className="flex justify-between items-center mb-2">
             <span className="text-muted-foreground text-xs">Machines</span>
             <span className="font-bold">{entities.machines.length}</span>
+          </div>
+        )}
+        {entities.storages.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Storage Containers</span>
+            <span className="font-bold">{entities.storages.length}</span>
           </div>
         )}
         {entities.trainStations.length > 0 && (
@@ -512,7 +543,7 @@ export const SelectionSidebar = ({
           </div>
         )}
 
-        {renderSelectionViewTabs(hasItems, hasPower, hasVehicles)}
+        {renderSelectionViewTabs(hasItems, hasPower, hasVehicles, hasInventory)}
 
         {activeView === 'items' && (
           <>
@@ -907,6 +938,36 @@ export const SelectionSidebar = ({
               entities.explorers.length === 0 && (
                 <p className="text-sm text-muted-foreground">No vehicles in selection</p>
               )}
+          </>
+        )}
+
+        {activeView === 'storage' && hasInventory && (
+          <>
+            <span className="font-bold block mb-2">Inventory</span>
+            {Object.keys(inventory).length > 0 ? (
+              Object.entries(inventory)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, count]) => (
+                  <div key={name} className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={`assets/images/satisfactory/64x64/${name}.png`}
+                        alt={name}
+                        className="w-6 h-6"
+                      />
+                      <span className="text-muted-foreground text-xs">{name}</span>
+                    </div>
+                    <span className="font-bold">
+                      {fShortenNumber(count, MetricUnits, {
+                        ensureConstantDecimals: true,
+                        onlyDecimalsWhenDivisible: true,
+                      })}
+                    </span>
+                  </div>
+                ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No items in inventory</p>
+            )}
           </>
         )}
       </>

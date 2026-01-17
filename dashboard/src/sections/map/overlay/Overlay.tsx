@@ -406,6 +406,7 @@ export function Overlay({
         onDragEnd={onDragEnd}
         onMapClick={handleMapClick}
         machines={machines}
+        storages={storages}
         trainStations={trainStations}
         droneStations={droneStations}
         radarTowers={radarTowers || []}
