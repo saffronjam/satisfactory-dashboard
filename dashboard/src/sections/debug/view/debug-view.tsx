@@ -1,9 +1,9 @@
 import { Icon } from '@iconify/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Chip } from '@/components/ui/chip';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -242,12 +242,9 @@ function DataRoot({
           <Icon icon="mdi:database" className="size-5 mr-2 text-primary" />
           <span className="font-semibold">{name}</span>
           {changedPaths.size > 0 && (
-            <Badge
-              variant="secondary"
-              className="ml-2 h-5 text-[0.7rem] bg-yellow-500/50 text-yellow-100"
-            >
+            <Chip variant="warning" className="ml-2">
               {changedPaths.size} changes
-            </Badge>
+            </Chip>
           )}
         </div>
         <ScrollArea className="h-[400px]">
@@ -274,6 +271,7 @@ export function DebugView() {
   const { selectedSession } = useSession();
 
   const api = useContextSelector(ApiContext, (v) => ({
+    satisfactoryApiStatus: v.satisfactoryApiStatus,
     circuits: v.circuits,
     factoryStats: v.factoryStats,
     prodStats: v.prodStats,
@@ -291,6 +289,8 @@ export function DebugView() {
     trainRails: v.trainRails,
     hypertubes: v.hypertubes,
     hypertubeEntrances: v.hypertubeEntrances,
+    cables: v.cables,
+    storages: v.storages,
     tractors: v.tractors,
     explorers: v.explorers,
     vehiclePaths: v.vehiclePaths,
@@ -298,6 +298,7 @@ export function DebugView() {
     hub: v.hub,
     radarTowers: v.radarTowers,
     resourceNodes: v.resourceNodes,
+    schematics: v.schematics,
     isLoading: v.isLoading,
   }));
 
@@ -305,6 +306,7 @@ export function DebugView() {
 
   const currentData = useMemo(
     () => ({
+      satisfactoryApiStatus: api.satisfactoryApiStatus as unknown as JsonValue,
       circuits: api.circuits as unknown as JsonValue,
       factoryStats: api.factoryStats as unknown as JsonValue,
       prodStats: api.prodStats as unknown as JsonValue,
@@ -322,6 +324,8 @@ export function DebugView() {
       trainRails: api.trainRails as unknown as JsonValue,
       hypertubes: api.hypertubes as unknown as JsonValue,
       hypertubeEntrances: api.hypertubeEntrances as unknown as JsonValue,
+      cables: api.cables as unknown as JsonValue,
+      storages: api.storages as unknown as JsonValue,
       tractors: api.tractors as unknown as JsonValue,
       explorers: api.explorers as unknown as JsonValue,
       vehiclePaths: api.vehiclePaths as unknown as JsonValue,
@@ -329,6 +333,7 @@ export function DebugView() {
       hub: api.hub as unknown as JsonValue,
       radarTowers: api.radarTowers as unknown as JsonValue,
       resourceNodes: api.resourceNodes as unknown as JsonValue,
+      schematics: api.schematics as unknown as JsonValue,
     }),
     [api]
   );
@@ -354,6 +359,7 @@ export function DebugView() {
   }, [currentData, paused]);
 
   const dataRoots = [
+    { name: 'satisfactoryApiStatus', icon: 'mdi:api' },
     { name: 'circuits', icon: 'mdi:flash' },
     { name: 'factoryStats', icon: 'material-symbols:factory' },
     { name: 'prodStats', icon: 'mdi:chart-line' },
@@ -371,6 +377,8 @@ export function DebugView() {
     { name: 'trainRails', icon: 'mdi:railroad-light' },
     { name: 'hypertubes', icon: 'mdi:transit-connection-variant' },
     { name: 'hypertubeEntrances', icon: 'mdi:transit-transfer' },
+    { name: 'cables', icon: 'mdi:cable-data' },
+    { name: 'storages', icon: 'mdi:archive' },
     { name: 'tractors', icon: 'mdi:tractor' },
     { name: 'explorers', icon: 'mdi:car-outline' },
     { name: 'vehiclePaths', icon: 'mdi:road-variant' },
@@ -378,6 +386,7 @@ export function DebugView() {
     { name: 'hub', icon: 'material-symbols:house-rounded' },
     { name: 'radarTowers', icon: 'mdi:radar' },
     { name: 'resourceNodes', icon: 'tabler:pick' },
+    { name: 'schematics', icon: 'mdi:bookmark-check' },
   ];
 
   const filteredDataRoots = useMemo(() => {
@@ -424,9 +433,9 @@ export function DebugView() {
                 </Button>
               )}
             </div>
-            <Badge variant={selectedSession?.isOnline ? 'default' : 'destructive'}>
+            <Chip variant={selectedSession?.isOnline ? 'success' : 'error'}>
               {selectedSession?.isOnline ? 'Online' : 'Offline'}
-            </Badge>
+            </Chip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
