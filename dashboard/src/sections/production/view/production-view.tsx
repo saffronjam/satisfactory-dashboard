@@ -336,6 +336,23 @@ export function ProductionView() {
     );
   });
 
+  // Pre-calculate all trend values to prevent flickering during render
+  const trendValues = React.useMemo(() => {
+    const trends = new Map<string, number>();
+    if (!settings.productionView.showTrend) {
+      return trends;
+    }
+    for (const row of sortedRows) {
+      for (const column of columns) {
+        if (column.trend) {
+          const key = `${row.id}-${column.id}`;
+          trends.set(key, column.trend(row, api.history));
+        }
+      }
+    }
+    return trends;
+  }, [sortedRows, api.history, settings.productionView.showTrend]);
+
   const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
   const paginatedRows = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -411,7 +428,7 @@ export function ProductionView() {
                 })
               }
             >
-              Show Trends
+              Show trends
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -497,7 +514,8 @@ export function ProductionView() {
                       }
 
                       if (settings.productionView.showTrend && typeof value === 'number') {
-                        const trendValue = column.trend ? column.trend(row, api.history) : 0;
+                        const trendKey = `${row.id}-${column.id}`;
+                        const trendValue = trendValues.get(trendKey) ?? 0;
 
                         const colorClass =
                           trendValue === 0
