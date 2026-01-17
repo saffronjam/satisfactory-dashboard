@@ -10,6 +10,7 @@ import DebugNodesPage from '@/pages/debug-nodes';
 import DronesPage from '@/pages/drones';
 import LoginPage from '@/pages/login';
 import MapPage from '@/pages/map';
+import MilestonesPage from '@/pages/milestones';
 import PlayersPage from '@/pages/players';
 import PowerPage from '@/pages/power';
 import PoductionPage from '@/pages/production';
@@ -55,6 +56,7 @@ export function Router() {
       ),
       children: [
         { element: <HomePage />, index: true },
+        { path: 'milestones', element: <MilestonesPage /> },
         { path: 'map', element: <MapPage /> },
         { path: 'production', element: <PoductionPage /> },
         { path: 'power', element: <PowerPage /> },
