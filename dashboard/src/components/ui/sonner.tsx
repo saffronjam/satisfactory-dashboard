@@ -39,6 +39,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
           '--info-bg': resolvedTheme === 'dark' ? 'hsl(143, 85%, 10%)' : 'hsl(143, 85%, 96%)',
           '--info-border': resolvedTheme === 'dark' ? 'hsl(143, 85%, 25%)' : 'hsl(143, 85%, 40%)',
           '--info-text': resolvedTheme === 'dark' ? 'hsl(143, 85%, 75%)' : 'hsl(143, 85%, 25%)',
+          // Error toast colors using destructive variable for consistency with status bar
+          '--error-bg': resolvedTheme === 'dark' ? 'oklch(0.25 0.1 27)' : 'oklch(0.95 0.03 27)',
+          '--error-border':
+            resolvedTheme === 'dark' ? 'oklch(0.45 0.18 27)' : 'oklch(0.55 0.2 27)',
+          '--error-text': resolvedTheme === 'dark' ? 'oklch(0.8 0.12 27)' : 'oklch(0.45 0.2 27)',
         } as React.CSSProperties
       }
       {...props}

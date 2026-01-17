@@ -31,9 +31,9 @@ export const ConnectionCheckerProvider: React.FC = () => {
 
     if (isOnline) {
       // Using the same ID automatically replaces the offline toast
-      toast.success(upMessage, { id: CONNECTION_TOAST_ID, duration: 3000 });
+      toast.success(upMessage, { id: CONNECTION_TOAST_ID, duration: 2500 });
     } else {
-      toast.error(downMessage, { id: CONNECTION_TOAST_ID, duration: Infinity });
+      toast.error(downMessage, { id: CONNECTION_TOAST_ID, duration: 2500 });
     }
   }, [isOnline]);
 

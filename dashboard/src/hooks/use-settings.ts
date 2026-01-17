@@ -7,7 +7,7 @@ const defaultSettings: Settings = {
   productionView: {
     includeMinable: true,
     includeItems: true,
-    showTrend: true,
+    showTrend: false,
   },
 };
 
