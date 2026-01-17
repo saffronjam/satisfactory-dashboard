@@ -2,36 +2,36 @@ import { Icon } from '@iconify/react';
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import type { SpaceElevator } from 'src/apiTypes';
+import type { Hub } from 'src/apiTypes';
 import { fShortenNumber, MetricUnits } from 'src/utils/format-number';
 
 type Props = {
   title?: string;
   subheader?: string;
-  spaceElevator?: SpaceElevator;
+  hub?: Hub;
   className?: string;
 };
 
 /**
- * Card component displaying Space Elevator phase progress.
+ * Card component displaying HUB milestone progress.
  * Shows overall progress bar and individual item requirements with completion status.
  */
-export function AnalyticsSpaceElevatorProgress({
-  title = 'Space Elevator',
+export function AnalyticsMilestoneProgress({
+  title = 'HUB Milestone',
   subheader,
-  spaceElevator,
+  hub,
   className,
 }: Props) {
-  const phases = spaceElevator?.currentPhase || [];
-  const isFullyUpgraded = spaceElevator?.fullyUpgraded ?? false;
-  const isUpgradeReady = spaceElevator?.upgradeReady ?? false;
+  const hasActiveMilestone = hub?.hasActiveMilestone ?? false;
+  const activeMilestone = hub?.activeMilestone;
+  const costs = activeMilestone?.cost || [];
 
   const overallProgress =
-    phases.length > 0
-      ? phases.reduce((acc, obj) => {
+    costs.length > 0
+      ? costs.reduce((acc, obj) => {
           const itemProgress = obj.totalCost > 0 ? obj.amount / obj.totalCost : 0;
           return acc + itemProgress;
-        }, 0) / phases.length
+        }, 0) / costs.length
       : 0;
 
   return (
@@ -40,32 +40,32 @@ export function AnalyticsSpaceElevatorProgress({
         <CardTitle className="text-base font-semibold uppercase tracking-wider">{title}</CardTitle>
         {subheader && <p className="text-sm text-muted-foreground">{subheader}</p>}
         <CardAction>
-          {isFullyUpgraded ? (
-            <span className="text-xs font-semibold text-green-500">Fully Upgraded</span>
-          ) : isUpgradeReady ? (
-            <span className="text-xs font-semibold text-amber-500">Upgrade Ready</span>
+          {hasActiveMilestone && activeMilestone ? (
+            <span className="text-xs font-medium text-accent-foreground">
+              Tier {activeMilestone.techTier}
+            </span>
           ) : (
-            <span className="text-xs font-medium text-muted-foreground">In Progress</span>
+            <span className="text-xs font-medium text-muted-foreground">No Active</span>
           )}
         </CardAction>
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col justify-center">
-        {!spaceElevator ? (
+        {!hub || !hasActiveMilestone || !activeMilestone ? (
           <div className="py-8 text-center">
             <Icon
-              icon="pepicons-pencil:building-off"
+              icon="mdi:flag-checkered"
               className="mx-auto mb-2 h-20 w-20 text-muted-foreground opacity-50"
             />
-            <p className="text-sm text-muted-foreground">Space Elevator is not built</p>
-          </div>
-        ) : isFullyUpgraded ? (
-          <div className="py-8 text-center">
-            <h4 className="mb-1 text-2xl font-bold text-green-500">Project Complete</h4>
-            <p className="text-sm text-muted-foreground">All phases delivered</p>
+            <p className="text-sm text-muted-foreground">No active milestone</p>
           </div>
         ) : (
           <>
+            {/* Milestone name */}
+            <div className="mb-4">
+              <h4 className="text-lg font-semibold">{activeMilestone.name}</h4>
+            </div>
+
             {/* Overall progress bar */}
             <div className="mb-6">
               <div className="mb-1 flex justify-between">
@@ -81,9 +81,9 @@ export function AnalyticsSpaceElevatorProgress({
               />
             </div>
 
-            {/* Phase requirements */}
+            {/* Item requirements */}
             <div className="flex flex-col gap-3">
-              {phases.map((obj, idx) => {
+              {costs.map((obj, idx) => {
                 const progress = obj.totalCost > 0 ? (obj.amount / obj.totalCost) * 100 : 0;
                 const isComplete = progress >= 100;
 

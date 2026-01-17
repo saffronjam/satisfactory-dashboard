@@ -4,7 +4,7 @@ import { ApiContext } from '@/contexts/api/useApi';
 import { useContextSelector } from 'use-context-selector';
 import { WattUnits } from 'src/utils/format-number';
 import { AnalyticsPieChart } from '../analytics-pie-chart';
-import { AnalyticsSpaceElevatorProgress } from '../analytics-space-elevator-progress';
+import { AnalyticsProgressAlternating } from '../analytics-progress-alternating';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 
 /**
@@ -21,6 +21,7 @@ export function OverviewAnalyticsView() {
       generatorStats: v.generatorStats,
       factoryStats: v.factoryStats,
       spaceElevator: v.spaceElevator,
+      hub: v.hub,
       history: v.history,
       isLoading: v.isLoading,
       isOnline: v.isOnline,
@@ -195,7 +196,7 @@ export function OverviewAnalyticsView() {
       </div>
 
       <div className="col-span-12 md:col-span-6 lg:col-span-4">
-        <AnalyticsSpaceElevatorProgress title="Space Elevator" spaceElevator={api.spaceElevator} />
+        <AnalyticsProgressAlternating hub={api.hub} spaceElevator={api.spaceElevator} />
       </div>
     </div>
   );
