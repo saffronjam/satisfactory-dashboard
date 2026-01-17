@@ -25,7 +25,7 @@ import {
   TruckStation,
   VehiclePath,
 } from 'src/apiTypes';
-import { MachineGroup, SelectedMapItem } from 'src/types';
+import { SelectableEntity, SelectedMapItem, Selection } from 'src/types';
 import { BuildingColorMode } from 'src/utils/gridColors';
 import { TowerVisibilityData } from '../utils/resourceNodeUtils';
 import {
@@ -93,10 +93,18 @@ export type DisplayOptions = {
 // Callbacks
 export type OverlayCallbacks = {
   onSelectItem: (item: SelectedMapItem | null) => void;
+  onCtrlClickEntity?: (entity: SelectableEntity) => void;
   onZoomEnd: (zoom: number) => void;
   onMoveEnd?: (center: [number, number]) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+};
+
+// Selection highlight options
+export type SelectionHighlightOptions = {
+  selection?: Selection | null;
+  showSelection?: boolean;
+  isSelectionTabActive?: boolean;
 };
 
 // Combined overlay props
@@ -105,11 +113,9 @@ export type OverlayProps = InfrastructureData &
   BuildingData &
   LayerVisibility &
   DisplayOptions &
-  OverlayCallbacks & {
-    machineGroups: MachineGroup[];
+  OverlayCallbacks &
+  SelectionHighlightOptions & {
     selectedItems: SelectedMapItem[];
     multiSelectMode?: boolean;
     isMobile?: boolean;
   };
-
-export type FilterCategory = 'production' | 'power' | 'resource' | 'train' | 'drone';
