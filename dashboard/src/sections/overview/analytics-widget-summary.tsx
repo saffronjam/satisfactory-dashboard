@@ -9,7 +9,7 @@ type Props = {
   units?: string[] | [string[], string[]];
   icon: React.ReactNode;
   chart: {
-    series: number[];
+    series: number[] | [number[], number[]];
     categories?: string[];
   };
   className?: string;
@@ -30,7 +30,16 @@ export function AnalyticsWidgetSummary({
   color = '1',
 }: Props) {
   const gradientId = `sparklineGradient-${color}`;
+  const gradientId2 = `sparklineGradient-${color}-2`;
   const chartColor = `var(--chart-${color})`;
+  const chartColor2 = `var(--chart-5)`; // Use chart-5 for the second line (consumption)
+
+  // Detect if we have dual series (tuple of two arrays)
+  const isDualSeries =
+    Array.isArray(chart.series) &&
+    chart.series.length === 2 &&
+    Array.isArray(chart.series[0]) &&
+    Array.isArray(chart.series[1]);
 
   const formatNumber = (value: number, options?: { decimals?: number; index?: number }) => {
     if (units) {
@@ -43,10 +52,16 @@ export function AnalyticsWidgetSummary({
     return Math.round(value);
   };
 
-  const chartData = chart.series.map((value, index) => ({
-    name: chart.categories?.[index] ?? index.toString(),
-    value,
-  }));
+  const chartData = isDualSeries
+    ? (chart.series as [number[], number[]])[0].map((value, index) => ({
+        name: chart.categories?.[index] ?? index.toString(),
+        value,
+        value2: (chart.series as [number[], number[]])[1][index],
+      }))
+    : (chart.series as number[]).map((value, index) => ({
+        name: chart.categories?.[index] ?? index.toString(),
+        value,
+      }));
 
   const genContent = (value: number | string | number[]) => {
     if (Array.isArray(value)) {
@@ -123,6 +138,12 @@ export function AnalyticsWidgetSummary({
                   <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
                   <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                 </linearGradient>
+                {isDualSeries && (
+                  <linearGradient id={gradientId2} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartColor2} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={chartColor2} stopOpacity={0} />
+                  </linearGradient>
+                )}
               </defs>
               <Area
                 type="natural"
@@ -132,14 +153,31 @@ export function AnalyticsWidgetSummary({
                 fill={`url(#${gradientId})`}
                 isAnimationActive={false}
               />
+              {isDualSeries && (
+                <Area
+                  type="natural"
+                  dataKey="value2"
+                  stroke={chartColor2}
+                  strokeWidth={2}
+                  fill={`url(#${gradientId2})`}
+                  isAnimationActive={false}
+                />
+              )}
               <Tooltip
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null;
                   const value = payload[0].value as number;
+                  const value2 = isDualSeries ? (payload[1]?.value as number) : undefined;
                   return (
                     <div className="rounded-md border border-border bg-popover px-3 py-2 text-popover-foreground">
                       <p className="text-sm font-semibold">
-                        {formatNumber(value, { decimals: 1 })}
+                        {formatNumber(value, { decimals: 1, index: 0 })}
+                        {value2 !== undefined && (
+                          <span className="text-muted-foreground">
+                            {' '}
+                            | {formatNumber(value2, { decimals: 1, index: 1 })}
+                          </span>
+                        )}
                       </p>
                     </div>
                   );
