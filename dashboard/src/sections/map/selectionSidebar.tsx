@@ -178,7 +178,7 @@ export const SelectionSidebar = ({
   const liveHub = useContextSelector(ApiContext, (v) => v.hub);
 
   // Use live hub data when a hub is selected (so it updates in real-time)
-  const hubData = selectedItem?.type === 'hub' ? liveHub ?? selectedItem.data : null;
+  const hubData = selectedItem?.type === 'hub' ? (liveHub ?? selectedItem.data) : null;
 
   // Manage ship return countdown timer
   const hubReturnTime = hubData?.shipReturnTime;
