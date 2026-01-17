@@ -27,6 +27,7 @@ type Client interface {
 	ListTrainStations(ctx context.Context) ([]models.TrainStation, error)
 	ListDroneStations(ctx context.Context) ([]models.DroneStation, error)
 	ListVehiclePaths(ctx context.Context) ([]models.VehiclePath, error)
+	ListSchematics(ctx context.Context) ([]models.Schematic, error)
 
 	ListBelts(ctx context.Context) ([]models.Belt, error)
 	ListPipes(ctx context.Context) ([]models.Pipe, error)

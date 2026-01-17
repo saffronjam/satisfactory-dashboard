@@ -34,6 +34,7 @@ func GetCachedState(sessionID string) *models.State {
 		VehiclePaths:       []models.VehiclePath{},
 		RadarTowers:        []models.RadarTower{},
 		ResourceNodes:      []models.ResourceNode{},
+		Schematics:         []models.Schematic{},
 	}
 
 	// Helper to get cached data and unmarshal
@@ -67,6 +68,7 @@ func GetCachedState(sessionID string) *models.State {
 	getCached(models.SatisfactoryEventHub, &state.Hub)
 	getCached(models.SatisfactoryEventRadarTowers, &state.RadarTowers)
 	getCached(models.SatisfactoryEventResourceNodes, &state.ResourceNodes)
+	getCached(models.SatisfactoryEventSchematics, &state.Schematics)
 
 	// Handle composite hypertubes event
 	var hypertubesData models.Hypertubes
@@ -106,6 +108,7 @@ func ClearCachedState(sessionID string) {
 		models.SatisfactoryEventRadarTowers,
 		models.SatisfactoryEventResourceNodes,
 		models.SatisfactoryEventHypertubes,
+		models.SatisfactoryEventSchematics,
 	}
 
 	for _, eventType := range eventTypes {

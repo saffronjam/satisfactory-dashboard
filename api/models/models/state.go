@@ -32,6 +32,7 @@ type State struct {
 	Hub                *Hub                `json:"hub"`
 	RadarTowers        []RadarTower        `json:"radarTowers"`
 	ResourceNodes      []ResourceNode      `json:"resourceNodes"`
+	Schematics         []Schematic         `json:"schematics"`
 }
 
 func (state *State) ToDTO() StateDTO {

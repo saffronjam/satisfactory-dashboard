@@ -27,6 +27,7 @@ const (
 	SatisfactoryEventRadarTowers     SatisfactoryEventType = "radarTowers"
 	SatisfactoryEventResourceNodes   SatisfactoryEventType = "resourceNodes"
 	SatisfactoryEventHypertubes      SatisfactoryEventType = "hypertubes"
+	SatisfactoryEventSchematics      SatisfactoryEventType = "schematics"
 
 	SatisfactoryEventKey string = "satisfactory_events"
 )

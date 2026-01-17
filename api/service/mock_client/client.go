@@ -309,6 +309,7 @@ func (c *Client) SetupEventStream(ctx context.Context, onEvent func(*models.Sati
 	Publish(ctx, models.SatisfactoryEventVehiclePaths, semiStaticInterval, c.ListVehiclePaths, onEvent)
 	Publish(ctx, models.SatisfactoryEventSpaceElevator, semiStaticInterval, c.GetSpaceElevator, onEvent)
 	Publish(ctx, models.SatisfactoryEventHub, semiStaticInterval, c.GetHub, onEvent)
+	Publish(ctx, models.SatisfactoryEventSchematics, semiStaticInterval, c.ListSchematics, onEvent)
 
 	// Static infrastructure (120s intervals)
 	Publish(ctx, models.SatisfactoryEventBelts, staticInterval, c.GetBelts, onEvent)

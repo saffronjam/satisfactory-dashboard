@@ -486,3 +486,21 @@ type HubTerminal struct {
 	ShipReturn         string               `json:"ShipReturn"` // "00:00:00" format
 	SchName            string               `json:"SchName"`    // Schematic name
 }
+
+type SchematicCost struct {
+	Name      string  `json:"Name"`
+	ClassName string  `json:"ClassName"`
+	Amount    float64 `json:"Amount"`
+	TotalCost float64 `json:"TotalCost"`
+}
+
+type Schematic struct {
+	ID          string          `json:"ID"`
+	Name        string          `json:"Name"`
+	TechTier    int             `json:"TechTier"`
+	Type        string          `json:"Type"`
+	Purchased   bool            `json:"Purchased"`
+	Locked      bool            `json:"Locked"`
+	LockedPhase bool            `json:"LockedPhase"`
+	Cost        []SchematicCost `json:"Cost"`
+}
