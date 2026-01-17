@@ -10,6 +10,7 @@ import {
 } from 'src/apiTypes';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Chip } from '@/components/ui/chip';
 import { PopoverMap } from '@/components/popover-map';
 import { cn } from '@/lib/utils';
 import { fNumber } from 'src/utils/format-number';
@@ -110,12 +111,10 @@ function TrainCard({ train, trainStations }: { train: Train; trainStations: Trai
             </div>
           </div>
 
-          <Badge
-            className={cn('gap-1.5 px-3 py-1', style.className, style.pulse && 'animate-pulse')}
-          >
-            <Icon icon={style.icon} className="h-4 w-4" />
+          <Chip className={cn('gap-1', style.className, style.pulse && 'animate-pulse')}>
+            <Icon icon={style.icon} className="size-3" />
             {style.label}
-          </Badge>
+          </Chip>
         </div>
 
         {/* Scrollable Timetable Node Graph */}
