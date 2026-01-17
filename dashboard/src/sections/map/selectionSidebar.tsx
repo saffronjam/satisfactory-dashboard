@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Drone,
   DroneStation,
@@ -15,7 +15,7 @@ import {
 } from 'src/apiTypes';
 import { Iconify } from 'src/components/iconify';
 import { ApiContext } from 'src/contexts/api/useApi';
-import { MachineGroup, SelectedMapItem } from 'src/types';
+import { SelectedMapItem, Selection } from 'src/types';
 import {
   fNumber,
   fShortenNumber,
@@ -29,9 +29,24 @@ import { getPurityLabel, PURITY_COLORS } from './utils/radarTowerUtils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { CircleHelp } from 'lucide-react';
 
 type SidebarView = 'items' | 'buildings' | 'power' | 'vehicles';
+
+/** Formats remaining milliseconds as MM:SS or HH:MM:SS */
+const formatCountdown = (ms: number): string => {
+  if (ms <= 0) return '00:00';
+  const totalSeconds = Math.ceil(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
 
 /** Formats camelCase machine type to readable name (e.g., "coalGenerator" → "Coal Generator") */
 const formatMachineType = (type: string): string => {
@@ -68,9 +83,15 @@ function ScannedSection({
   items: (ScannedFauna | ScannedFlora | ScannedSignal)[];
   icon: string;
 }) {
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+
   if (!items || items.length === 0) return null;
 
   const totalCount = items.reduce((sum, item) => sum + item.amount, 0);
+
+  const handleImageError = (itemName: string) => {
+    setFailedImages((prev) => new Set(prev).add(itemName));
+  };
 
   return (
     <div className="mt-2 pt-2 border-t border-border">
@@ -82,22 +103,24 @@ function ScannedSection({
       </div>
       <div className="flex flex-wrap gap-1">
         {items.map((item, idx) => (
-          <div
-            key={idx}
-            className="flex items-center gap-1 h-5 px-2 text-[0.6rem] bg-secondary rounded-full"
-          >
-            <span>
-              {item.amount}x {item.name}
-            </span>
-            <img
-              src={`assets/images/satisfactory/64x64/${item.name}.png`}
-              alt={item.name}
-              className="w-4 h-4 object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </div>
+          <Tooltip key={idx}>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-1 h-9 px-2 text-[0.6rem] bg-accent rounded-full cursor-default">
+                <span>{item.amount}x</span>
+                {failedImages.has(item.name) ? (
+                  <CircleHelp className="w-7 h-7 text-muted-foreground" />
+                ) : (
+                  <img
+                    src={`assets/images/satisfactory/64x64/${item.name}.png`}
+                    alt={item.name}
+                    className="w-7 h-7 object-contain"
+                    onError={() => handleImageError(item.name)}
+                  />
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>{item.name}</TooltipContent>
+          </Tooltip>
         ))}
       </div>
     </div>
@@ -107,11 +130,7 @@ function ScannedSection({
 /** Gets tab icon and label for a selection type */
 const getTabInfo = (item: SelectedMapItem): { icon: string; label: string } => {
   switch (item.type) {
-    case 'machineGroup':
-      return { icon: 'mdi:factory', label: 'Group' };
-    case 'machineGroups':
-      return { icon: 'mdi:factory', label: `${item.data.length} Groups` };
-    case 'multiSelection':
+    case 'selection':
       return { icon: 'mdi:select-multiple', label: 'Selection' };
     case 'trainStation':
       return { icon: 'mdi:train', label: 'Station' };
@@ -146,6 +165,7 @@ export const SelectionSidebar = ({
   onClose,
 }: SelectionSidebarProps) => {
   const [activeView, setActiveView] = useState<SidebarView>('items');
+  const [shipCountdown, setShipCountdown] = useState<number | null>(null);
 
   const selectedItem = useMemo(() => {
     if (selectedItems.length === 0) return null;
@@ -155,36 +175,78 @@ export const SelectionSidebar = ({
 
   const trains = useContextSelector(ApiContext, (v) => v.trains) || [];
   const drones = useContextSelector(ApiContext, (v) => v.drones) || [];
+  const liveHub = useContextSelector(ApiContext, (v) => v.hub);
 
-  const getTotalVehicles = (group: MachineGroup) => {
-    let total = 0;
-    (group.trainStations || []).forEach((station) => {
-      total += getDockedTrains(station, trains).length;
-    });
-    (group.droneStations || []).forEach((station) => {
-      total += getDockedDrones(station, drones).length;
-    });
-    return total;
-  };
+  // Use live hub data when a hub is selected (so it updates in real-time)
+  const hubData = selectedItem?.type === 'hub' ? liveHub ?? selectedItem.data : null;
 
-  const hasStations = (group: MachineGroup) => {
-    return (group.trainStations?.length || 0) > 0 || (group.droneStations?.length || 0) > 0;
-  };
+  // Manage ship return countdown timer
+  const hubReturnTime = hubData?.shipReturnTime;
 
-  /** View tabs component for machine group selections */
-  const renderViewTabs = (showVehicles: boolean) => (
+  useEffect(() => {
+    if (!hubReturnTime) {
+      setShipCountdown(null);
+      return;
+    }
+
+    // Calculate initial remaining time
+    const updateCountdown = () => {
+      const remaining = hubReturnTime - Date.now();
+      setShipCountdown(remaining > 0 ? remaining : 0);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [hubReturnTime]);
+
+  /**
+   * Auto-select a valid sub-tab when the selection changes.
+   * Falls back to 'buildings' if the current view is not available for the selection.
+   *
+   * Edge case: Infrastructure-only selections (belts, pipes, cables, rails, hypertubes)
+   * will have hasItems=false, hasPower=false, hasVehicles=false, so only the Buildings
+   * sub-tab is valid. The Buildings tab always shows entity counts including infrastructure.
+   */
+  useEffect(() => {
+    if (selectedItem?.type === 'selection') {
+      const { hasItems, hasPower, hasVehicles } = selectedItem.data;
+      const validViews: SidebarView[] = ['buildings'];
+      if (hasItems) validViews.push('items');
+      if (hasPower) validViews.push('power');
+      if (hasVehicles) validViews.push('vehicles');
+
+      if (!validViews.includes(activeView)) {
+        setActiveView(hasItems ? 'items' : 'buildings');
+      }
+    }
+  }, [selectedItem, activeView]);
+
+  /**
+   * View tabs component for universal Selection that only shows relevant sub-tabs.
+   * Buildings tab is always visible (shows machines, special structures, and infrastructure).
+   * For infrastructure-only selections, only the Buildings tab appears.
+   */
+  const renderSelectionViewTabs = (
+    showItems: boolean,
+    showPower: boolean,
+    showVehicles: boolean
+  ) => (
     <div className="flex gap-1 mb-4 flex-wrap">
-      <button
-        onClick={() => setActiveView('items')}
-        className={cn(
-          'px-3 py-1 text-xs rounded-full border transition-colors',
-          activeView === 'items'
-            ? 'bg-primary text-primary-foreground border-primary'
-            : 'bg-transparent border-border hover:bg-accent'
-        )}
-      >
-        Items
-      </button>
+      {showItems && (
+        <button
+          onClick={() => setActiveView('items')}
+          className={cn(
+            'px-3 py-1 text-xs rounded-full border transition-colors',
+            activeView === 'items'
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-transparent border-border hover:bg-accent'
+          )}
+        >
+          Items
+        </button>
+      )}
       <button
         onClick={() => setActiveView('buildings')}
         className={cn(
@@ -196,17 +258,19 @@ export const SelectionSidebar = ({
       >
         Buildings
       </button>
-      <button
-        onClick={() => setActiveView('power')}
-        className={cn(
-          'px-3 py-1 text-xs rounded-full border transition-colors',
-          activeView === 'power'
-            ? 'bg-primary text-primary-foreground border-primary'
-            : 'bg-transparent border-border hover:bg-accent'
-        )}
-      >
-        Power
-      </button>
+      {showPower && (
+        <button
+          onClick={() => setActiveView('power')}
+          className={cn(
+            'px-3 py-1 text-xs rounded-full border transition-colors',
+            activeView === 'power'
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'bg-transparent border-border hover:bg-accent'
+          )}
+        >
+          Power
+        </button>
+      )}
       {showVehicles && (
         <button
           onClick={() => setActiveView('vehicles')}
@@ -222,554 +286,6 @@ export const SelectionSidebar = ({
       )}
     </div>
   );
-
-  /** Aggregates building types from machine groups */
-  const getBuildingCounts = (groups: MachineGroup[]) => {
-    const counts: Record<string, number> = Object.create(null);
-    groups.forEach((g) => {
-      g.machines.forEach((m) => {
-        counts[m.type] = (counts[m.type] || 0) + 1;
-      });
-    });
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  };
-
-  /** Gets power sources from machine groups (generators only) */
-  const getPowerSources = (groups: MachineGroup[]) => {
-    const generators = groups.flatMap((g) =>
-      g.machines.filter((m) => m.category === MachineCategoryGenerator)
-    );
-    const powerByType: Record<string, { count: number; production: number }> = Object.create(null);
-    generators.forEach((gen) => {
-      const production = gen.output.find((o) => o.name === 'Power')?.current || 0;
-      if (!powerByType[gen.type]) {
-        powerByType[gen.type] = { count: 0, production: 0 };
-      }
-      powerByType[gen.type].count += 1;
-      powerByType[gen.type].production += production;
-    });
-    return Object.entries(powerByType).sort((a, b) => b[1].production - a[1].production);
-  };
-
-  const renderMachineGroup = () => {
-    if (selectedItem?.type !== 'machineGroup') return null;
-    const machineGroup = selectedItem.data;
-    const buildingCounts = getBuildingCounts([machineGroup]);
-    const powerSources = getPowerSources([machineGroup]);
-    const showVehicles = hasStations(machineGroup);
-    const totalVehicles = getTotalVehicles(machineGroup);
-
-    const dockedTrains = (machineGroup.trainStations || []).flatMap((station) =>
-      getDockedTrains(station, trains)
-    );
-    const dockedDrones = (machineGroup.droneStations || []).flatMap((station) =>
-      getDockedDrones(station, drones)
-    );
-
-    const totalItems =
-      machineGroup.machines.length +
-      (machineGroup.trainStations?.length || 0) +
-      (machineGroup.droneStations?.length || 0);
-
-    return (
-      <>
-        <div className="flex justify-between items-center mb-2">
-          <span className="font-bold">Selected Group</span>
-          <span className="text-muted-foreground text-xs">
-            {totalItems} {totalItems === 1 ? 'item' : 'items'}
-          </span>
-        </div>
-
-        {totalItems === 1 && machineGroup.machines.length === 1 ? (
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-muted-foreground text-xs">Building</span>
-            <span className="font-bold">{formatMachineType(machineGroup.machines[0].type)}</span>
-          </div>
-        ) : (
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-muted-foreground text-xs">Machines</span>
-            <span className="font-bold">{machineGroup.machines.length}</span>
-          </div>
-        )}
-        {showVehicles && (
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-muted-foreground text-xs">Total Vehicles</span>
-            <span className="font-bold">{totalVehicles}</span>
-          </div>
-        )}
-
-        {renderViewTabs(showVehicles)}
-
-        {activeView === 'items' && (
-          <>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Power Consumption</span>
-              <span className="font-bold">
-                {machineGroup.powerConsumption
-                  ? fShortenNumber(machineGroup.powerConsumption, WattUnits)
-                  : '-'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Power Production</span>
-              <span className="font-bold">
-                {machineGroup.powerProduction
-                  ? fShortenNumber(machineGroup.powerProduction, WattUnits)
-                  : '-'}
-              </span>
-            </div>
-
-            {Object.entries(machineGroup.itemProduction).length > 0 && (
-              <>
-                <Separator className="my-2" />
-                <div className="mt-4">
-                  <span className="font-bold block mb-2">Production</span>
-                  {Object.entries(machineGroup.itemProduction).map(([name, value]) => (
-                    <div key={name} className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={`assets/images/satisfactory/64x64/${name}.png`}
-                          alt={name}
-                          className="w-6 h-6"
-                        />
-                        <span className="text-muted-foreground text-xs">{name}</span>
-                      </div>
-                      <span className="font-bold">
-                        {fShortenNumber(value, MetricUnits, {
-                          ensureConstantDecimals: true,
-                          onlyDecimalsWhenDivisible: true,
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {Object.entries(machineGroup.itemConsumption).length > 0 && (
-              <>
-                <Separator className="my-2" />
-                <div className="mt-4">
-                  <span className="font-bold block mb-2">Consumption</span>
-                  {Object.entries(machineGroup.itemConsumption).map(([name, value]) => (
-                    <div key={name} className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={`assets/images/satisfactory/64x64/${name}.png`}
-                          alt={name}
-                          className="w-6 h-6"
-                        />
-                        <span className="text-muted-foreground text-xs">{name}</span>
-                      </div>
-                      <span className="font-bold">
-                        {fShortenNumber(value, MetricUnits, {
-                          ensureConstantDecimals: true,
-                          onlyDecimalsWhenDivisible: true,
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {activeView === 'buildings' && (
-          <>
-            {buildingCounts.length > 0 ? (
-              buildingCounts.map(([type, count]) => (
-                <div key={type} className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground text-xs">{formatMachineType(type)}</span>
-                  <span className="font-bold">{count}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No buildings in selection</p>
-            )}
-          </>
-        )}
-
-        {activeView === 'power' && (
-          <>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Total Production</span>
-              <span className="font-bold">
-                {machineGroup.powerProduction
-                  ? fShortenNumber(machineGroup.powerProduction, WattUnits)
-                  : '-'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Total Consumption</span>
-              <span className="font-bold">
-                {machineGroup.powerConsumption
-                  ? fShortenNumber(machineGroup.powerConsumption, WattUnits)
-                  : '-'}
-              </span>
-            </div>
-
-            {powerSources.length > 0 && (
-              <>
-                <Separator className="my-2" />
-                <span className="font-bold block mb-2">Power Sources</span>
-                {powerSources.map(([type, data]) => (
-                  <div key={type} className="flex justify-between items-center mb-2">
-                    <span className="text-muted-foreground text-xs">
-                      {formatMachineType(type)} ({data.count})
-                    </span>
-                    <span className="font-bold">{fShortenNumber(data.production, WattUnits)}</span>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {powerSources.length === 0 && (
-              <p className="text-sm text-muted-foreground mt-2">No power generators in selection</p>
-            )}
-          </>
-        )}
-
-        {activeView === 'vehicles' && showVehicles && (
-          <>
-            {(machineGroup.trainStations?.length || 0) > 0 && (
-              <>
-                <span className="font-bold block mb-2">
-                  Train Stations ({machineGroup.trainStations.length})
-                </span>
-                {machineGroup.trainStations.map((station, idx) => {
-                  const stationDockedTrains = getDockedTrains(station, trains);
-                  return (
-                    <div key={idx} className="mb-4 p-2 rounded bg-card">
-                      <p className="text-sm font-bold">{station.name}</p>
-                      {stationDockedTrains.length > 0 ? (
-                        stationDockedTrains.map((train, tidx) => (
-                          <div key={tidx} className="flex justify-between items-center mt-1">
-                            <span className="text-xs">{train.name}</span>
-                            <Badge variant="secondary">Docking</Badge>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="text-xs text-muted-foreground">No trains docked</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </>
-            )}
-
-            {(machineGroup.droneStations?.length || 0) > 0 && (
-              <>
-                {(machineGroup.trainStations?.length || 0) > 0 && <Separator className="my-4" />}
-                <span className="font-bold block mb-2">
-                  Drone Stations ({machineGroup.droneStations.length})
-                </span>
-                {machineGroup.droneStations.map((station, idx) => {
-                  const stationDockedDrones = getDockedDrones(station, drones);
-                  return (
-                    <div key={idx} className="mb-4 p-2 rounded bg-card">
-                      <p className="text-sm font-bold">{station.name}</p>
-                      {station.fuel?.Name && (
-                        <span className="text-xs text-muted-foreground block">
-                          Fuel: {station.fuel.Name}
-                        </span>
-                      )}
-                      {stationDockedDrones.length > 0 ? (
-                        stationDockedDrones.map((drone, didx) => (
-                          <div key={didx} className="flex justify-between items-center mt-1">
-                            <span className="text-xs">{drone.name}</span>
-                            <Badge variant="secondary">{formatMachineType(drone.status)}</Badge>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="text-xs text-muted-foreground">No drones at station</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </>
-            )}
-
-            {dockedTrains.length === 0 && dockedDrones.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No vehicles docked at stations in this group
-              </p>
-            )}
-          </>
-        )}
-      </>
-    );
-  };
-
-  const renderMultiViewTabs = (hasVehicles: boolean) => (
-    <div className="flex gap-1 mb-4 flex-wrap">
-      <button
-        onClick={() => setActiveView('items')}
-        className={cn(
-          'px-3 py-1 text-xs rounded-full border transition-colors',
-          activeView === 'items'
-            ? 'bg-primary text-primary-foreground border-primary'
-            : 'bg-transparent border-border hover:bg-accent'
-        )}
-      >
-        Items
-      </button>
-      <button
-        onClick={() => setActiveView('buildings')}
-        className={cn(
-          'px-3 py-1 text-xs rounded-full border transition-colors',
-          activeView === 'buildings'
-            ? 'bg-primary text-primary-foreground border-primary'
-            : 'bg-transparent border-border hover:bg-accent'
-        )}
-      >
-        Buildings
-      </button>
-      <button
-        onClick={() => setActiveView('power')}
-        className={cn(
-          'px-3 py-1 text-xs rounded-full border transition-colors',
-          activeView === 'power'
-            ? 'bg-primary text-primary-foreground border-primary'
-            : 'bg-transparent border-border hover:bg-accent'
-        )}
-      >
-        Power
-      </button>
-      {hasVehicles && (
-        <button
-          onClick={() => setActiveView('vehicles')}
-          className={cn(
-            'px-3 py-1 text-xs rounded-full border transition-colors',
-            activeView === 'vehicles'
-              ? 'bg-primary text-primary-foreground border-primary'
-              : 'bg-transparent border-border hover:bg-accent'
-          )}
-        >
-          Vehicles
-        </button>
-      )}
-    </div>
-  );
-
-  const renderMultiSelection = () => {
-    if (selectedItem?.type !== 'multiSelection') return null;
-    const { machineGroups, trainStations, droneStations } = selectedItem.data;
-
-    const totalItems = machineGroups.length + trainStations.length + droneStations.length;
-    const hasVehicles = trainStations.length > 0 || droneStations.length > 0;
-
-    const aggregateItems = (
-      groups: MachineGroup[],
-      key: 'itemProduction' | 'itemConsumption'
-    ): Record<string, number> => {
-      const result: Record<string, number> = {};
-      groups.forEach((g) => {
-        Object.entries(g[key]).forEach(([name, value]) => {
-          result[name] = (result[name] || 0) + value;
-        });
-      });
-      return result;
-    };
-
-    const totalMachines = machineGroups.reduce((sum, g) => sum + g.machines.length, 0);
-    const totalPowerConsumption = machineGroups.reduce((sum, g) => sum + g.powerConsumption, 0);
-    const totalPowerProduction = machineGroups.reduce((sum, g) => sum + g.powerProduction, 0);
-    const totalItemProduction = aggregateItems(machineGroups, 'itemProduction');
-    const totalItemConsumption = aggregateItems(machineGroups, 'itemConsumption');
-
-    const allTrains = trainStations.flatMap((ts) => ts.dockedTrains);
-    const allDrones = droneStations.flatMap((ds) => ds.dockedDrones);
-
-    return (
-      <>
-        <div className="flex justify-between items-center mb-2">
-          <span className="font-bold">Multi-Selection</span>
-          <span className="text-muted-foreground text-xs">{totalItems} items</span>
-        </div>
-
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-muted-foreground text-xs">Machine Groups</span>
-          <span className="font-bold">{machineGroups.length}</span>
-        </div>
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-muted-foreground text-xs">Total Machines</span>
-          <span className="font-bold">{totalMachines}</span>
-        </div>
-
-        {renderMultiViewTabs(hasVehicles)}
-
-        {activeView === 'items' && (
-          <>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Power Consumption</span>
-              <span className="font-bold">
-                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Power Production</span>
-              <span className="font-bold">
-                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
-              </span>
-            </div>
-
-            {Object.entries(totalItemProduction).length > 0 && (
-              <>
-                <Separator className="my-2" />
-                <div className="mt-4">
-                  <span className="font-bold block mb-2">Production</span>
-                  {Object.entries(totalItemProduction).map(([name, value]) => (
-                    <div key={name} className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={`assets/images/satisfactory/64x64/${name}.png`}
-                          alt={name}
-                          className="w-6 h-6"
-                        />
-                        <span className="text-muted-foreground text-xs">{name}</span>
-                      </div>
-                      <span className="font-bold">
-                        {fShortenNumber(value, MetricUnits, {
-                          ensureConstantDecimals: true,
-                          onlyDecimalsWhenDivisible: true,
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {Object.entries(totalItemConsumption).length > 0 && (
-              <>
-                <Separator className="my-2" />
-                <div className="mt-4">
-                  <span className="font-bold block mb-2">Consumption</span>
-                  {Object.entries(totalItemConsumption).map(([name, value]) => (
-                    <div key={name} className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={`assets/images/satisfactory/64x64/${name}.png`}
-                          alt={name}
-                          className="w-6 h-6"
-                        />
-                        <span className="text-muted-foreground text-xs">{name}</span>
-                      </div>
-                      <span className="font-bold">
-                        {fShortenNumber(value, MetricUnits, {
-                          ensureConstantDecimals: true,
-                          onlyDecimalsWhenDivisible: true,
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {activeView === 'buildings' && (
-          <>
-            {getBuildingCounts(machineGroups).length > 0 ? (
-              getBuildingCounts(machineGroups).map(([type, count]) => (
-                <div key={type} className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground text-xs">{formatMachineType(type)}</span>
-                  <span className="font-bold">{count}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No buildings in selection</p>
-            )}
-          </>
-        )}
-
-        {activeView === 'power' && (
-          <>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Total Production</span>
-              <span className="font-bold">
-                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Total Consumption</span>
-              <span className="font-bold">
-                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
-              </span>
-            </div>
-
-            {getPowerSources(machineGroups).length > 0 && (
-              <>
-                <Separator className="my-2" />
-                <span className="font-bold block mb-2">Power Sources</span>
-                {getPowerSources(machineGroups).map(([type, data]) => (
-                  <div key={type} className="flex justify-between items-center mb-2">
-                    <span className="text-muted-foreground text-xs">
-                      {formatMachineType(type)} ({data.count})
-                    </span>
-                    <span className="font-bold">{fShortenNumber(data.production, WattUnits)}</span>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {getPowerSources(machineGroups).length === 0 && (
-              <p className="text-sm text-muted-foreground mt-2">No power generators in selection</p>
-            )}
-          </>
-        )}
-
-        {activeView === 'vehicles' && hasVehicles && (
-          <>
-            {allTrains.length > 0 && (
-              <>
-                <span className="font-bold block mb-2">Docked Trains ({allTrains.length})</span>
-                {allTrains.map((train, index) => (
-                  <div key={index} className="p-2 mb-2 rounded bg-card">
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-bold">{train.name}</p>
-                      <Badge variant="secondary">
-                        {train.status === TrainStatusDocking ? 'Docking' : train.status}
-                      </Badge>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      Speed: {train.speed.toFixed(0)} km/h
-                    </span>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {allDrones.length > 0 && (
-              <>
-                {allTrains.length > 0 && <Separator className="my-4" />}
-                <span className="font-bold block mb-2">Docked Drones ({allDrones.length})</span>
-                {allDrones.map((drone, index) => (
-                  <div key={index} className="p-2 mb-2 rounded bg-card">
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-bold">{drone.name}</p>
-                      <Badge variant="secondary">{formatMachineType(drone.status)}</Badge>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      Speed: {drone.speed.toFixed(0)} km/h
-                    </span>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {allTrains.length === 0 && allDrones.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No vehicles docked at selected stations
-              </p>
-            )}
-          </>
-        )}
-      </>
-    );
-  };
 
   const renderTrainStation = () => {
     if (selectedItem?.type !== 'trainStation') return null;
@@ -849,151 +365,352 @@ export const SelectionSidebar = ({
     );
   };
 
-  const renderMachineGroups = () => {
-    if (selectedItem?.type !== 'machineGroups') return null;
-    const groups = selectedItem.data;
+  /** Renders the universal Selection view with sub-tabs for items, buildings, power, and vehicles */
+  const renderSelection = () => {
+    if (selectedItem?.type !== 'selection') return null;
+    const selection = selectedItem.data;
 
-    const totalMachines = groups.reduce((sum, g) => sum + g.machines.length, 0);
-    const totalTrainStations = groups.reduce((sum, g) => sum + (g.trainStations?.length || 0), 0);
-    const totalDroneStations = groups.reduce((sum, g) => sum + (g.droneStations?.length || 0), 0);
-    const totalItems = totalMachines + totalTrainStations + totalDroneStations;
+    const { entities, totalCount, power, items, buildingCounts, hasItems, hasPower, hasVehicles } =
+      selection;
 
-    const totalVehicles = groups.reduce((sum, g) => sum + getTotalVehicles(g), 0);
-    const showVehicles = totalTrainStations > 0 || totalDroneStations > 0;
+    const dockedTrainsForStations = entities.trainStations.flatMap((station) =>
+      getDockedTrains(station, trains)
+    );
+    const dockedDronesForStations = entities.droneStations.flatMap((station) =>
+      getDockedDrones(station, drones)
+    );
 
-    const totalPowerConsumption = groups.reduce((sum, g) => sum + g.powerConsumption, 0);
-    const totalPowerProduction = groups.reduce((sum, g) => sum + g.powerProduction, 0);
+    const totalVehicles = dockedTrainsForStations.length + dockedDronesForStations.length;
 
-    const aggregateItems = (key: 'itemProduction' | 'itemConsumption'): Record<string, number> => {
-      const result: Record<string, number> = {};
-      groups.forEach((g) => {
-        Object.entries(g[key]).forEach(([name, value]) => {
-          result[name] = (result[name] || 0) + value;
-        });
+    const buildingCountsEntries = Object.entries(buildingCounts).sort((a, b) => b[1] - a[1]);
+
+    const getPowerSourcesFromSelection = (sel: Selection) => {
+      const generators = sel.entities.machines.filter(
+        (m) => m.category === MachineCategoryGenerator
+      );
+      const powerByType: Record<string, { count: number; production: number }> =
+        Object.create(null);
+      generators.forEach((gen) => {
+        const production = gen.output.find((o) => o.name === 'Power')?.current || 0;
+        if (!powerByType[gen.type]) {
+          powerByType[gen.type] = { count: 0, production: 0 };
+        }
+        powerByType[gen.type].count += 1;
+        powerByType[gen.type].production += production;
       });
-      return result;
+      return Object.entries(powerByType).sort((a, b) => b[1].production - a[1].production);
     };
-    const totalItemProduction = aggregateItems('itemProduction');
-    const totalItemConsumption = aggregateItems('itemConsumption');
 
-    const allDockedTrains = groups.flatMap((g) =>
-      (g.trainStations || []).flatMap((station) => getDockedTrains(station, trains))
-    );
-    const allDockedDrones = groups.flatMap((g) =>
-      (g.droneStations || []).flatMap((station) => getDockedDrones(station, drones))
-    );
+    const powerSourcesEntries = getPowerSourcesFromSelection(selection);
 
     return (
       <>
         <div className="flex justify-between items-center mb-2">
-          <span className="font-bold">Multi-Selection</span>
-          <span className="text-muted-foreground text-xs">{groups.length} groups</span>
+          <span className="font-bold">Selection</span>
+          <span className="text-muted-foreground text-xs">
+            {totalCount} {totalCount === 1 ? 'item' : 'items'}
+          </span>
         </div>
 
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-muted-foreground text-xs">Total Items</span>
-          <span className="font-bold">{totalItems}</span>
-        </div>
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-muted-foreground text-xs">Machines</span>
-          <span className="font-bold">{totalMachines}</span>
-        </div>
-        {showVehicles && (
+        {entities.machines.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Machines</span>
+            <span className="font-bold">{entities.machines.length}</span>
+          </div>
+        )}
+        {entities.trainStations.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Train Stations</span>
+            <span className="font-bold">{entities.trainStations.length}</span>
+          </div>
+        )}
+        {entities.droneStations.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Drone Stations</span>
+            <span className="font-bold">{entities.droneStations.length}</span>
+          </div>
+        )}
+        {entities.radarTowers.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Radar Towers</span>
+            <span className="font-bold">{entities.radarTowers.length}</span>
+          </div>
+        )}
+        {entities.hubs.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">HUBs</span>
+            <span className="font-bold">{entities.hubs.length}</span>
+          </div>
+        )}
+        {entities.spaceElevators.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Space Elevators</span>
+            <span className="font-bold">{entities.spaceElevators.length}</span>
+          </div>
+        )}
+        {entities.trains.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Trains</span>
+            <span className="font-bold">{entities.trains.length}</span>
+          </div>
+        )}
+        {entities.drones.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Drones</span>
+            <span className="font-bold">{entities.drones.length}</span>
+          </div>
+        )}
+        {entities.trucks.length + entities.tractors.length + entities.explorers.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Ground Vehicles</span>
+            <span className="font-bold">
+              {entities.trucks.length + entities.tractors.length + entities.explorers.length}
+            </span>
+          </div>
+        )}
+        {entities.players.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Players</span>
+            <span className="font-bold">{entities.players.length}</span>
+          </div>
+        )}
+        {entities.belts.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Belts</span>
+            <span className="font-bold">{entities.belts.length}</span>
+          </div>
+        )}
+        {entities.pipes.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Pipes</span>
+            <span className="font-bold">{entities.pipes.length}</span>
+          </div>
+        )}
+        {entities.cables.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Power Cables</span>
+            <span className="font-bold">{entities.cables.length}</span>
+          </div>
+        )}
+        {entities.rails.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Train Rails</span>
+            <span className="font-bold">{entities.rails.length}</span>
+          </div>
+        )}
+        {entities.hypertubes.length > 0 && (
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-muted-foreground text-xs">Hypertubes</span>
+            <span className="font-bold">{entities.hypertubes.length}</span>
+          </div>
+        )}
+
+        {hasVehicles && totalVehicles > 0 && (
           <div className="flex justify-between items-center mb-4">
-            <span className="text-muted-foreground text-xs">Total Vehicles</span>
+            <span className="text-muted-foreground text-xs">Docked Vehicles</span>
             <span className="font-bold">{totalVehicles}</span>
           </div>
         )}
 
-        {renderViewTabs(showVehicles)}
+        {renderSelectionViewTabs(hasItems, hasPower, hasVehicles)}
 
         {activeView === 'items' && (
           <>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Power Consumption</span>
-              <span className="font-bold">
-                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-muted-foreground text-xs">Power Production</span>
-              <span className="font-bold">
-                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
-              </span>
-            </div>
-
-            {Object.entries(totalItemProduction).length > 0 && (
+            {hasItems ? (
               <>
-                <Separator className="my-2" />
-                <div className="mt-4">
-                  <span className="font-bold block mb-2">Production</span>
-                  {Object.entries(totalItemProduction)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([name, value]) => (
-                      <div key={name} className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={`assets/images/satisfactory/64x64/${name}.png`}
-                            alt={name}
-                            className="w-6 h-6"
-                          />
-                          <span className="text-muted-foreground text-xs">{name}</span>
-                        </div>
-                        <span className="font-bold">
-                          {fShortenNumber(value, MetricUnits, {
-                            ensureConstantDecimals: true,
-                            onlyDecimalsWhenDivisible: true,
-                          })}
-                        </span>
-                      </div>
-                    ))}
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-muted-foreground text-xs">Power Consumption</span>
+                  <span className="font-bold">
+                    {power.consumption ? fShortenNumber(power.consumption, WattUnits) : '-'}
+                  </span>
                 </div>
-              </>
-            )}
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-muted-foreground text-xs">Power Production</span>
+                  <span className="font-bold">
+                    {power.production ? fShortenNumber(power.production, WattUnits) : '-'}
+                  </span>
+                </div>
 
-            {Object.entries(totalItemConsumption).length > 0 && (
-              <>
-                <Separator className="my-2" />
-                <div className="mt-4">
-                  <span className="font-bold block mb-2">Consumption</span>
-                  {Object.entries(totalItemConsumption)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([name, value]) => (
-                      <div key={name} className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={`assets/images/satisfactory/64x64/${name}.png`}
-                            alt={name}
-                            className="w-6 h-6"
-                          />
-                          <span className="text-muted-foreground text-xs">{name}</span>
-                        </div>
-                        <span className="font-bold">
-                          {fShortenNumber(value, MetricUnits, {
-                            ensureConstantDecimals: true,
-                            onlyDecimalsWhenDivisible: true,
-                          })}
-                        </span>
-                      </div>
-                    ))}
-                </div>
+                {Object.entries(items.production).length > 0 && (
+                  <>
+                    <Separator className="my-2" />
+                    <div className="mt-4">
+                      <span className="font-bold block mb-2">Production</span>
+                      {Object.entries(items.production)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([name, value]) => (
+                          <div key={name} className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={`assets/images/satisfactory/64x64/${name}.png`}
+                                alt={name}
+                                className="w-6 h-6"
+                              />
+                              <span className="text-muted-foreground text-xs">{name}</span>
+                            </div>
+                            <span className="font-bold">
+                              {fShortenNumber(value, MetricUnits, {
+                                ensureConstantDecimals: true,
+                                onlyDecimalsWhenDivisible: true,
+                              })}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </>
+                )}
+
+                {Object.entries(items.consumption).length > 0 && (
+                  <>
+                    <Separator className="my-2" />
+                    <div className="mt-4">
+                      <span className="font-bold block mb-2">Consumption</span>
+                      {Object.entries(items.consumption)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([name, value]) => (
+                          <div key={name} className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={`assets/images/satisfactory/64x64/${name}.png`}
+                                alt={name}
+                                className="w-6 h-6"
+                              />
+                              <span className="text-muted-foreground text-xs">{name}</span>
+                            </div>
+                            <span className="font-bold">
+                              {fShortenNumber(value, MetricUnits, {
+                                ensureConstantDecimals: true,
+                                onlyDecimalsWhenDivisible: true,
+                              })}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </>
+                )}
               </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No item production or consumption data in selection
+              </p>
             )}
           </>
         )}
 
         {activeView === 'buildings' && (
           <>
-            {getBuildingCounts(groups).length > 0 ? (
-              getBuildingCounts(groups).map(([type, count]) => (
-                <div key={type} className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground text-xs">{formatMachineType(type)}</span>
-                  <span className="font-bold">{count}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No buildings in selection</p>
+            {buildingCountsEntries.length > 0 && (
+              <>
+                <span className="text-xs text-muted-foreground mb-2 block">Machines</span>
+                {buildingCountsEntries.map(([type, count]) => (
+                  <div key={type} className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">{formatMachineType(type)}</span>
+                    <span className="font-bold">{count}</span>
+                  </div>
+                ))}
+              </>
             )}
+
+            {(entities.trainStations.length > 0 ||
+              entities.droneStations.length > 0 ||
+              entities.radarTowers.length > 0 ||
+              entities.hubs.length > 0 ||
+              entities.spaceElevators.length > 0) && (
+              <>
+                {buildingCountsEntries.length > 0 && <Separator className="my-2" />}
+                <span className="text-xs text-muted-foreground mb-2 block">Special Structures</span>
+                {entities.trainStations.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">Train Stations</span>
+                    <span className="font-bold">{entities.trainStations.length}</span>
+                  </div>
+                )}
+                {entities.droneStations.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">Drone Stations</span>
+                    <span className="font-bold">{entities.droneStations.length}</span>
+                  </div>
+                )}
+                {entities.radarTowers.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">Radar Towers</span>
+                    <span className="font-bold">{entities.radarTowers.length}</span>
+                  </div>
+                )}
+                {entities.hubs.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">HUBs</span>
+                    <span className="font-bold">{entities.hubs.length}</span>
+                  </div>
+                )}
+                {entities.spaceElevators.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">Space Elevators</span>
+                    <span className="font-bold">{entities.spaceElevators.length}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {(entities.belts.length > 0 ||
+              entities.pipes.length > 0 ||
+              entities.cables.length > 0 ||
+              entities.rails.length > 0 ||
+              entities.hypertubes.length > 0) && (
+              <>
+                {(buildingCountsEntries.length > 0 ||
+                  entities.trainStations.length > 0 ||
+                  entities.droneStations.length > 0 ||
+                  entities.radarTowers.length > 0 ||
+                  entities.hubs.length > 0 ||
+                  entities.spaceElevators.length > 0) && <Separator className="my-2" />}
+                <span className="text-xs text-muted-foreground mb-2 block">Infrastructure</span>
+                {entities.belts.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">Belts</span>
+                    <span className="font-bold">{entities.belts.length}</span>
+                  </div>
+                )}
+                {entities.pipes.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">Pipes</span>
+                    <span className="font-bold">{entities.pipes.length}</span>
+                  </div>
+                )}
+                {entities.cables.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">Power Cables</span>
+                    <span className="font-bold">{entities.cables.length}</span>
+                  </div>
+                )}
+                {entities.rails.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">Train Rails</span>
+                    <span className="font-bold">{entities.rails.length}</span>
+                  </div>
+                )}
+                {entities.hypertubes.length > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground text-xs">Hypertubes</span>
+                    <span className="font-bold">{entities.hypertubes.length}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {buildingCountsEntries.length === 0 &&
+              entities.trainStations.length === 0 &&
+              entities.droneStations.length === 0 &&
+              entities.radarTowers.length === 0 &&
+              entities.hubs.length === 0 &&
+              entities.spaceElevators.length === 0 &&
+              entities.belts.length === 0 &&
+              entities.pipes.length === 0 &&
+              entities.cables.length === 0 &&
+              entities.rails.length === 0 &&
+              entities.hypertubes.length === 0 && (
+                <p className="text-sm text-muted-foreground">No buildings in selection</p>
+              )}
           </>
         )}
 
@@ -1002,21 +719,21 @@ export const SelectionSidebar = ({
             <div className="flex justify-between items-center mb-2">
               <span className="text-muted-foreground text-xs">Total Production</span>
               <span className="font-bold">
-                {totalPowerProduction ? fShortenNumber(totalPowerProduction, WattUnits) : '-'}
+                {power.production ? fShortenNumber(power.production, WattUnits) : '-'}
               </span>
             </div>
             <div className="flex justify-between items-center mb-2">
               <span className="text-muted-foreground text-xs">Total Consumption</span>
               <span className="font-bold">
-                {totalPowerConsumption ? fShortenNumber(totalPowerConsumption, WattUnits) : '-'}
+                {power.consumption ? fShortenNumber(power.consumption, WattUnits) : '-'}
               </span>
             </div>
 
-            {getPowerSources(groups).length > 0 && (
+            {powerSourcesEntries.length > 0 && (
               <>
                 <Separator className="my-2" />
                 <span className="font-bold block mb-2">Power Sources</span>
-                {getPowerSources(groups).map(([type, data]) => (
+                {powerSourcesEntries.map(([type, data]) => (
                   <div key={type} className="flex justify-between items-center mb-2">
                     <span className="text-muted-foreground text-xs">
                       {formatMachineType(type)} ({data.count})
@@ -1027,79 +744,169 @@ export const SelectionSidebar = ({
               </>
             )}
 
-            {getPowerSources(groups).length === 0 && (
+            {powerSourcesEntries.length === 0 && (
               <p className="text-sm text-muted-foreground mt-2">No power generators in selection</p>
             )}
           </>
         )}
 
-        {activeView === 'vehicles' && showVehicles && (
+        {activeView === 'vehicles' && hasVehicles && (
           <>
-            {totalTrainStations > 0 && (
+            {entities.trainStations.length > 0 && (
               <>
-                <span className="font-bold block mb-2">Train Stations ({totalTrainStations})</span>
-                {groups
-                  .flatMap((g) => g.trainStations || [])
-                  .map((station, idx) => {
-                    const stationDockedTrains = getDockedTrains(station, trains);
-                    return (
-                      <div key={idx} className="mb-4 p-2 rounded bg-card">
-                        <p className="text-sm font-bold">{station.name}</p>
-                        {stationDockedTrains.length > 0 ? (
-                          stationDockedTrains.map((train, tidx) => (
-                            <div key={tidx} className="flex justify-between items-center mt-1">
-                              <span className="text-xs">{train.name}</span>
-                              <Badge variant="secondary">Docking</Badge>
-                            </div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-muted-foreground">No trains docked</span>
-                        )}
-                      </div>
-                    );
-                  })}
+                <span className="font-bold block mb-2">
+                  Train Stations ({entities.trainStations.length})
+                </span>
+                {entities.trainStations.map((station, idx) => {
+                  const stationDockedTrains = getDockedTrains(station, trains);
+                  return (
+                    <div key={idx} className="mb-4 p-2 rounded bg-card">
+                      <p className="text-sm font-bold">{station.name}</p>
+                      {stationDockedTrains.length > 0 ? (
+                        stationDockedTrains.map((train, tidx) => (
+                          <div key={tidx} className="flex justify-between items-center mt-1">
+                            <span className="text-xs">{train.name}</span>
+                            <Badge variant="secondary">Docking</Badge>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No trains docked</span>
+                      )}
+                    </div>
+                  );
+                })}
               </>
             )}
 
-            {totalDroneStations > 0 && (
+            {entities.droneStations.length > 0 && (
               <>
-                {totalTrainStations > 0 && <Separator className="my-4" />}
-                <span className="font-bold block mb-2">Drone Stations ({totalDroneStations})</span>
-                {groups
-                  .flatMap((g) => g.droneStations || [])
-                  .map((station, idx) => {
-                    const stationDockedDrones = getDockedDrones(station, drones);
-                    return (
-                      <div key={idx} className="mb-4 p-2 rounded bg-card">
-                        <p className="text-sm font-bold">{station.name}</p>
-                        {station.fuel?.Name && (
-                          <span className="text-xs text-muted-foreground block">
-                            Fuel: {station.fuel.Name}
-                          </span>
-                        )}
-                        {stationDockedDrones.length > 0 ? (
-                          stationDockedDrones.map((drone, didx) => (
-                            <div key={didx} className="flex justify-between items-center mt-1">
-                              <span className="text-xs">{drone.name}</span>
-                              <Badge variant="secondary">{formatMachineType(drone.status)}</Badge>
-                            </div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            No drones at station
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                {entities.trainStations.length > 0 && <Separator className="my-4" />}
+                <span className="font-bold block mb-2">
+                  Drone Stations ({entities.droneStations.length})
+                </span>
+                {entities.droneStations.map((station, idx) => {
+                  const stationDockedDrones = getDockedDrones(station, drones);
+                  return (
+                    <div key={idx} className="mb-4 p-2 rounded bg-card">
+                      <p className="text-sm font-bold">{station.name}</p>
+                      {station.fuel?.Name && (
+                        <span className="text-xs text-muted-foreground block">
+                          Fuel: {station.fuel.Name}
+                        </span>
+                      )}
+                      {stationDockedDrones.length > 0 ? (
+                        stationDockedDrones.map((drone, didx) => (
+                          <div key={didx} className="flex justify-between items-center mt-1">
+                            <span className="text-xs">{drone.name}</span>
+                            <Badge variant="secondary">{formatMachineType(drone.status)}</Badge>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No drones at station</span>
+                      )}
+                    </div>
+                  );
+                })}
               </>
             )}
 
-            {allDockedTrains.length === 0 && allDockedDrones.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No vehicles docked at stations in selection
-              </p>
+            {entities.trains.length > 0 && (
+              <>
+                {(entities.trainStations.length > 0 || entities.droneStations.length > 0) && (
+                  <Separator className="my-4" />
+                )}
+                <span className="font-bold block mb-2">Trains ({entities.trains.length})</span>
+                {entities.trains.map((train, idx) => (
+                  <div key={idx} className="p-2 mb-2 rounded bg-card">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-bold">{train.name}</p>
+                      <Badge variant="secondary">{formatMachineType(train.status)}</Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Speed: {train.speed.toFixed(0)} km/h
+                    </span>
+                  </div>
+                ))}
+              </>
             )}
+
+            {entities.drones.length > 0 && (
+              <>
+                {(entities.trainStations.length > 0 ||
+                  entities.droneStations.length > 0 ||
+                  entities.trains.length > 0) && <Separator className="my-4" />}
+                <span className="font-bold block mb-2">Drones ({entities.drones.length})</span>
+                {entities.drones.map((drone, idx) => (
+                  <div key={idx} className="p-2 mb-2 rounded bg-card">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-bold">{drone.name}</p>
+                      <Badge variant="secondary">{formatMachineType(drone.status)}</Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Speed: {drone.speed.toFixed(0)} km/h
+                    </span>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {(entities.trucks.length > 0 ||
+              entities.tractors.length > 0 ||
+              entities.explorers.length > 0) && (
+              <>
+                {(entities.trainStations.length > 0 ||
+                  entities.droneStations.length > 0 ||
+                  entities.trains.length > 0 ||
+                  entities.drones.length > 0) && <Separator className="my-4" />}
+                <span className="font-bold block mb-2">
+                  Ground Vehicles (
+                  {entities.trucks.length + entities.tractors.length + entities.explorers.length})
+                </span>
+                {entities.trucks.map((truck, idx) => (
+                  <div key={`truck-${idx}`} className="p-2 mb-2 rounded bg-card">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-bold">{truck.name}</p>
+                      <Badge variant="secondary">Truck</Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Speed: {truck.speed.toFixed(0)} km/h
+                    </span>
+                  </div>
+                ))}
+                {entities.tractors.map((tractor, idx) => (
+                  <div key={`tractor-${idx}`} className="p-2 mb-2 rounded bg-card">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-bold">{tractor.name}</p>
+                      <Badge variant="secondary">Tractor</Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Speed: {tractor.speed.toFixed(0)} km/h
+                    </span>
+                  </div>
+                ))}
+                {entities.explorers.map((explorer, idx) => (
+                  <div key={`explorer-${idx}`} className="p-2 mb-2 rounded bg-card">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-bold">{explorer.name}</p>
+                      <Badge variant="secondary">Explorer</Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Speed: {explorer.speed.toFixed(0)} km/h
+                    </span>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {dockedTrainsForStations.length === 0 &&
+              dockedDronesForStations.length === 0 &&
+              entities.trains.length === 0 &&
+              entities.drones.length === 0 &&
+              entities.trucks.length === 0 &&
+              entities.tractors.length === 0 &&
+              entities.explorers.length === 0 && (
+                <p className="text-sm text-muted-foreground">No vehicles in selection</p>
+              )}
           </>
         )}
       </>
@@ -1199,24 +1006,104 @@ export const SelectionSidebar = ({
   };
 
   const renderHub = () => {
-    if (selectedItem?.type !== 'hub') return null;
-    const hubData = selectedItem.data;
+    if (selectedItem?.type !== 'hub' || !hubData) return null;
+    const milestone = hubData.activeMilestone;
 
     return (
       <>
         <div className="flex items-center gap-2 mb-2">
           <Iconify icon="material-symbols:house-rounded" width={20} className="text-amber-500" />
-          <p className="text-base font-medium">HUB</p>
+          <p className="text-base font-medium">{hubData.name || 'HUB Terminal'}</p>
         </div>
 
+        {/* Ship Status */}
         <div className="mb-3">
           <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">Level</span>
-            <p className="text-sm font-medium">{hubData.hubLevel}</p>
+            <span className="text-xs text-muted-foreground">Ship Status</span>
+            {hubData.shipDocked ? (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-500">
+                Docked
+              </span>
+            ) : shipCountdown !== null && shipCountdown > 0 ? (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+                Returns in {formatCountdown(shipCountdown)}
+              </span>
+            ) : (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500">
+                Returning...
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="pt-2 border-t border-border">
+        {/* Active Milestone */}
+        {hubData.hasActiveMilestone && milestone ? (
+          <div className="pt-2 border-t border-border">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-muted-foreground">Active Milestone</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-500">
+                Tier {milestone.techTier}
+              </span>
+            </div>
+            <p className="text-sm font-medium mb-3">{milestone.name}</p>
+
+            {/* Cost Progress */}
+            <span className="text-xs text-muted-foreground block mb-2">Requirements</span>
+            {milestone.cost.map((item, idx) => {
+              const progress =
+                item.totalCost > 0
+                  ? ((item.totalCost - item.remainingCost) / item.totalCost) * 100
+                  : 0;
+              const isComplete = progress >= 100;
+              return (
+                <div key={idx} className={cn(idx < milestone.cost.length - 1 ? 'mb-3' : '')}>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <img
+                        src={`assets/images/satisfactory/32x32/${item.name}.png`}
+                        alt={item.name}
+                        className="w-5 h-5 object-contain shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <p className="text-sm overflow-hidden text-ellipsis whitespace-nowrap">
+                        {item.name}
+                      </p>
+                    </div>
+                    <p
+                      className={cn(
+                        'text-sm shrink-0',
+                        isComplete ? 'text-green-500' : 'text-foreground'
+                      )}
+                    >
+                      {fShortenNumber(item.totalCost - item.remainingCost, MetricUnits, {
+                        decimals: 0,
+                      })}{' '}
+                      / {fShortenNumber(item.totalCost, MetricUnits, { decimals: 0 })}
+                    </p>
+                  </div>
+                  <div className="h-1.5 bg-white/10 rounded overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full transition-all duration-300',
+                        isComplete ? 'bg-green-500' : 'bg-amber-500'
+                      )}
+                      style={{ width: `${Math.min(progress, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="pt-2 border-t border-border">
+            <span className="text-xs text-muted-foreground italic">No active milestone</span>
+          </div>
+        )}
+
+        {/* Location */}
+        <div className="pt-2 mt-2 border-t border-border">
           <span className="text-xs text-muted-foreground block mb-1">Location</span>
           <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Coordinates</span>
@@ -1383,9 +1270,7 @@ export const SelectionSidebar = ({
     <MapSidebar open={selectedItems.length > 0} isMobile={isMobile} onClose={onClose}>
       {renderTabBar()}
       {!selectedItem && renderEmpty()}
-      {selectedItem?.type === 'machineGroup' && renderMachineGroup()}
-      {selectedItem?.type === 'machineGroups' && renderMachineGroups()}
-      {selectedItem?.type === 'multiSelection' && renderMultiSelection()}
+      {selectedItem?.type === 'selection' && renderSelection()}
       {selectedItem?.type === 'trainStation' && renderTrainStation()}
       {selectedItem?.type === 'droneStation' && renderDroneStation()}
       {selectedItem?.type === 'radarTower' && renderRadarTower()}
