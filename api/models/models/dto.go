@@ -26,6 +26,11 @@ type SplitterMergerDTO = SplitterMerger
 type CableDTO = Cable
 type VehiclesDTO = Vehicles
 type VehicleStationsDTO = VehicleStations
+type SchematicDTO = Schematic
+type StorageDTO = Storage
+type SpaceElevatorDTO = SpaceElevator
+type HubDTO = Hub
+type RadarTowerDTO = RadarTower
 
 type DroneSetupDTO struct {
 	Drones        []DroneDTO        `json:"drones"`

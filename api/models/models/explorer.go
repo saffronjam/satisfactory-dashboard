@@ -14,7 +14,7 @@ type Explorer struct {
 	Name       string         `json:"name"`
 	Speed      float64        `json:"speed"`
 	Status     ExplorerStatus `json:"status"`
-	Fuel       *Fuel          `json:"fuel,omitempty"`
+	Fuel       *Fuel          `json:"fuel"`
 	Inventory  []ItemStats    `json:"inventory"`
 	Location   `json:",inline" tstype:",extends"`
 	CircuitIDs `json:",inline" tstype:",extends"`

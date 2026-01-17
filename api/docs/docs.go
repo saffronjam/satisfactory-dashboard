@@ -440,6 +440,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/explorers": {
+            "get": {
+                "description": "List all explorers from cached session state",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "World"
+                ],
+                "summary": "List Explorers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of explorers",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ExplorerDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/factoryStats": {
             "get": {
                 "description": "Get factory stats from cached session state",
@@ -505,6 +546,44 @@ const docTemplate = `{
                         "description": "Get generator stats",
                         "schema": {
                             "$ref": "#/definitions/models.GeneratorStatsDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/hub": {
+            "get": {
+                "description": "Get the hub from cached session state",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "World"
+                ],
+                "summary": "Get Hub",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Hub",
+                        "schema": {
+                            "$ref": "#/definitions/models.HubDTO"
                         }
                     },
                     "400": {
@@ -744,6 +823,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/radarTowers": {
+            "get": {
+                "description": "List all radar towers from cached session state",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "World"
+                ],
+                "summary": "List Radar Towers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of radar towers",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RadarTowerDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/resourceNodes": {
             "get": {
                 "description": "List all world resource nodes from cached session state",
@@ -812,6 +932,47 @@ const docTemplate = `{
                         "description": "Satisfactory API Status",
                         "schema": {
                             "$ref": "#/definitions/models.SatisfactoryApiStatusDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/schematics": {
+            "get": {
+                "description": "List all schematics/milestones from cached session state",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schematics"
+                ],
+                "summary": "List Schematics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of schematics",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.SchematicDTO"
+                            }
                         }
                     },
                     "400": {
@@ -1026,7 +1187,7 @@ const docTemplate = `{
                 }
             },
             "patch": {
-                "description": "Update a session's properties (name, paused state). All fields are optional.",
+                "description": "Update a session's properties (name, paused state, address). All fields are optional.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1317,6 +1478,126 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/spaceElevator": {
+            "get": {
+                "description": "Get the space elevator from cached session state",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "World"
+                ],
+                "summary": "Get Space Elevator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Space elevator",
+                        "schema": {
+                            "$ref": "#/definitions/models.SpaceElevatorDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storages": {
+            "get": {
+                "description": "List all storage containers from cached session state",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "World"
+                ],
+                "summary": "List Storages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of storages",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.StorageDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tractors": {
+            "get": {
+                "description": "List all tractors from cached session state",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "World"
+                ],
+                "summary": "List Tractors",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of tractors",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.TractorDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/trainRails": {
             "get": {
                 "description": "List all train rails from cached session state",
@@ -1466,6 +1747,47 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/models.TrainDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/vehiclePaths": {
+            "get": {
+                "description": "List all vehicle paths from cached session state",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "World"
+                ],
+                "summary": "List Vehicle Paths",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of vehicle paths",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.VehiclePathDTO"
                             }
                         }
                     },
@@ -2067,6 +2389,50 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ExplorerDTO": {
+            "type": "object",
+            "properties": {
+                "circuitGroupId": {
+                    "type": "integer"
+                },
+                "circuitId": {
+                    "type": "integer"
+                },
+                "fuel": {
+                    "$ref": "#/definitions/models.Fuel"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "inventory": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ItemStats"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rotation": {
+                    "type": "number"
+                },
+                "speed": {
+                    "type": "number"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.ExplorerStatus"
+                },
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            }
+        },
         "models.ExplorerStatus": {
             "type": "string",
             "enum": [
@@ -2202,17 +2568,31 @@ const docTemplate = `{
         "models.Hub": {
             "type": "object",
             "properties": {
+                "activeMilestone": {
+                    "$ref": "#/definitions/models.HubMilestone"
+                },
                 "boundingBox": {
                     "$ref": "#/definitions/models.BoundingBox"
                 },
-                "hubLevel": {
-                    "type": "integer"
+                "hasActiveMilestone": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "rotation": {
                     "type": "number"
+                },
+                "shipDocked": {
+                    "description": "Is ship currently docked?",
+                    "type": "boolean"
+                },
+                "shipReturnTime": {
+                    "description": "Unix timestamp (ms) when ship returns, null if docked",
+                    "type": "integer"
                 },
                 "x": {
                     "type": "number"
@@ -2221,6 +2601,87 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "z": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.HubDTO": {
+            "type": "object",
+            "properties": {
+                "activeMilestone": {
+                    "$ref": "#/definitions/models.HubMilestone"
+                },
+                "boundingBox": {
+                    "$ref": "#/definitions/models.BoundingBox"
+                },
+                "hasActiveMilestone": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rotation": {
+                    "type": "number"
+                },
+                "shipDocked": {
+                    "description": "Is ship currently docked?",
+                    "type": "boolean"
+                },
+                "shipReturnTime": {
+                    "description": "Unix timestamp (ms) when ship returns, null if docked",
+                    "type": "integer"
+                },
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.HubMilestone": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.HubMilestoneCost"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "techTier": {
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "\"Milestone\" or \"No Milestone Selected\"",
+                    "type": "string"
+                }
+            }
+        },
+        "models.HubMilestoneCost": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "description": "Amount submitted so far",
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "remainingCost": {
+                    "description": "How much left to submit",
+                    "type": "number"
+                },
+                "totalCost": {
+                    "description": "Total required",
                     "type": "number"
                 }
             }
@@ -2994,6 +3455,56 @@ const docTemplate = `{
                 }
             }
         },
+        "models.RadarTowerDTO": {
+            "type": "object",
+            "properties": {
+                "boundingBox": {
+                    "$ref": "#/definitions/models.BoundingBox"
+                },
+                "fauna": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ScannedFauna"
+                    }
+                },
+                "flora": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ScannedFlora"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ResourceNode"
+                    }
+                },
+                "revealRadius": {
+                    "type": "number"
+                },
+                "rotation": {
+                    "type": "number"
+                },
+                "signal": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ScannedSignal"
+                    }
+                },
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            }
+        },
         "models.ResourceNode": {
             "type": "object",
             "properties": {
@@ -3142,6 +3653,84 @@ const docTemplate = `{
                 },
                 "name": {
                     "$ref": "#/definitions/models.SignalType"
+                }
+            }
+        },
+        "models.Schematic": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SchematicCost"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "locked": {
+                    "type": "boolean"
+                },
+                "lockedPhase": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "purchased": {
+                    "type": "boolean"
+                },
+                "tier": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SchematicCost": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "totalCost": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.SchematicDTO": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SchematicCost"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "locked": {
+                    "type": "boolean"
+                },
+                "lockedPhase": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "purchased": {
+                    "type": "boolean"
+                },
+                "tier": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -3351,6 +3940,47 @@ const docTemplate = `{
                 "fullyUpgraded": {
                     "type": "boolean"
                 },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rotation": {
+                    "type": "number"
+                },
+                "upgradeReady": {
+                    "type": "boolean"
+                },
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.SpaceElevatorDTO": {
+            "type": "object",
+            "properties": {
+                "boundingBox": {
+                    "$ref": "#/definitions/models.BoundingBox"
+                },
+                "currentPhase": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SpaceElevatorPhaseObjective"
+                    }
+                },
+                "fullyUpgraded": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -3554,6 +4184,12 @@ const docTemplate = `{
                 "satisfactoryApiStatus": {
                     "$ref": "#/definitions/models.SatisfactoryApiStatus"
                 },
+                "schematics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Schematic"
+                    }
+                },
                 "sinkStats": {
                     "$ref": "#/definitions/models.SinkStats"
                 },
@@ -3636,6 +4272,38 @@ const docTemplate = `{
                 }
             }
         },
+        "models.StorageDTO": {
+            "type": "object",
+            "properties": {
+                "boundingBox": {
+                    "$ref": "#/definitions/models.BoundingBox"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "inventory": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ItemStats"
+                    }
+                },
+                "rotation": {
+                    "type": "number"
+                },
+                "type": {
+                    "$ref": "#/definitions/models.StorageType"
+                },
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            }
+        },
         "models.StorageType": {
             "type": "string",
             "enum": [
@@ -3654,6 +4322,50 @@ const docTemplate = `{
             ]
         },
         "models.Tractor": {
+            "type": "object",
+            "properties": {
+                "circuitGroupId": {
+                    "type": "integer"
+                },
+                "circuitId": {
+                    "type": "integer"
+                },
+                "fuel": {
+                    "$ref": "#/definitions/models.Fuel"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "inventory": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ItemStats"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rotation": {
+                    "type": "number"
+                },
+                "speed": {
+                    "type": "number"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.TractorStatus"
+                },
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.TractorDTO": {
             "type": "object",
             "properties": {
                 "circuitGroupId": {
@@ -3984,6 +4696,9 @@ const docTemplate = `{
                 "boundingBox": {
                     "$ref": "#/definitions/models.BoundingBox"
                 },
+                "id": {
+                    "type": "string"
+                },
                 "inflowRate": {
                     "description": "Fluid incoming rate",
                     "type": "number"
@@ -4116,6 +4831,9 @@ const docTemplate = `{
         "models.UpdateSessionRequest": {
             "type": "object",
             "properties": {
+                "address": {
+                    "type": "string"
+                },
                 "isPaused": {
                     "type": "boolean"
                 },
@@ -4125,6 +4843,27 @@ const docTemplate = `{
             }
         },
         "models.VehiclePath": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "pathLength": {
+                    "description": "in meters",
+                    "type": "number"
+                },
+                "vehicleType": {
+                    "$ref": "#/definitions/models.VehiclePathType"
+                },
+                "vertices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Location"
+                    }
+                }
+            }
+        },
+        "models.VehiclePathDTO": {
             "type": "object",
             "properties": {
                 "name": {
