@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Hub, RadarTower, ResourceNode, SpaceElevator } from 'src/apiTypes';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  DroneStation,
+  Hub,
+  RadarTower,
+  ResourceNode,
+  SpaceElevator,
+  TrainStation,
+} from 'src/apiTypes';
 import { HoveredItem, HoverTooltip } from '../hoverTooltip';
 import { HoverEvent, InfrastructureOverlay } from '../infrastructureOverlay';
 import { ClickedItem, ItemPopover } from '../itemPopover';
@@ -7,7 +14,7 @@ import { HubLayer } from '../layers/hubLayer';
 import { RadarTowerLayer } from '../layers/radarTowerLayer';
 import { SpaceElevatorLayer } from '../layers/spaceElevatorLayer';
 import { ResourceNodesLayer } from '../layers/resourceNodesLayer';
-import { MachineGroupMarkers } from './components/MachineGroupMarkers';
+import { SelectionHighlight } from './components/SelectionHighlight';
 import { SelectionRectangle } from './components/SelectionRectangle';
 import { VehicleLayers } from './components/VehicleLayers';
 import { VehicleRouteOverlays } from './components/VehicleRouteOverlays';
@@ -15,9 +22,9 @@ import { useVehicleSelection } from './hooks/useVehicleSelection';
 import { OverlayProps } from './types';
 
 export function Overlay({
-  machineGroups,
   selectedItems,
   onSelectItem,
+  onCtrlClickEntity,
   onZoomEnd,
   onMoveEnd,
   onDragStart,
@@ -58,6 +65,9 @@ export function Overlay({
   towerVisibilityData,
   hypertubes,
   hypertubeEntrances,
+  selection,
+  showSelection = false,
+  isSelectionTabActive = false,
 }: OverlayProps) {
   const [clickedInfraItem, setClickedInfraItem] = useState<ClickedItem | null>(null);
 
@@ -109,10 +119,26 @@ export function Overlay({
     onSelectItem({ type: 'radarTower', data: tower });
   };
 
+  const handleRadarTowerCtrlClick = useCallback(
+    (tower: RadarTower) => {
+      ignoreMapClickRef.current = true;
+      onCtrlClickEntity?.({ type: 'radarTower', data: tower });
+    },
+    [onCtrlClickEntity]
+  );
+
   const handleHubClick = (clickedHub: Hub, _containerPoint: { x: number; y: number }) => {
     ignoreMapClickRef.current = true;
     onSelectItem({ type: 'hub', data: clickedHub });
   };
+
+  const handleHubCtrlClick = useCallback(
+    (clickedHub: Hub) => {
+      ignoreMapClickRef.current = true;
+      onCtrlClickEntity?.({ type: 'hub', data: clickedHub });
+    },
+    [onCtrlClickEntity]
+  );
 
   const handleSpaceElevatorClick = (
     clickedSpaceElevator: SpaceElevator,
@@ -121,6 +147,73 @@ export function Overlay({
     ignoreMapClickRef.current = true;
     onSelectItem({ type: 'spaceElevator', data: clickedSpaceElevator });
   };
+
+  const handleSpaceElevatorCtrlClick = useCallback(
+    (clickedSpaceElevator: SpaceElevator) => {
+      ignoreMapClickRef.current = true;
+      onCtrlClickEntity?.({ type: 'spaceElevator', data: clickedSpaceElevator });
+    },
+    [onCtrlClickEntity]
+  );
+
+  const dockedTrainsByStation = useMemo(() => {
+    const map = new Map<string, typeof trains>();
+    for (const station of trainStations) {
+      const docked = trains.filter(
+        (t) =>
+          t.status === 'Docking' && t.timetable?.some((entry) => entry.station === station.name)
+      );
+      map.set(station.name, docked);
+    }
+    return map;
+  }, [trainStations, trains]);
+
+  const handleTrainStationClick = useCallback(
+    (station: TrainStation) => {
+      ignoreMapClickRef.current = true;
+      const dockedTrains = dockedTrainsByStation.get(station.name) || [];
+      onSelectItem({ type: 'trainStation', data: { station, dockedTrains } });
+    },
+    [onSelectItem, dockedTrainsByStation]
+  );
+
+  const handleTrainStationCtrlClick = useCallback(
+    (station: TrainStation) => {
+      ignoreMapClickRef.current = true;
+      onCtrlClickEntity?.({ type: 'trainStation', data: station });
+    },
+    [onCtrlClickEntity]
+  );
+
+  const dockedDronesByStation = useMemo(() => {
+    const map = new Map<string, typeof drones>();
+    for (const station of droneStations) {
+      const docked = drones.filter(
+        (d) =>
+          d.status === 'Docking' &&
+          (d.home?.name === station.name || d.paired?.name === station.name)
+      );
+      map.set(station.name, docked);
+    }
+    return map;
+  }, [droneStations, drones]);
+
+  const handleDroneStationClick = useCallback(
+    (station: DroneStation) => {
+      ignoreMapClickRef.current = true;
+      const dockedDrones = dockedDronesByStation.get(station.name) || [];
+      onSelectItem({ type: 'droneStation', data: { station, dockedDrones } });
+    },
+    [onSelectItem, dockedDronesByStation]
+  );
+
+  const handleDroneStationCtrlClick = useCallback(
+    (station: DroneStation) => {
+      ignoreMapClickRef.current = true;
+      onCtrlClickEntity?.({ type: 'droneStation', data: station });
+    },
+    [onCtrlClickEntity]
+  );
 
   // Derive selected hub ID from selectedItems
   const selectedHubId = selectedItems
@@ -191,6 +284,10 @@ export function Overlay({
         showTrainStations={buildingSubLayers.has('trainStation')}
         showDroneStations={buildingSubLayers.has('droneStation')}
         showTruckStations={buildingSubLayers.has('truckStation')}
+        onTrainStationClick={handleTrainStationClick}
+        onTrainStationCtrlClick={handleTrainStationCtrlClick}
+        onDroneStationClick={handleDroneStationClick}
+        onDroneStationCtrlClick={handleDroneStationCtrlClick}
         buildingColorMode={buildingColorMode}
         buildingOpacity={buildingOpacity}
         hypertubes={hypertubes}
@@ -203,6 +300,7 @@ export function Overlay({
           radarTowers={radarTowers}
           selectedIds={selectedRadarTowerIds}
           onRadarTowerClick={handleRadarTowerClick}
+          onCtrlClick={handleRadarTowerCtrlClick}
           onResourceNodeHover={handleResourceNodeHover}
           opacity={buildingOpacity}
         />
@@ -213,6 +311,7 @@ export function Overlay({
           hub={hub}
           selectedId={selectedHubId}
           onHubClick={handleHubClick}
+          onCtrlClick={handleHubCtrlClick}
           opacity={buildingOpacity}
         />
       )}
@@ -222,6 +321,7 @@ export function Overlay({
           spaceElevator={spaceElevator}
           selectedId={selectedSpaceElevatorId}
           onSpaceElevatorClick={handleSpaceElevatorClick}
+          onCtrlClick={handleSpaceElevatorCtrlClick}
           opacity={buildingOpacity}
         />
       )}
@@ -283,19 +383,21 @@ export function Overlay({
       {/* Hover tooltip for infrastructure */}
       {hoveredItem && hoverPosition && <HoverTooltip item={hoveredItem} position={hoverPosition} />}
 
-      {/* Unified Groups (machines + train stations + drone stations) */}
-      {enabledLayers.has('machineGroups') && (
-        <MachineGroupMarkers
-          machineGroups={machineGroups}
-          selectedItems={selectedItems}
-          onSelectItem={onSelectItem}
+      {/* Selection Highlight */}
+      {selection && (
+        <SelectionHighlight
+          selection={selection}
+          showSelection={showSelection}
+          isSelectionTabActive={isSelectionTabActive}
         />
       )}
 
       {/* Selection Rectangle */}
       <SelectionRectangle
-        machineGroups={machineGroups}
         enabledLayers={enabledLayers}
+        buildingSubLayers={buildingSubLayers}
+        infrastructureSubLayers={infrastructureSubLayers}
+        vehicleSubLayers={vehicleSubLayers}
         multiSelectMode={multiSelectMode}
         onSelectItem={onSelectItem}
         onZoomEnd={onZoomEnd}
@@ -303,6 +405,23 @@ export function Overlay({
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         onMapClick={handleMapClick}
+        machines={machines}
+        trainStations={trainStations}
+        droneStations={droneStations}
+        radarTowers={radarTowers || []}
+        hub={hub}
+        spaceElevator={spaceElevator}
+        trains={trains}
+        drones={drones}
+        trucks={trucks}
+        tractors={tractors}
+        explorers={explorers}
+        players={players}
+        belts={belts}
+        pipes={pipes}
+        cables={cables}
+        rails={trainRails}
+        hypertubes={hypertubes || []}
       />
     </>
   );
