@@ -14,7 +14,7 @@ import { WelcomeScreen } from '@/components/welcome';
 import { useDebug } from '@/contexts/debug/DebugContext';
 import { useSession } from '@/contexts/sessions';
 
-import { getNavData } from '../config-nav-dashboard';
+import { useNavData } from '../config-nav-dashboard';
 import { DashboardHeader } from './header';
 import { AppSidebar } from './sidebar';
 
@@ -34,7 +34,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const [addSessionDialogOpen, setAddSessionDialogOpen] = useState(false);
 
-  const navData = getNavData(isDebugMode);
+  const navData = useNavData(isDebugMode);
 
   const hideHeader = location.pathname === '/map';
 
