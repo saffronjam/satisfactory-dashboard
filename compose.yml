@@ -1,18 +1,4 @@
 services:
-  dashboard:
-    build:
-      context: .
-      dockerfile: dashboard/Dockerfile
-      args:
-        INCLUDE_ASSETS: "true"
-    container_name: dashboard
-    ports:
-      - "3000:3000"
-    environment:
-      - API_URL=http://localhost:8081/v1
-    depends_on:
-      - api
-    restart: unless-stopped
 
   api:
     build:
