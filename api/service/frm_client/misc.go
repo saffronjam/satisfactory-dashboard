@@ -116,9 +116,10 @@ func (client *Client) GetHub(ctx context.Context) (*models.Hub, error) {
 	if raw.HasActiveMilestone && raw.ActiveMilestone.Type != "No Milestone Selected" {
 		costs := make([]models.HubMilestoneCost, len(raw.ActiveMilestone.Cost))
 		for i, c := range raw.ActiveMilestone.Cost {
+			// Bug in FRM api, Amount is same as TotalCost, so we use RemainingCost instead
 			costs[i] = models.HubMilestoneCost{
 				Name:          c.Name,
-				Amount:        c.Amount,
+				Amount:        c.TotalCost - c.RemainingCost,
 				RemainingCost: c.RemainingCost,
 				TotalCost:     c.TotalCost,
 			}
