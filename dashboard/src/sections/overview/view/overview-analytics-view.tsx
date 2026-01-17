@@ -59,7 +59,14 @@ export function OverviewAnalyticsView() {
           icon={<Iconify icon="bi:lightning-charge-fill" className="size-full" />}
           chart={{
             categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
-            series: api.history.map((data) => data.prodStats.itemsConsumedPerMinute) || [],
+            series: [
+              api.history.map((data) =>
+                data.circuits.reduce((acc, circuit) => acc + circuit.production.total, 0)
+              ) || [],
+              api.history.map((data) =>
+                data.circuits.reduce((acc, circuit) => acc + circuit.consumption.total, 0)
+              ) || [],
+            ],
           }}
           units={wUnits}
           color="1"
@@ -73,7 +80,10 @@ export function OverviewAnalyticsView() {
           icon={<Iconify icon="bi:gem" className="size-full" />}
           chart={{
             categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
-            series: api.history.map((data) => data.prodStats.minableProducedPerMinute) || [],
+            series: [
+              api.history.map((data) => data.prodStats.minableProducedPerMinute) || [],
+              api.history.map((data) => data.prodStats.minableConsumedPerMinute) || [],
+            ],
           }}
           units={mPerMinUnits}
           color="2"
@@ -87,7 +97,10 @@ export function OverviewAnalyticsView() {
           icon={<Iconify icon="material-symbols:factory" className="size-full" />}
           chart={{
             categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
-            series: api.history.map((data) => data.prodStats.itemsProducedPerMinute) || [],
+            series: [
+              api.history.map((data) => data.prodStats.itemsProducedPerMinute) || [],
+              api.history.map((data) => data.prodStats.itemsConsumedPerMinute) || [],
+            ],
           }}
           units={mPerMinUnits}
           color="3"
