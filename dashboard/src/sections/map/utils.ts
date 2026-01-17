@@ -1,7 +1,9 @@
-import { DroneStation, Machine, MachineCategoryGenerator, TrainStation } from 'src/apiTypes';
-import { MachineGroup } from 'src/types';
+import { BoundingBox } from 'src/apiTypes';
+import { SelectableEntity } from 'src/types';
 
-// Rotate a point around a pivot point
+/**
+ * Rotates a point around a pivot point by the given angle.
+ */
 export function rotatePoint(
   px: number,
   py: number,
@@ -19,190 +21,105 @@ export function rotatePoint(
   };
 }
 
-// Convert rotation degrees to radians (with 90° offset for map coordinate system)
+/**
+ * Converts rotation degrees to radians with 90° offset for map coordinate system.
+ */
 export function toRotationRad(rotationDegrees: number): number {
   return Math.PI / 2 + ((rotationDegrees || 0) * Math.PI) / 180;
 }
 
-// Entity type for unified grouping
-type GroupableEntity =
-  | { type: 'machine'; data: Machine; x: number; y: number }
-  | { type: 'trainStation'; data: TrainStation; x: number; y: number }
-  | { type: 'droneStation'; data: DroneStation; x: number; y: number };
-
-class UnionFind {
-  private readonly parent: number[];
-  private readonly rank: number[];
-
-  constructor(size: number) {
-    this.parent = Array.from({ length: size }, (_, i) => i);
-    this.rank = Array.from({ length: size }, () => 0);
-  }
-
-  find(x: number): number {
-    if (this.parent[x] !== x) {
-      this.parent[x] = this.find(this.parent[x]); // Path compression
-    }
-    return this.parent[x];
-  }
-
-  union(x: number, y: number): void {
-    const rootX = this.find(x);
-    const rootY = this.find(y);
-    if (rootX !== rootY) {
-      if (this.rank[rootX] > this.rank[rootY]) {
-        this.parent[rootY] = rootX;
-      } else if (this.rank[rootX] < this.rank[rootY]) {
-        this.parent[rootX] = rootY;
-      } else {
-        this.parent[rootY] = rootX;
-        this.rank[rootX]++;
-      }
-    }
-  }
-}
-
-// Unified grouping function that groups machines, train stations, and drone stations together
-export const computeUnifiedGroups = (
-  machines: Machine[],
-  trainStations: TrainStation[],
-  droneStations: DroneStation[],
-  groupDistance: number
-): MachineGroup[] => {
-  // Create unified entities array
-  const entities: GroupableEntity[] = [
-    ...machines.map((m) => ({ type: 'machine' as const, data: m, x: m.x, y: m.y })),
-    ...trainStations.map((s) => ({ type: 'trainStation' as const, data: s, x: s.x, y: s.y })),
-    ...droneStations.map((s) => ({ type: 'droneStation' as const, data: s, x: s.x, y: s.y })),
-  ];
-
-  if (entities.length === 0) return [];
-
-  // Group all entities together based on distance
-  const groups = groupByDistance(entities, groupDistance);
-
-  return groups.map((entityGroup) => {
-    // Separate entities by type
-    const groupMachines = entityGroup
-      .filter((e): e is GroupableEntity & { type: 'machine' } => e.type === 'machine')
-      .map((e) => e.data);
-    const groupTrainStations = entityGroup
-      .filter((e): e is GroupableEntity & { type: 'trainStation' } => e.type === 'trainStation')
-      .map((e) => e.data);
-    const groupDroneStations = entityGroup
-      .filter((e): e is GroupableEntity & { type: 'droneStation' } => e.type === 'droneStation')
-      .map((e) => e.data);
-
-    // Calculate center from all entities
-    const center = {
-      x: entityGroup.reduce((acc, e) => acc + e.x, 0) / entityGroup.length,
-      y: entityGroup.reduce((acc, e) => acc + e.y, 0) / entityGroup.length,
-    };
-
-    // Calculate power metrics from machines
-    const powerConsumption = groupMachines.reduce((acc, m) => {
-      if (m.category === MachineCategoryGenerator) return acc;
-      return acc + (m.input.find((i) => i.name === 'Power')?.current || 0);
-    }, 0);
-    const powerProduction = groupMachines.reduce((acc, m) => {
-      if (m.category !== MachineCategoryGenerator) return acc;
-      return acc + (m.output.find((i) => i.name === 'Power')?.current || 0);
-    }, 0);
-
-    const itemProduction: { [key: string]: number } = {};
-    const itemConsumption: { [key: string]: number } = {};
-
-    groupMachines.forEach((m) => {
-      m.output.forEach((p) => {
-        if (p.name === 'Power') return;
-        if (itemProduction[p.name] === undefined) {
-          itemProduction[p.name] = 0;
-        }
-        itemProduction[p.name] += p.current;
-      });
-
-      m.input.forEach((i) => {
-        if (i.name === 'Power') return;
-        if (itemConsumption[i.name] === undefined) {
-          itemConsumption[i.name] = 0;
-        }
-        itemConsumption[i.name] += i.current;
-      });
-    });
-
-    // Create hash from all entities (sorted to ensure stable hash regardless of input order)
-    const hash = [
-      ...groupMachines.map((m) => `m:${m.x},${m.y},${m.z}`),
-      ...groupTrainStations.map((s) => `t:${s.x},${s.y}`),
-      ...groupDroneStations.map((s) => `d:${s.x},${s.y}`),
-    ]
-      .sort()
-      .join('|');
-
-    return {
-      hash,
-      machines: groupMachines,
-      trainStations: groupTrainStations,
-      droneStations: groupDroneStations,
-      center,
-      powerConsumption,
-      powerProduction,
-      itemProduction,
-      itemConsumption,
-    } as MachineGroup;
-  });
-};
-
-// Generic grouping for any items with x, y coordinates
-export function groupByDistance<T extends { x: number; y: number }>(
-  items: T[],
-  distance: number
-): T[][] {
-  if (distance === 0 || items.length === 0) {
-    return items.map((item) => [item]);
-  }
-
-  const n = items.length;
-  const uf = new UnionFind(n);
-
-  const euclideanDistance = (a: T, b: T): number => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      if (euclideanDistance(items[i], items[j]) < distance) {
-        uf.union(i, j);
-      }
-    }
-  }
-
-  const groups: Map<number, T[]> = new Map();
-  for (let i = 0; i < n; i++) {
-    const root = uf.find(i);
-    if (!groups.has(root)) {
-      groups.set(root, []);
-    }
-    groups.get(root)!.push(items[i]);
-  }
-
-  return Array.from(groups.values());
-}
-
-export const zoomToGroupDistance = (zoom: number) => {
-  zoom = Math.floor(zoom);
-  switch (zoom) {
-    case 3:
-      return 12000;
-    case 4:
-      return 8000;
-    case 5:
-      return 4000;
-    case 6:
-      return 100;
-    case 7:
-      return 0;
-    case 8:
-      return 0;
+/**
+ * Returns the position (x, y) of a selectable entity.
+ * For infrastructure with two endpoints (belts, pipes, cables, rails, hypertubes),
+ * returns the midpoint between location0 and location1.
+ */
+export function getEntityPosition(entity: SelectableEntity): { x: number; y: number } {
+  switch (entity.type) {
+    case 'belt':
+    case 'pipe':
+    case 'cable':
+    case 'rail':
+      return {
+        x: (entity.data.location0.x + entity.data.location1.x) / 2,
+        y: (entity.data.location0.y + entity.data.location1.y) / 2,
+      };
+    case 'hypertube':
+      return {
+        x: (entity.data.location0.x + entity.data.location1.x) / 2,
+        y: (entity.data.location0.y + entity.data.location1.y) / 2,
+      };
     default:
-      return 0;
+      return { x: entity.data.x, y: entity.data.y };
   }
-};
+}
+
+/**
+ * Returns the bounding box for a selectable entity.
+ * For entities with explicit bounding boxes, returns those directly.
+ * For infrastructure, computes bounds from the two endpoints.
+ * For point entities (vehicles, players), returns a small box around the position.
+ */
+export function getEntityBounds(entity: SelectableEntity): BoundingBox {
+  switch (entity.type) {
+    case 'machine':
+    case 'trainStation':
+    case 'droneStation':
+    case 'radarTower':
+    case 'hub':
+    case 'spaceElevator':
+      return entity.data.boundingBox;
+
+    case 'belt':
+    case 'pipe':
+    case 'cable':
+    case 'rail': {
+      const { location0, location1 } = entity.data;
+      return {
+        min: {
+          x: Math.min(location0.x, location1.x),
+          y: Math.min(location0.y, location1.y),
+          z: Math.min(location0.z, location1.z),
+          rotation: 0,
+        },
+        max: {
+          x: Math.max(location0.x, location1.x),
+          y: Math.max(location0.y, location1.y),
+          z: Math.max(location0.z, location1.z),
+          rotation: 0,
+        },
+      };
+    }
+
+    case 'hypertube': {
+      const { location0, location1 } = entity.data;
+      return {
+        min: {
+          x: Math.min(location0.x, location1.x),
+          y: Math.min(location0.y, location1.y),
+          z: Math.min(location0.z, location1.z),
+          rotation: 0,
+        },
+        max: {
+          x: Math.max(location0.x, location1.x),
+          y: Math.max(location0.y, location1.y),
+          z: Math.max(location0.z, location1.z),
+          rotation: 0,
+        },
+      };
+    }
+
+    case 'train':
+    case 'drone':
+    case 'truck':
+    case 'tractor':
+    case 'explorer':
+    case 'player': {
+      const { x, y, z } = entity.data;
+      const halfSize = 100;
+      return {
+        min: { x: x - halfSize, y: y - halfSize, z: z - halfSize, rotation: 0 },
+        max: { x: x + halfSize, y: y + halfSize, z: z + halfSize, rotation: 0 },
+      };
+    }
+  }
+}
