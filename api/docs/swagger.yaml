@@ -388,6 +388,35 @@ definitions:
       z:
         type: number
     type: object
+  models.ExplorerDTO:
+    properties:
+      circuitGroupId:
+        type: integer
+      circuitId:
+        type: integer
+      fuel:
+        $ref: '#/definitions/models.Fuel'
+      id:
+        type: string
+      inventory:
+        items:
+          $ref: '#/definitions/models.ItemStats'
+        type: array
+      name:
+        type: string
+      rotation:
+        type: number
+      speed:
+        type: number
+      status:
+        $ref: '#/definitions/models.ExplorerStatus'
+      x:
+        type: number
+      "y":
+        type: number
+      z:
+        type: number
+    type: object
   models.ExplorerStatus:
     enum:
     - selfDriving
@@ -493,19 +522,84 @@ definitions:
     type: object
   models.Hub:
     properties:
+      activeMilestone:
+        $ref: '#/definitions/models.HubMilestone'
       boundingBox:
         $ref: '#/definitions/models.BoundingBox'
-      hubLevel:
-        type: integer
+      hasActiveMilestone:
+        type: boolean
       id:
+        type: string
+      name:
         type: string
       rotation:
         type: number
+      shipDocked:
+        description: Is ship currently docked?
+        type: boolean
+      shipReturnTime:
+        description: Unix timestamp (ms) when ship returns, null if docked
+        type: integer
       x:
         type: number
       "y":
         type: number
       z:
+        type: number
+    type: object
+  models.HubDTO:
+    properties:
+      activeMilestone:
+        $ref: '#/definitions/models.HubMilestone'
+      boundingBox:
+        $ref: '#/definitions/models.BoundingBox'
+      hasActiveMilestone:
+        type: boolean
+      id:
+        type: string
+      name:
+        type: string
+      rotation:
+        type: number
+      shipDocked:
+        description: Is ship currently docked?
+        type: boolean
+      shipReturnTime:
+        description: Unix timestamp (ms) when ship returns, null if docked
+        type: integer
+      x:
+        type: number
+      "y":
+        type: number
+      z:
+        type: number
+    type: object
+  models.HubMilestone:
+    properties:
+      cost:
+        items:
+          $ref: '#/definitions/models.HubMilestoneCost'
+        type: array
+      name:
+        type: string
+      techTier:
+        type: integer
+      type:
+        description: '"Milestone" or "No Milestone Selected"'
+        type: string
+    type: object
+  models.HubMilestoneCost:
+    properties:
+      amount:
+        description: Amount submitted so far
+        type: number
+      name:
+        type: string
+      remainingCost:
+        description: How much left to submit
+        type: number
+      totalCost:
+        description: Total required
         type: number
     type: object
   models.Hypertube:
@@ -1034,6 +1128,39 @@ definitions:
       z:
         type: number
     type: object
+  models.RadarTowerDTO:
+    properties:
+      boundingBox:
+        $ref: '#/definitions/models.BoundingBox'
+      fauna:
+        items:
+          $ref: '#/definitions/models.ScannedFauna'
+        type: array
+      flora:
+        items:
+          $ref: '#/definitions/models.ScannedFlora'
+        type: array
+      id:
+        type: string
+      nodes:
+        items:
+          $ref: '#/definitions/models.ResourceNode'
+        type: array
+      revealRadius:
+        type: number
+      rotation:
+        type: number
+      signal:
+        items:
+          $ref: '#/definitions/models.ScannedSignal'
+        type: array
+      x:
+        type: number
+      "y":
+        type: number
+      z:
+        type: number
+    type: object
   models.ResourceNode:
     properties:
       className:
@@ -1141,6 +1268,57 @@ definitions:
         type: string
       name:
         $ref: '#/definitions/models.SignalType'
+    type: object
+  models.Schematic:
+    properties:
+      cost:
+        items:
+          $ref: '#/definitions/models.SchematicCost'
+        type: array
+      id:
+        type: string
+      locked:
+        type: boolean
+      lockedPhase:
+        type: boolean
+      name:
+        type: string
+      purchased:
+        type: boolean
+      tier:
+        type: integer
+      type:
+        type: string
+    type: object
+  models.SchematicCost:
+    properties:
+      amount:
+        type: number
+      name:
+        type: string
+      totalCost:
+        type: number
+    type: object
+  models.SchematicDTO:
+    properties:
+      cost:
+        items:
+          $ref: '#/definitions/models.SchematicCost'
+        type: array
+      id:
+        type: string
+      locked:
+        type: boolean
+      lockedPhase:
+        type: boolean
+      name:
+        type: string
+      purchased:
+        type: boolean
+      tier:
+        type: integer
+      type:
+        type: string
     type: object
   models.SessionDTO:
     properties:
@@ -1283,6 +1461,33 @@ definitions:
         type: array
       fullyUpgraded:
         type: boolean
+      id:
+        type: string
+      name:
+        type: string
+      rotation:
+        type: number
+      upgradeReady:
+        type: boolean
+      x:
+        type: number
+      "y":
+        type: number
+      z:
+        type: number
+    type: object
+  models.SpaceElevatorDTO:
+    properties:
+      boundingBox:
+        $ref: '#/definitions/models.BoundingBox'
+      currentPhase:
+        items:
+          $ref: '#/definitions/models.SpaceElevatorPhaseObjective'
+        type: array
+      fullyUpgraded:
+        type: boolean
+      id:
+        type: string
       name:
         type: string
       rotation:
@@ -1419,6 +1624,10 @@ definitions:
         type: array
       satisfactoryApiStatus:
         $ref: '#/definitions/models.SatisfactoryApiStatus'
+      schematics:
+        items:
+          $ref: '#/definitions/models.Schematic'
+        type: array
       sinkStats:
         $ref: '#/definitions/models.SinkStats'
       spaceElevator:
@@ -1473,6 +1682,27 @@ definitions:
       z:
         type: number
     type: object
+  models.StorageDTO:
+    properties:
+      boundingBox:
+        $ref: '#/definitions/models.BoundingBox'
+      id:
+        type: string
+      inventory:
+        items:
+          $ref: '#/definitions/models.ItemStats'
+        type: array
+      rotation:
+        type: number
+      type:
+        $ref: '#/definitions/models.StorageType'
+      x:
+        type: number
+      "y":
+        type: number
+      z:
+        type: number
+    type: object
   models.StorageType:
     enum:
     - Blueprint Storage Box
@@ -1488,6 +1718,35 @@ definitions:
     - StorageTypePersonalStorageBox
     - StorageTypeStorageContainer
   models.Tractor:
+    properties:
+      circuitGroupId:
+        type: integer
+      circuitId:
+        type: integer
+      fuel:
+        $ref: '#/definitions/models.Fuel'
+      id:
+        type: string
+      inventory:
+        items:
+          $ref: '#/definitions/models.ItemStats'
+        type: array
+      name:
+        type: string
+      rotation:
+        type: number
+      speed:
+        type: number
+      status:
+        $ref: '#/definitions/models.TractorStatus'
+      x:
+        type: number
+      "y":
+        type: number
+      z:
+        type: number
+    type: object
+  models.TractorDTO:
     properties:
       circuitGroupId:
         type: integer
@@ -1707,6 +1966,8 @@ definitions:
     properties:
       boundingBox:
         $ref: '#/definitions/models.BoundingBox'
+      id:
+        type: string
       inflowRate:
         description: Fluid incoming rate
         type: number
@@ -1801,12 +2062,28 @@ definitions:
     type: object
   models.UpdateSessionRequest:
     properties:
+      address:
+        type: string
       isPaused:
         type: boolean
       name:
         type: string
     type: object
   models.VehiclePath:
+    properties:
+      name:
+        type: string
+      pathLength:
+        description: in meters
+        type: number
+      vehicleType:
+        $ref: '#/definitions/models.VehiclePathType'
+      vertices:
+        items:
+          $ref: '#/definitions/models.Location'
+        type: array
+    type: object
+  models.VehiclePathDTO:
     properties:
       name:
         type: string
@@ -2121,6 +2398,33 @@ paths:
       summary: List Drones
       tags:
       - Drones
+  /v1/explorers:
+    get:
+      consumes:
+      - application/json
+      description: List all explorers from cached session state
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of explorers
+          schema:
+            items:
+              $ref: '#/definitions/models.ExplorerDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List Explorers
+      tags:
+      - World
   /v1/factoryStats:
     get:
       consumes:
@@ -2171,6 +2475,31 @@ paths:
       summary: Get Generator Stats
       tags:
       - Stats
+  /v1/hub:
+    get:
+      consumes:
+      - application/json
+      description: Get the hub from cached session state
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Hub
+          schema:
+            $ref: '#/definitions/models.HubDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get Hub
+      tags:
+      - World
   /v1/hypertubes:
     get:
       consumes:
@@ -2321,6 +2650,33 @@ paths:
       summary: Get Prod Stats
       tags:
       - Stats
+  /v1/radarTowers:
+    get:
+      consumes:
+      - application/json
+      description: List all radar towers from cached session state
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of radar towers
+          schema:
+            items:
+              $ref: '#/definitions/models.RadarTowerDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List Radar Towers
+      tags:
+      - World
   /v1/resourceNodes:
     get:
       consumes:
@@ -2373,6 +2729,33 @@ paths:
       summary: Get Satisfactory API Status
       tags:
       - Status
+  /v1/schematics:
+    get:
+      consumes:
+      - application/json
+      description: List all schematics/milestones from cached session state
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of schematics
+          schema:
+            items:
+              $ref: '#/definitions/models.SchematicDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List Schematics
+      tags:
+      - Schematics
   /v1/sessions:
     get:
       consumes:
@@ -2481,8 +2864,8 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Update a session's properties (name, paused state). All fields
-        are optional.
+      description: Update a session's properties (name, paused state, address). All
+        fields are optional.
       parameters:
       - description: Session ID
         in: path
@@ -2702,6 +3085,85 @@ paths:
       summary: Get Sink Stats
       tags:
       - Stats
+  /v1/spaceElevator:
+    get:
+      consumes:
+      - application/json
+      description: Get the space elevator from cached session state
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Space elevator
+          schema:
+            $ref: '#/definitions/models.SpaceElevatorDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get Space Elevator
+      tags:
+      - World
+  /v1/storages:
+    get:
+      consumes:
+      - application/json
+      description: List all storage containers from cached session state
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of storages
+          schema:
+            items:
+              $ref: '#/definitions/models.StorageDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List Storages
+      tags:
+      - World
+  /v1/tractors:
+    get:
+      consumes:
+      - application/json
+      description: List all tractors from cached session state
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of tractors
+          schema:
+            items:
+              $ref: '#/definitions/models.TractorDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List Tractors
+      tags:
+      - World
   /v1/trainRails:
     get:
       consumes:
@@ -2808,4 +3270,31 @@ paths:
       summary: List Trains
       tags:
       - Trains
+  /v1/vehiclePaths:
+    get:
+      consumes:
+      - application/json
+      description: List all vehicle paths from cached session state
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of vehicle paths
+          schema:
+            items:
+              $ref: '#/definitions/models.VehiclePathDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List Vehicle Paths
+      tags:
+      - World
 swagger: "2.0"
