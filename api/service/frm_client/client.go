@@ -294,6 +294,11 @@ func (client *Client) SetupEventStream(ctx context.Context, callback func(*model
 			Endpoint: func(c context.Context) (interface{}, error) { return client.GetHypertubes(c) },
 			Interval: 120 * time.Second,
 		},
+		{
+			Type:     models.SatisfactoryEventSchematics,
+			Endpoint: func(c context.Context) (interface{}, error) { return client.ListSchematics(c) },
+			Interval: 30 * time.Second,
+		},
 	}
 
 	log.Infoln("Starting event listeners for Satisfactory API")
