@@ -133,6 +133,8 @@ docker compose logs -f api          # Follow API logs
 - TypeScript 5.6, React 18.3, Bun 1.3 + shadcn/ui, Tailwind CSS v4, Recharts, React Router 6, Leaflet (003-shadcn-migration)
 - TypeScript 5.6 (frontend), React 18.3 + React, Leaflet, Material-UI 6, zustand (for potential state management) (004-universal-map-selection)
 - localStorage (map settings persistence) (004-universal-map-selection)
+- Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), React 18, shadcn/ui, Tailwind CSS v4, Lucide React (icons) (005-unlockables)
+- Redis (session-scoped caching via existing infrastructure) (005-unlockables)
 
 ## Recent Changes
 - 001-access-key-auth: Added Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), Redis (session store), React 18, Material-UI 6
