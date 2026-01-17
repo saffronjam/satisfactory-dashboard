@@ -1,4 +1,4 @@
-import { LatLngExpression } from 'leaflet';
+import L, { LatLngExpression } from 'leaflet';
 import React from 'react';
 import { CircleMarker, Polygon, Polyline, Rectangle } from 'react-leaflet';
 import {
@@ -99,6 +99,10 @@ type InfrastructureOverlayProps = {
   showTrainStations?: boolean;
   showDroneStations?: boolean;
   showTruckStations?: boolean;
+  onTrainStationClick?: (station: TrainStation) => void;
+  onTrainStationCtrlClick?: (station: TrainStation) => void;
+  onDroneStationClick?: (station: DroneStation) => void;
+  onDroneStationCtrlClick?: (station: DroneStation) => void;
   buildingColorMode?: BuildingColorMode;
   buildingOpacity?: number;
   hypertubes?: Hypertube[];
@@ -318,11 +322,15 @@ function SplitterMergerLayer({
 function TrainStationLayer({
   trainStations,
   onItemHover,
+  onTrainStationClick,
+  onCtrlClick,
   opacity = 0.5,
   buildingColorMode = 'type',
 }: {
   trainStations: TrainStation[];
   onItemHover?: (event: HoverEvent) => void;
+  onTrainStationClick?: (station: TrainStation) => void;
+  onCtrlClick?: (station: TrainStation) => void;
   opacity?: number;
   buildingColorMode?: BuildingColorMode;
 }) {
@@ -344,6 +352,16 @@ function TrainStationLayer({
         const platformColor =
           buildingColorMode === 'grid' ? gridColors.stroke : TRAIN_STATION_PLATFORM_COLOR;
 
+        const handleClick = (e: L.LeafletMouseEvent) => {
+          e.originalEvent.stopPropagation();
+          const isCtrlOrCmd = e.originalEvent.ctrlKey || e.originalEvent.metaKey;
+          if (isCtrlOrCmd && onCtrlClick) {
+            onCtrlClick(station);
+          } else {
+            onTrainStationClick?.(station);
+          }
+        };
+
         return (
           <React.Fragment key={`train-station-${station.name}-${index}`}>
             {/* Main station bounding box (rotated) */}
@@ -356,6 +374,7 @@ function TrainStationLayer({
                 weight: 2,
               }}
               eventHandlers={{
+                click: handleClick,
                 mouseover: (e) =>
                   onItemHover?.({
                     item: { type: 'trainStation', data: station },
@@ -384,6 +403,7 @@ function TrainStationLayer({
                     weight: 1,
                   }}
                   eventHandlers={{
+                    click: handleClick,
                     mouseover: (e) =>
                       onItemHover?.({
                         item: { type: 'trainStation', data: station },
@@ -405,11 +425,15 @@ function TrainStationLayer({
 function DroneStationLayer({
   droneStations,
   onItemHover,
+  onDroneStationClick,
+  onCtrlClick,
   opacity = 0.5,
   buildingColorMode = 'type',
 }: {
   droneStations: DroneStation[];
   onItemHover?: (event: HoverEvent) => void;
+  onDroneStationClick?: (station: DroneStation) => void;
+  onCtrlClick?: (station: DroneStation) => void;
   opacity?: number;
   buildingColorMode?: BuildingColorMode;
 }) {
@@ -429,6 +453,16 @@ function DroneStationLayer({
         const gridColors = getGridColor(station.circuitGroupId);
         const stationColor = buildingColorMode === 'grid' ? gridColors.fill : DRONE_STATION_COLOR;
 
+        const handleClick = (e: L.LeafletMouseEvent) => {
+          e.originalEvent.stopPropagation();
+          const isCtrlOrCmd = e.originalEvent.ctrlKey || e.originalEvent.metaKey;
+          if (isCtrlOrCmd && onCtrlClick) {
+            onCtrlClick(station);
+          } else {
+            onDroneStationClick?.(station);
+          }
+        };
+
         return (
           <Rectangle
             key={`drone-station-${station.name}-${index}`}
@@ -440,6 +474,7 @@ function DroneStationLayer({
               weight: 2,
             }}
             eventHandlers={{
+              click: handleClick,
               mouseover: (e) =>
                 onItemHover?.({
                   item: { type: 'droneStation', data: station },
@@ -746,6 +781,10 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
   showTrainStations = false,
   showDroneStations = false,
   showTruckStations = false,
+  onTrainStationClick,
+  onTrainStationCtrlClick,
+  onDroneStationClick,
+  onDroneStationCtrlClick,
   buildingColorMode = 'type',
   buildingOpacity = 0.5,
   hypertubes = [],
@@ -837,6 +876,8 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
         <TrainStationLayer
           trainStations={trainStations}
           onItemHover={onItemHover}
+          onTrainStationClick={onTrainStationClick}
+          onCtrlClick={onTrainStationCtrlClick}
           opacity={buildingOpacity}
           buildingColorMode={buildingColorMode}
         />
@@ -847,6 +888,8 @@ export const InfrastructureOverlay = React.memo(function InfrastructureOverlay({
         <DroneStationLayer
           droneStations={droneStations}
           onItemHover={onItemHover}
+          onDroneStationClick={onDroneStationClick}
+          onCtrlClick={onDroneStationCtrlClick}
           opacity={buildingOpacity}
           buildingColorMode={buildingColorMode}
         />
