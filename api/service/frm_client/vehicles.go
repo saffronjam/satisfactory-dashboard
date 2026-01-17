@@ -119,7 +119,7 @@ func (client *Client) ListTrucks(ctx context.Context) ([]models.Truck, error) {
 
 	trucks := make([]models.Truck, len(rawTrucks))
 	for i, raw := range rawTrucks {
-		var inventory []models.ItemStats
+		inventory := make([]models.ItemStats, 0)
 		for _, item := range raw.Storage {
 			inventory = append(inventory, models.ItemStats{
 				Name:  item.Name,
@@ -268,7 +268,7 @@ func (client *Client) ListTractors(ctx context.Context) ([]models.Tractor, error
 
 	tractors := make([]models.Tractor, len(rawTractors))
 	for i, raw := range rawTractors {
-		var inventory []models.ItemStats
+		inventory := make([]models.ItemStats, 0)
 		for _, item := range raw.Storage {
 			inventory = append(inventory, models.ItemStats{
 				Name:  item.Name,
@@ -317,7 +317,7 @@ func (client *Client) ListExplorers(ctx context.Context) ([]models.Explorer, err
 
 	explorers := make([]models.Explorer, len(rawExplorers))
 	for i, raw := range rawExplorers {
-		var inventory []models.ItemStats
+		inventory := make([]models.ItemStats, 0)
 		for _, item := range raw.Storage {
 			inventory = append(inventory, models.ItemStats{
 				Name:  item.Name,
