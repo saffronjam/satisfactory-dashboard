@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { AlertCircle, Laptop, Loader2, Network, Plus, TestTube } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertCircle, Loader2, Network, Plus, TestTube } from 'lucide-react';
 import { SessionInfo } from '@/apiTypes';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -14,17 +14,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/sessions';
-import { sessionApi } from '@/services/sessionApi';
 
 interface AddSessionDialogProps {
   open: boolean;
   onClose: () => void;
 }
-
-const DEFAULT_FRM_PORT = '8080';
 
 /**
  * AddSessionDialog provides a modal form for adding new sessions to the dashboard.
@@ -35,22 +31,12 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
 
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
-  const [clientIP, setClientIP] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ success: boolean; info?: SessionInfo } | null>(
     null
   );
-
-  useEffect(() => {
-    if (open) {
-      sessionApi
-        .getClientIP()
-        .then((ip) => setClientIP(ip))
-        .catch(() => setClientIP(null));
-    }
-  }, [open]);
 
   const resetForm = () => {
     setName('');
@@ -128,14 +114,6 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
     }
   };
 
-  const handleUseThisComputer = () => {
-    if (clientIP) {
-      setAddress(`${clientIP}:${DEFAULT_FRM_PORT}`);
-      setTestResult(null);
-      setError(null);
-    }
-  };
-
   const formatPlayTime = (info: SessionInfo) => {
     const hours = Math.floor(info.totalPlayDuration / 3600);
     const minutes = Math.floor((info.totalPlayDuration % 3600) / 60);
@@ -173,34 +151,15 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
 
           <div className="grid gap-2">
             <Label htmlFor="server-address">Server Address</Label>
-            <div className="relative">
-              <Input
-                id="server-address"
-                value={address}
-                onChange={(e) => {
-                  setAddress(e.target.value);
-                  setTestResult(null);
-                }}
-                placeholder="192.168.1.100:8080"
-                className={cn(clientIP && 'pr-10')}
-              />
-              {clientIP && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={handleUseThisComputer}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    >
-                      <Laptop className="size-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Use this computer ({clientIP}:{DEFAULT_FRM_PORT})
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
+            <Input
+              id="server-address"
+              value={address}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                setTestResult(null);
+              }}
+              placeholder="192.168.1.100:8080"
+            />
             <p className="text-xs text-muted-foreground">
               IP address and port of the Ficsit Remote Monitoring server
             </p>
