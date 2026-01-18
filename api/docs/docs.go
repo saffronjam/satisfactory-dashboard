@@ -1285,6 +1285,126 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/sessions/{id}/history": {
+            "get": {
+                "description": "Returns all save names that have historical data for this session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "History"
+                ],
+                "summary": "List save names with history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of save names with history",
+                        "schema": {
+                            "$ref": "#/definitions/models.HistorySavesResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sessions/{id}/history/{dataType}": {
+            "get": {
+                "description": "Retrieves historical data points for the specified data type. Data is returned in ascending order by game-time ID. Use the ` + "`" + `since` + "`" + ` parameter for incremental fetching.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "History"
+                ],
+                "summary": "Get historical data for a session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "circuits",
+                            "generatorStats",
+                            "prodStats",
+                            "factoryStats",
+                            "sinkStats"
+                        ],
+                        "type": "string",
+                        "description": "Data type to retrieve history for",
+                        "name": "dataType",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Save name to query (defaults to current save)",
+                        "name": "saveName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Only return data points with gameTimeId greater than this value (default 0)",
+                        "name": "since",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Historical data chunk",
+                        "schema": {
+                            "$ref": "#/definitions/models.HistoryChunk"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid parameters",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sessions/{id}/state": {
             "get": {
                 "description": "Get full state for a specific session from cache",
@@ -2114,6 +2234,22 @@ const docTemplate = `{
                 }
             }
         },
+        "models.DataPoint": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "The actual data payload (type depends on DataType)"
+                },
+                "dataType": {
+                    "description": "One of: circuits, generatorStats, prodStats, factoryStats, sinkStats",
+                    "type": "string"
+                },
+                "gameTimeId": {
+                    "description": "Game time in seconds when data was captured",
+                    "type": "integer"
+                }
+            }
+        },
         "models.Drone": {
             "type": "object",
             "properties": {
@@ -2561,6 +2697,46 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/models.PowerSource"
+                    }
+                }
+            }
+        },
+        "models.HistoryChunk": {
+            "type": "object",
+            "properties": {
+                "dataType": {
+                    "description": "The data type requested",
+                    "type": "string"
+                },
+                "latestId": {
+                    "description": "Highest GameTimeID in the chunk (for client tracking)",
+                    "type": "integer"
+                },
+                "points": {
+                    "description": "Array of data points, ordered by GameTimeID ascending",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.DataPoint"
+                    }
+                },
+                "saveName": {
+                    "description": "The save name these points belong to",
+                    "type": "string"
+                }
+            }
+        },
+        "models.HistorySavesResponse": {
+            "type": "object",
+            "properties": {
+                "currentSave": {
+                    "description": "Currently active save name for the session",
+                    "type": "string"
+                },
+                "saveNames": {
+                    "description": "List of save names that have history data",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 }
             }

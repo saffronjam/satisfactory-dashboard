@@ -37,6 +37,7 @@ func RoutingGroups() []RoutingGroup {
 		NodeRoutes(),
 		SchematicRoutes(),
 		WorldRoutes(),
+		HistoryRoutes(),
 	}
 }
 

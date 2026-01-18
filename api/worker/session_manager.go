@@ -16,10 +16,46 @@ import (
 	"time"
 )
 
+// historyEnabledTypes defines which event types support historical data storage.
+var historyEnabledTypes = map[models.SatisfactoryEventType]bool{
+	models.SatisfactoryEventCircuits:       true,
+	models.SatisfactoryEventGeneratorStats: true,
+	models.SatisfactoryEventProdStats:      true,
+	models.SatisfactoryEventFactoryStats:   true,
+	models.SatisfactoryEventSinkStats:      true,
+}
+
+// isHistoryEnabledType returns true if the event type supports historical data storage.
+func isHistoryEnabledType(eventType models.SatisfactoryEventType) bool {
+	return historyEnabledTypes[eventType]
+}
+
 // publisherState tracks the state of a session's publisher
 type publisherState struct {
-	cancel         context.CancelFunc
-	isDisconnected bool
+	cancel          context.CancelFunc
+	isDisconnected  bool
+	currentSaveName string
+	saveNameMu      sync.RWMutex
+	gameTimeTracker *session.GameTimeTracker
+}
+
+// GetSaveName returns the current save name for this publisher.
+func (ps *publisherState) GetSaveName() string {
+	ps.saveNameMu.RLock()
+	defer ps.saveNameMu.RUnlock()
+	return ps.currentSaveName
+}
+
+// SetSaveName updates the current save name for this publisher.
+func (ps *publisherState) SetSaveName(name string) {
+	ps.saveNameMu.Lock()
+	defer ps.saveNameMu.Unlock()
+	ps.currentSaveName = name
+}
+
+// GameTimeTracker returns the game time tracker for this publisher.
+func (ps *publisherState) GameTimeTracker() *session.GameTimeTracker {
+	return ps.gameTimeTracker
 }
 
 var (
@@ -168,14 +204,17 @@ func (sm *SessionManager) StartSession(parentCtx context.Context, sess *models.S
 	}
 
 	ctx, cancel := context.WithCancel(parentCtx)
-	sm.publishers[sess.ID] = &publisherState{
-		cancel:         cancel,
-		isDisconnected: sess.IsDisconnected,
+	state := &publisherState{
+		cancel:          cancel,
+		isDisconnected:  sess.IsDisconnected,
+		currentSaveName: sess.SessionName,
+		gameTimeTracker: session.NewGameTimeTracker(),
 	}
+	sm.publishers[sess.ID] = state
 
 	log.Infof("Starting publisher for session: %s (%s)", sess.Name, sess.ID)
 
-	go sm.publishLoop(ctx, sess)
+	go sm.publishLoop(ctx, sess, state)
 }
 
 // StopSession stops the publisher for the given session
@@ -211,24 +250,19 @@ func (sm *SessionManager) Stop() {
 }
 
 // publishLoop runs the event publishing loop for a session
-func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session) {
+func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session, state *publisherState) {
 	channelKey := fmt.Sprintf("%s:%s", models.SatisfactoryEventKey, sess.ID)
 
-	// Create the appropriate client for this session
-	var apiClient client.Client
-	if sess.IsMock {
-		apiClient = service.NewMockClient()
-	} else {
-		frmClient := service.NewClientWithAddress(sess.Address)
+	// Create the FRM client for this session
+	frmClient := service.NewClientWithAddress(sess.Address)
 
-		// Set up disconnection callback
-		frmClient.SetDisconnectedCallback(func() {
-			log.Infof("Session is offline: %s (%s)", sess.Name, sess.ID)
-			sm.transitionToDisconnected(sess.ID)
-		})
+	// Set up disconnection callback
+	frmClient.SetDisconnectedCallback(func() {
+		log.Infof("Session is offline: %s (%s)", sess.Name, sess.ID)
+		sm.transitionToDisconnected(sess.ID)
+	})
 
-		apiClient = frmClient
-	}
+	var apiClient client.Client = frmClient
 
 	handler := func(event *models.SatisfactoryEvent) {
 		// Check lease ownership before processing each poll result
@@ -245,6 +279,25 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session)
 			sm.StopSession(sess.ID)
 			return
 		}
+
+		// Store history and set gameTimeId for time-series data types
+		if isHistoryEnabledType(event.Type) {
+			saveName := state.GetSaveName()
+			gameTimeID := state.gameTimeTracker.CurrentGameTime()
+			if saveName != "" && gameTimeID > 0 {
+				// Set gameTimeId on event for SSE subscribers to track position
+				event.GameTimeID = gameTimeID
+
+				if err := session.StoreHistoryPoint(sess.ID, saveName, string(event.Type), gameTimeID, event.Data); err != nil {
+					log.Warnf("Failed to store history point for session %s type %s: %v", sess.ID, event.Type, err)
+				}
+
+				if err := session.PruneOldHistory(sess.ID, saveName, string(event.Type), gameTimeID, config.Config.MaxSampleGameDuration); err != nil {
+					log.Warnf("Failed to prune old history for session %s type %s: %v", sess.ID, event.Type, err)
+				}
+			}
+		}
+
 		toPublish := []models.SatisfactoryEvent{*event}
 
 		switch event.Type {
@@ -286,7 +339,7 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session)
 	}
 
 	// Start session info monitor in background
-	go sm.monitorSessionInfo(ctx, sess, apiClient, channelKey)
+	go sm.monitorSessionInfo(ctx, sess, apiClient, channelKey, state)
 
 	// Verify lease ownership strictly (query Redis) before starting to poll.
 	// This ensures we still own the lease after setup, preventing duplicate polling
@@ -325,12 +378,13 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session)
 	log.Infof("Publisher stopped for session: %s (%s)", sess.Name, sess.ID)
 }
 
-// monitorSessionInfo periodically fetches session info and publishes updates when changed
-func (sm *SessionManager) monitorSessionInfo(ctx context.Context, sess *models.Session, apiClient client.Client, channelKey string) {
+// monitorSessionInfo periodically fetches session info and publishes updates when changed.
+// It also updates the publisherState with the current save name for history storage.
+func (sm *SessionManager) monitorSessionInfo(ctx context.Context, sess *models.Session, apiClient client.Client, channelKey string, state *publisherState) {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
-	lastSessionName := sess.SessionName
+	lastSessionName := state.GetSaveName()
 
 	for {
 		select {
@@ -346,10 +400,16 @@ func (sm *SessionManager) monitorSessionInfo(ctx context.Context, sess *models.S
 				continue
 			}
 
-			// Check if session name changed
+			// Update game time tracker with latest TotalPlayDuration
+			state.gameTimeTracker.Update(int64(sessionInfo.TotalPlayDuration))
+
+			// Check if session name (save name) changed
 			if sessionInfo.SessionName != lastSessionName {
 				log.Infof("Session info changed for %s: %s -> %s", sess.ID, lastSessionName, sessionInfo.SessionName)
 				lastSessionName = sessionInfo.SessionName
+
+				// Update publisher state with new save name
+				state.SetSaveName(sessionInfo.SessionName)
 
 				// Update in Redis
 				currentSession, err := sm.store.Get(sess.ID)
@@ -438,20 +498,30 @@ func (sm *SessionManager) transitionToConnected(sessionID string) {
 // restartPublisherLocked cancels the current publisher and starts a new one
 // Assumes lock is already held by caller
 func (sm *SessionManager) restartPublisherLocked(sessionID string, sess *models.Session) {
-	// Cancel existing publisher
-	if state, exists := sm.publishers[sessionID]; exists {
-		state.cancel()
+	// Preserve state from the existing publisher
+	var currentSaveName string
+	var gameTimeTracker *session.GameTimeTracker
+	if existingState, exists := sm.publishers[sessionID]; exists {
+		currentSaveName = existingState.GetSaveName()
+		gameTimeTracker = existingState.gameTimeTracker
+		existingState.cancel()
 		delete(sm.publishers, sessionID)
+	} else {
+		currentSaveName = sess.SessionName
+		gameTimeTracker = session.NewGameTimeTracker()
 	}
 
 	// Start new publisher with updated session state
 	ctx, cancel := context.WithCancel(context.Background())
-	sm.publishers[sessionID] = &publisherState{
-		cancel:         cancel,
-		isDisconnected: sess.IsDisconnected,
+	state := &publisherState{
+		cancel:          cancel,
+		isDisconnected:  sess.IsDisconnected,
+		currentSaveName: currentSaveName,
+		gameTimeTracker: gameTimeTracker,
 	}
+	sm.publishers[sessionID] = state
 
-	go sm.publishLoop(ctx, sess)
+	go sm.publishLoop(ctx, sess, state)
 }
 
 // SessionManagerWorker is the worker function that starts the session manager
