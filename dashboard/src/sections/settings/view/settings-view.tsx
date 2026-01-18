@@ -1,4 +1,4 @@
-import { CheckCircle, Eye, EyeOff, Lock, Palette, Terminal } from 'lucide-react';
+import { CheckCircle, Clock, Eye, EyeOff, Lock, Palette, Terminal } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { useTheme } from '@/components/theme-provider';
@@ -17,16 +17,43 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 
 import { Settings } from 'src/apiTypes';
-import { authApi } from 'src/services/auth';
+import { useSettings } from 'src/hooks/use-settings';
+import { authApi } from '@/services/authApi';
 import { settingsApi } from 'src/services/settingsApi';
+import { HistoryDataRange } from 'src/types';
 
 /**
  * Settings view component with password change functionality.
  * Allows authenticated users to change the dashboard access key.
  */
+/** Predefined history data range options with their labels */
+const HISTORY_RANGE_OPTIONS = [
+  { value: 60, label: '1 min' },
+  { value: 120, label: '2 min' },
+  { value: 180, label: '3 min' },
+  { value: 240, label: '4 min' },
+  { value: 300, label: '5 min' },
+  { value: 600, label: '10 min' },
+  { value: 3600, label: '60 min' },
+  { value: 28800, label: '8 hours' },
+  { value: -1, label: 'All time' },
+] as const;
+
+/** Custom option sentinel value */
+const CUSTOM_OPTION_VALUE = 'custom';
+
+/** Maximum allowed custom range in seconds (1 year) */
+const MAX_CUSTOM_RANGE_SECONDS = 31536000;
+
+/** Minimum allowed custom range in seconds */
+const MIN_CUSTOM_RANGE_SECONDS = 1;
+
 export const SettingsView = () => {
   // Theme state
   const { theme, setTheme } = useTheme();
+
+  // Local settings (localStorage-backed)
+  const { settings: localSettings, saveSettings } = useSettings({ reloadEverySecond: false });
 
   // Settings state
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -114,6 +141,65 @@ export const SettingsView = () => {
 
   const isFormValid =
     currentPassword.length > 0 && newPassword.length > 0 && confirmPassword.length > 0;
+
+  // History data range state
+  const isPresetValue = (value: HistoryDataRange): boolean =>
+    HISTORY_RANGE_OPTIONS.some((opt) => opt.value === value);
+
+  const [historyDataRange, setHistoryDataRange] = useState<HistoryDataRange>(
+    localSettings.historyDataRange
+  );
+  const [isCustomRange, setIsCustomRange] = useState<boolean>(
+    !isPresetValue(localSettings.historyDataRange)
+  );
+  const [customRangeInput, setCustomRangeInput] = useState<string>(
+    isPresetValue(localSettings.historyDataRange) ? '' : String(localSettings.historyDataRange)
+  );
+  const [customRangeError, setCustomRangeError] = useState<string | null>(null);
+
+  const handleHistoryRangeChange = (value: string) => {
+    if (value === CUSTOM_OPTION_VALUE) {
+      setIsCustomRange(true);
+      setCustomRangeError(null);
+      return;
+    }
+
+    const numericValue = parseInt(value, 10) as HistoryDataRange;
+    setIsCustomRange(false);
+    setCustomRangeError(null);
+    setHistoryDataRange(numericValue);
+    saveSettings({ ...localSettings, historyDataRange: numericValue });
+  };
+
+  const handleCustomRangeSubmit = () => {
+    setCustomRangeError(null);
+
+    const numericValue = parseInt(customRangeInput, 10);
+    if (isNaN(numericValue)) {
+      setCustomRangeError('Please enter a valid number');
+      return;
+    }
+    if (numericValue < MIN_CUSTOM_RANGE_SECONDS) {
+      setCustomRangeError(`Minimum value is ${MIN_CUSTOM_RANGE_SECONDS} second`);
+      return;
+    }
+    if (numericValue > MAX_CUSTOM_RANGE_SECONDS) {
+      setCustomRangeError(
+        `Maximum value is ${MAX_CUSTOM_RANGE_SECONDS.toLocaleString()} seconds (1 year)`
+      );
+      return;
+    }
+
+    setHistoryDataRange(numericValue);
+    saveSettings({ ...localSettings, historyDataRange: numericValue });
+  };
+
+  const getSelectValue = (): string => {
+    if (isCustomRange) {
+      return CUSTOM_OPTION_VALUE;
+    }
+    return String(historyDataRange);
+  };
 
   return (
     <div className="space-y-6">
@@ -340,6 +426,68 @@ export const SettingsView = () => {
 
               <p className="text-sm text-muted-foreground">
                 Choose your preferred color scheme. System follows your device settings.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Data History - Fourth Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="size-5" />
+              Data History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="history-range">History Range</Label>
+                <Select value={getSelectValue()} onValueChange={handleHistoryRangeChange}>
+                  <SelectTrigger id="history-range" className="w-full">
+                    <SelectValue placeholder="Select history range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {HISTORY_RANGE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={String(option.value)}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={CUSTOM_OPTION_VALUE}>Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isCustomRange && (
+                <div className="space-y-2">
+                  <Label htmlFor="custom-range">Custom Range (seconds)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="custom-range"
+                      type="number"
+                      min={MIN_CUSTOM_RANGE_SECONDS}
+                      max={MAX_CUSTOM_RANGE_SECONDS}
+                      value={customRangeInput}
+                      onChange={(e) => {
+                        setCustomRangeInput(e.target.value);
+                        setCustomRangeError(null);
+                      }}
+                      placeholder="Enter seconds"
+                      className="flex-1"
+                    />
+                    <Button type="button" onClick={handleCustomRangeSubmit}>
+                      Apply
+                    </Button>
+                  </div>
+                  {customRangeError && (
+                    <p className="text-sm text-destructive">{customRangeError}</p>
+                  )}
+                </div>
+              )}
+
+              <p className="text-sm text-muted-foreground">
+                How much historical data to fetch and maintain in memory. Larger values use more
+                memory but provide longer time series for analysis.
               </p>
             </div>
           </CardContent>

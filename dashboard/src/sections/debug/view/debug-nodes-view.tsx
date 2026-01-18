@@ -13,7 +13,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CONFIG } from 'src/config-global';
 import { useSession } from 'src/contexts/sessions';
-import { nodesApi } from 'src/services/nodes';
+import { nodesApi } from '@/services/nodesApi';
 import type { NodesResponse, NodeInfo, SessionLease } from '../../../apiTypes';
 
 const POLL_INTERVAL = 5000;
@@ -142,7 +142,6 @@ export function DebugNodesView() {
   const getSessionAddress = (sessionId: string) => {
     const session = sessions.find((s) => s.id === sessionId);
     if (!session) return 'Unknown';
-    if (session.isMock) return 'Demo';
     return session.address || 'Unknown';
   };
 
