@@ -31,7 +31,6 @@ type Session struct {
 	Name                string    `json:"name"`           // User-provided display name
 	Address             string    `json:"address"`        // IP:port (e.g., "192.168.1.100:8080")
 	SessionName         string    `json:"sessionName"`    // From getSessionInfo API
-	IsMock              bool      `json:"isMock"`         // True for mock session
 	IsOnline            bool      `json:"isOnline"`       // Current connection status
 	IsPaused            bool      `json:"isPaused"`       // True if polling is paused by user
 	IsDisconnected      bool      `json:"isDisconnected"` // True if session has failed to connect multiple times
@@ -92,8 +91,7 @@ func (r *SessionInfoRaw) ToDTO() *SessionInfo {
 // CreateSessionRequest is the request body for creating a new session
 type CreateSessionRequest struct {
 	Name    string `json:"name" binding:"required"`
-	Address string `json:"address"` // Required for non-mock sessions
-	IsMock  bool   `json:"isMock"`
+	Address string `json:"address" binding:"required"`
 }
 
 // UpdateSessionRequest is the request body for updating a session (all fields optional)
@@ -109,7 +107,6 @@ type SessionDTO struct {
 	Name           string       `json:"name"`
 	Address        string       `json:"address"`
 	SessionName    string       `json:"sessionName"`
-	IsMock         bool         `json:"isMock"`
 	IsOnline       bool         `json:"isOnline"`
 	IsPaused       bool         `json:"isPaused"`
 	IsDisconnected bool         `json:"isDisconnected"` // True if session is in disconnected state
@@ -124,7 +121,6 @@ func (s *Session) ToDTO(stage SessionStage) SessionDTO {
 		Name:           s.Name,
 		Address:        s.Address,
 		SessionName:    s.SessionName,
-		IsMock:         s.IsMock,
 		IsOnline:       s.IsOnline,
 		IsPaused:       s.IsPaused,
 		IsDisconnected: s.IsDisconnected,

@@ -78,38 +78,21 @@ func CreateSession(ginContext *gin.Context) {
 		return
 	}
 
-	if !req.IsMock && req.Address == "" {
-		requestContext.UserError("Address is required for non-mock sessions")
+	if req.Address == "" {
+		requestContext.UserError("Address is required")
 		return
-	}
-
-	// Check if mock session already exists
-	if req.IsMock {
-		mockExists, err := getSessionStore().MockExists()
-		if err != nil {
-			requestContext.ServerError(fmt.Errorf("failed to check mock session: %w", err), err)
-			return
-		}
-		if mockExists {
-			requestContext.UserError("A mock session already exists")
-			return
-		}
 	}
 
 	// Create session object
 	newSession := &models.Session{
 		Name:      req.Name,
 		Address:   req.Address,
-		IsMock:    req.IsMock,
 		IsOnline:  false,
 		CreatedAt: time.Now(),
 	}
 
 	// Try to fetch session info from the target (but don't fail if it's offline)
-	var client = service.NewMockClient()
-	if !req.IsMock {
-		client = service.NewClientWithAddress(req.Address)
-	}
+	client := service.NewClientWithAddress(req.Address)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -313,10 +296,7 @@ func ValidateSession(ginContext *gin.Context) {
 	}
 
 	// Create client for the session
-	var client = service.NewMockClient()
-	if !existingSession.IsMock {
-		client = service.NewClientWithAddress(existingSession.Address)
-	}
+	client := service.NewClientWithAddress(existingSession.Address)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
