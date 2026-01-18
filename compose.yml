@@ -10,6 +10,9 @@ services:
       # SD_BOOTSTRAP_PASSWORD: Initial password for dashboard authentication.
       # Defaults to "change-me" if not set. Change this in production!
       - SD_BOOTSTRAP_PASSWORD=${SD_BOOTSTRAP_PASSWORD:-change-me}
+      # SD_MAX_SAMPLE_GAME_DURATION: Maximum game-time duration (in seconds) to retain historical data.
+      # Required - must be set explicitly. Example: 3600 for 1 hour of game time.
+      - SD_MAX_SAMPLE_GAME_DURATION=${SD_MAX_SAMPLE_GAME_DURATION}
     depends_on:
       - redis
     restart: unless-stopped

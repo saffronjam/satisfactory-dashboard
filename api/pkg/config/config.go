@@ -5,12 +5,12 @@ var (
 )
 
 type Type struct {
-	Port        int    `json:"port"`
-	Mode        string `json:"mode"`
-	Mock        bool   `json:"mock"`
-	ExternalURL string `json:"externalUrl"`
-	Filepath    string `json:"filepath"`
-	NodeName    string `json:"nodeName"` // If set, uses this instead of GenerateInstanceID()
+	Port                  int    `json:"port"`
+	Mode                  string `json:"mode"`
+	ExternalURL           string `json:"externalUrl"`
+	Filepath              string `json:"filepath"`
+	NodeName              string `json:"nodeName"` // If set, uses this instead of GenerateInstanceID()
+	MaxSampleGameDuration int64  `json:"maxSampleGameDuration"`
 
 	Redis struct {
 		URL      string `json:"url"`
