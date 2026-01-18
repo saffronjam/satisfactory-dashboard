@@ -14,7 +14,6 @@ import (
 const (
 	// Key patterns for Redis
 	sessionKeyPrefix = "session:"
-	mockSessionKey   = "session:mock:id"
 )
 
 // Store manages session persistence in Redis
@@ -39,22 +38,6 @@ func (s *Store) Create(session *models.Session) error {
 	// Generate UUID if not set
 	if session.ID == "" {
 		session.ID = uuid.New().String()
-	}
-
-	// If this is a mock session, check if one already exists
-	if session.IsMock {
-		existingMockID, err := s.kvClient.Get(mockSessionKey)
-		if err != nil {
-			return fmt.Errorf("failed to check for existing mock session: %w", err)
-		}
-		if existingMockID != "" {
-			return fmt.Errorf("a mock session already exists")
-		}
-
-		// Store the mock session ID reference
-		if err := s.kvClient.Set(mockSessionKey, session.ID, 0); err != nil {
-			return fmt.Errorf("failed to store mock session reference: %w", err)
-		}
 	}
 
 	data, err := json.Marshal(session)
@@ -97,16 +80,8 @@ func (s *Store) List() ([]*models.Session, error) {
 
 	sessions := make([]*models.Session, 0, len(keys))
 	for _, key := range keys {
-		// Skip the mock session reference key
-		if key == mockSessionKey {
-			continue
-		}
-
 		// Extract session ID from key
 		id := strings.TrimPrefix(key, sessionKeyPrefix)
-		if id == "mock:id" {
-			continue // Skip the mock reference key
-		}
 
 		session, err := s.Get(id)
 		if err != nil {
@@ -154,41 +129,12 @@ func (s *Store) Delete(id string) error {
 		return fmt.Errorf("session not found: %s", id)
 	}
 
-	// If this is a mock session, remove the reference
-	if session.IsMock {
-		if err := s.kvClient.Del(mockSessionKey); err != nil {
-			log.Warnf("Failed to delete mock session reference: %v", err)
-		}
-	}
-
 	if err := s.kvClient.Del(sessionKey(id)); err != nil {
 		return fmt.Errorf("failed to delete session: %w", err)
 	}
 
 	log.Infof("Deleted session: %s (%s)", session.Name, id)
 	return nil
-}
-
-// GetMockSession retrieves the mock session if it exists
-func (s *Store) GetMockSession() (*models.Session, error) {
-	mockID, err := s.kvClient.Get(mockSessionKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get mock session ID: %w", err)
-	}
-	if mockID == "" {
-		return nil, nil // No mock session exists
-	}
-
-	return s.Get(mockID)
-}
-
-// MockExists checks if a mock session exists
-func (s *Store) MockExists() (bool, error) {
-	mockID, err := s.kvClient.Get(mockSessionKey)
-	if err != nil {
-		return false, fmt.Errorf("failed to check mock session: %w", err)
-	}
-	return mockID != "", nil
 }
 
 // UpdateOnlineStatus updates the online status of a session
