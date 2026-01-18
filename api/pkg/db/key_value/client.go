@@ -125,6 +125,30 @@ func (client *Client) AddListener(ctx context.Context, key string, handler func(
 	return nil
 }
 
+// ZAdd adds a member with the given score to a sorted set.
+// If the member already exists, its score is updated.
+func (client *Client) ZAdd(key string, score float64, member string) error {
+	return client.RedisClient.ZAdd(context.Background(), key, redis.Z{
+		Score:  score,
+		Member: member,
+	}).Err()
+}
+
+// ZRangeByScore returns members from a sorted set with scores between min and max (inclusive).
+// Results are ordered by score ascending.
+func (client *Client) ZRangeByScore(key string, min, max float64) ([]string, error) {
+	return client.RedisClient.ZRangeByScore(context.Background(), key, &redis.ZRangeBy{
+		Min: fmt.Sprintf("%v", min),
+		Max: fmt.Sprintf("%v", max),
+	}).Result()
+}
+
+// ZRemRangeByScore removes members from a sorted set with scores between min and max (inclusive).
+// Returns the number of elements removed.
+func (client *Client) ZRemRangeByScore(key string, min, max float64) (int64, error) {
+	return client.RedisClient.ZRemRangeByScore(context.Background(), key, fmt.Sprintf("%v", min), fmt.Sprintf("%v", max)).Result()
+}
+
 // SetUpExpirationListener sets up a listener for expired key events for every key that matches the given pattern.
 // It is non-blocking and will run in a separate goroutine.
 func (client *Client) SetUpExpirationListener(ctx context.Context, pattern string, handler func(key string) error) error {

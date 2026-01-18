@@ -3,6 +3,7 @@ package session
 import (
 	"api/models/models"
 	"api/pkg/db/key_value"
+	"api/pkg/log"
 	"encoding/json"
 	"fmt"
 )
@@ -136,4 +137,183 @@ func GetSessionStage(sessionID string) models.SessionStage {
 // IsSessionReady is a convenience function to check if a session is ready
 func IsSessionReady(sessionID string) bool {
 	return GetSessionStage(sessionID) == models.SessionStageReady
+}
+
+// historyKey generates the Redis key for storing history data.
+func historyKey(sessionID, saveName, dataType string) string {
+	return fmt.Sprintf("history:%s:%s:%s", sessionID, saveName, dataType)
+}
+
+// historyMemberKey generates a unique member key for Redis ZSET that enables overwrites.
+// By using only the game-time ID as the member identifier, ZADD will replace existing
+// entries at the same game-time when a save rollback occurs.
+func historyMemberKey(gameTimeID int64) string {
+	return fmt.Sprintf("%d", gameTimeID)
+}
+
+// StoreHistoryPoint stores a data point in the Redis sorted set for historical data.
+// The game time ID is used as both the score (for ordering) and the member key to enable
+// overwrites on save rollbacks. The actual data is stored separately keyed by game-time.
+func StoreHistoryPoint(sessionID, saveName, dataType string, gameTimeID int64, data any) error {
+	kvClient := key_value.New()
+
+	dataPoint := models.DataPoint{
+		GameTimeID: gameTimeID,
+		DataType:   dataType,
+		Data:       data,
+	}
+
+	jsonData, err := json.Marshal(dataPoint)
+	if err != nil {
+		return fmt.Errorf("failed to marshal data point: %w", err)
+	}
+
+	key := historyKey(sessionID, saveName, dataType)
+	memberKey := historyMemberKey(gameTimeID)
+
+	dataKey := fmt.Sprintf("%s:data:%s", key, memberKey)
+	if err := kvClient.Set(dataKey, string(jsonData), 0); err != nil {
+		return fmt.Errorf("failed to store data point: %w", err)
+	}
+
+	if err := kvClient.ZAdd(key, float64(gameTimeID), memberKey); err != nil {
+		return err
+	}
+
+	log.Debugf("History store: session=%s save=%s type=%s gameTime=%d", sessionID, saveName, dataType, gameTimeID)
+	return nil
+}
+
+// GetHistory retrieves historical data points from Redis for a session/save/dataType combination.
+// If sinceID is provided (> 0), only returns data points with gameTimeID greater than sinceID.
+// Returns a HistoryChunk containing the data points ordered by game time ascending.
+func GetHistory(sessionID, saveName, dataType string, sinceID int64) (*models.HistoryChunk, error) {
+	kvClient := key_value.New()
+
+	key := historyKey(sessionID, saveName, dataType)
+
+	minScore := float64(sinceID + 1)
+	if sinceID <= 0 {
+		minScore = 0
+	}
+	maxScore := float64(1<<62 - 1)
+
+	memberKeys, err := kvClient.ZRangeByScore(key, minScore, maxScore)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get history from Redis: %w", err)
+	}
+
+	points := make([]models.DataPoint, 0, len(memberKeys))
+	var latestID int64
+
+	for _, memberKey := range memberKeys {
+		dataKey := fmt.Sprintf("%s:data:%s", key, memberKey)
+		jsonData, err := kvClient.Get(dataKey)
+		if err != nil || jsonData == "" {
+			continue
+		}
+
+		var point models.DataPoint
+		if err := json.Unmarshal([]byte(jsonData), &point); err != nil {
+			continue
+		}
+		points = append(points, point)
+		if point.GameTimeID > latestID {
+			latestID = point.GameTimeID
+		}
+	}
+
+	log.Debugf("History query: session=%s save=%s type=%s sinceID=%d returned=%d points", sessionID, saveName, dataType, sinceID, len(points))
+
+	return &models.HistoryChunk{
+		DataType: dataType,
+		SaveName: saveName,
+		LatestID: latestID,
+		Points:   points,
+	}, nil
+}
+
+// GetHistorySaves returns a list of save names that have historical data for a session.
+// It scans Redis keys matching the history pattern for the session and extracts unique save names.
+func GetHistorySaves(sessionID string) ([]string, error) {
+	kvClient := key_value.New()
+
+	pattern := fmt.Sprintf("history:%s:*", sessionID)
+	keys, err := kvClient.List(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list history keys: %w", err)
+	}
+
+	saveNameSet := make(map[string]struct{})
+	for _, key := range keys {
+		parts := extractSaveName(key, sessionID)
+		if parts != "" {
+			saveNameSet[parts] = struct{}{}
+		}
+	}
+
+	saveNames := make([]string, 0, len(saveNameSet))
+	for saveName := range saveNameSet {
+		saveNames = append(saveNames, saveName)
+	}
+
+	return saveNames, nil
+}
+
+// extractSaveName parses a Redis history key and extracts the save name component.
+// Key format: history:{sessionID}:{saveName}:{dataType}
+func extractSaveName(key, sessionID string) string {
+	prefix := fmt.Sprintf("history:%s:", sessionID)
+	if len(key) <= len(prefix) {
+		return ""
+	}
+
+	remainder := key[len(prefix):]
+	for i := len(remainder) - 1; i >= 0; i-- {
+		if remainder[i] == ':' {
+			return remainder[:i]
+		}
+	}
+
+	return ""
+}
+
+// PruneOldHistory removes data points older than the configured retention limit.
+// It calculates the cutoff time as currentGameTimeID - maxDurationSeconds and removes
+// all data points with game time IDs below that threshold. Also cleans up associated data keys.
+func PruneOldHistory(sessionID, saveName, dataType string, currentGameTimeID, maxDurationSeconds int64) error {
+	if maxDurationSeconds <= 0 {
+		return nil
+	}
+
+	cutoffID := currentGameTimeID - maxDurationSeconds
+	if cutoffID <= 0 {
+		return nil
+	}
+
+	kvClient := key_value.New()
+	key := historyKey(sessionID, saveName, dataType)
+
+	memberKeys, err := kvClient.ZRangeByScore(key, 0, float64(cutoffID))
+	if err != nil {
+		return fmt.Errorf("failed to get members to prune: %w", err)
+	}
+
+	if len(memberKeys) == 0 {
+		return nil
+	}
+
+	for _, memberKey := range memberKeys {
+		dataKey := fmt.Sprintf("%s:data:%s", key, memberKey)
+		kvClient.Del(dataKey)
+	}
+
+	_, err = kvClient.ZRemRangeByScore(key, 0, float64(cutoffID))
+	if err != nil {
+		return fmt.Errorf("failed to prune old history: %w", err)
+	}
+
+	log.Debugf("History prune: session=%s save=%s type=%s cutoff=%d removed=%d points", sessionID, saveName, dataType, cutoffID, len(memberKeys))
+
+	return nil
 }
