@@ -2,6 +2,7 @@ package v1
 
 import (
 	"api/service/session"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +26,18 @@ func ListStorages(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.Storages)
 }
@@ -49,7 +61,18 @@ func ListTractors(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.Tractors)
 }
@@ -73,7 +96,18 @@ func ListExplorers(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.Explorers)
 }
@@ -97,7 +131,18 @@ func ListVehiclePaths(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.VehiclePaths)
 }
@@ -121,7 +166,18 @@ func GetSpaceElevator(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.SpaceElevator)
 }
@@ -145,7 +201,18 @@ func GetHub(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.Hub)
 }
@@ -169,7 +236,18 @@ func ListRadarTowers(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.RadarTowers)
 }

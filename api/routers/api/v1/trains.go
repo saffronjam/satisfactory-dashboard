@@ -3,6 +3,7 @@ package v1
 import (
 	"api/models/models"
 	"api/service/session"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,7 +27,18 @@ func ListTrains(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	trainsDto := make([]models.TrainDTO, len(state.Trains))
 	for i, train := range state.Trains {
@@ -55,7 +67,18 @@ func ListTrainStations(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	trainStationsDto := make([]models.TrainStationDTO, len(state.TrainStations))
 	for i, trainStation := range state.TrainStations {
@@ -84,7 +107,18 @@ func GetTrainSetup(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	trainSetupDto := models.TrainSetupDTO{
 		Trains:        state.Trains,

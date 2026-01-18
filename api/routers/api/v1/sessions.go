@@ -2,6 +2,7 @@ package v1
 
 import (
 	"api/models/models"
+	"api/pkg/log"
 	"api/service"
 	"api/service/session"
 	"context"
@@ -45,7 +46,7 @@ func ListSessions(ginContext *gin.Context) {
 	// Convert to DTOs with computed stage
 	sessionDTOs := make([]models.SessionDTO, 0, len(sessions))
 	for _, sess := range sessions {
-		stage := session.GetSessionStage(sess.ID)
+		stage := session.GetSessionStage(sess.ID, sess.SessionName)
 		sessionDTOs = append(sessionDTOs, sess.ToDTO(stage))
 	}
 
@@ -146,6 +147,20 @@ func DeleteSession(ginContext *gin.Context) {
 		return
 	}
 
+	// Mark session as deleted FIRST to prevent race condition with pollers
+	if err := session.MarkSessionDeleted(sessionID); err != nil {
+		log.Warnf("Failed to mark session %s as deleted: %v", sessionID, err)
+	}
+
+	// Clean up cached state data
+	session.ClearCachedState(sessionID)
+
+	// Clean up history data
+	if err := session.ClearHistoryData(sessionID); err != nil {
+		log.Warnf("Failed to clear history data for session %s: %v", sessionID, err)
+		// Continue with deletion even if cleanup fails
+	}
+
 	// Delete the session
 	if err := getSessionStore().Delete(sessionID); err != nil {
 		requestContext.ServerError(fmt.Errorf("failed to delete session: %w", err), err)
@@ -185,7 +200,7 @@ func GetSession(ginContext *gin.Context) {
 		return
 	}
 
-	stage := session.GetSessionStage(sessionID)
+	stage := session.GetSessionStage(sessionID, existingSession.SessionName)
 	requestContext.Ok(existingSession.ToDTO(stage))
 }
 
@@ -261,7 +276,7 @@ func UpdateSession(ginContext *gin.Context) {
 		return
 	}
 
-	stage := session.GetSessionStage(sessionID)
+	stage := session.GetSessionStage(sessionID, existingSession.SessionName)
 	requestContext.Ok(existingSession.ToDTO(stage))
 }
 

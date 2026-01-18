@@ -40,6 +40,6 @@ func GetSessionState(ginContext *gin.Context) {
 
 	// Read from cache only - returns empty/default state on cache miss
 	// SSE events will populate the data as they arrive
-	state := session.GetCachedState(sessionID)
+	state := session.GetCachedState(sessionID, sess.SessionName)
 	requestContext.Ok(state.ToDTO())
 }

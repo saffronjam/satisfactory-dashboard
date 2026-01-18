@@ -27,7 +27,16 @@ func RequireSessionReady() gin.HandlerFunc {
 			return
 		}
 
-		if !session.IsSessionReady(sessionID) {
+		// Fetch session to get save name
+		store := session.NewStore()
+		sess, err := store.Get(sessionID)
+		if err != nil || sess == nil {
+			// Let the handler deal with missing/invalid session
+			c.Next()
+			return
+		}
+
+		if !session.IsSessionReady(sessionID, sess.SessionName) {
 			c.JSON(http.StatusTooEarly, models.ErrorResponse{
 				Errors: []models.ApiError{{
 					Code: status_codes.GetMsg(status_codes.Error),
