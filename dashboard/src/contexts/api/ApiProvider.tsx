@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import * as API from 'src/apiTypes';
 import { config } from 'src/config';
 import { dispatchAuthExpired } from 'src/contexts/auth/AuthContext';
@@ -56,7 +56,6 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
   onSessionUpdate,
 }) => {
   const [data, setData] = useState<ApiData>(DEFAULT_DATA);
-  const [dataHistory, setDataHistory] = useState<(ApiData & { timestamp: Date })[]>([]);
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -88,7 +87,6 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
       const newData = { ...DEFAULT_DATA };
       dataRef.current = newData;
       setData(newData);
-      setDataHistory([]);
 
       const eventSource = new EventSource(`${API_URL}/sessions/${currentSessionId}/events`, {
         withCredentials: true,
@@ -266,24 +264,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
         setData({ ...dataRef.current });
       };
 
-      // Setup interval that snapshots the current data then saves to history
+      // Setup interval that snapshots the current data
       intervalRef.current = setInterval(() => {
         setData({ ...dataRef.current });
-
-        // Only add to history if not loading and online
-        if (dataRef.current.isLoading || !dataRef.current.isOnline) {
-          return;
-        }
-
-        const latestData = { ...dataRef.current, timestamp: new Date() };
-
-        setDataHistory((prevDataHistory) => {
-          const newHistory = [...prevDataHistory, latestData];
-
-          // Keep one minute of history, check timestamps
-          const oneMinuteAgo = new Date(latestData.timestamp.getTime() - 60000);
-          return newHistory.filter((entry) => entry.timestamp > oneMinuteAgo);
-        });
       }, 2000);
     },
     [cleanup]
@@ -327,7 +310,5 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({
     prevStageRef.current = sessionStage;
   }, [sessionStage]);
 
-  const contextValue = useMemo(() => ({ ...data, history: dataHistory }), [data, dataHistory]);
-
-  return <ApiContext.Provider value={contextValue}>{children}</ApiContext.Provider>;
+  return <ApiContext.Provider value={data}>{children}</ApiContext.Provider>;
 };

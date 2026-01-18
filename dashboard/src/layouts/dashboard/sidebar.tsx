@@ -19,11 +19,41 @@ import {
   SidebarMenuSubItem,
   SidebarSeparator,
 } from 'src/components/ui/sidebar';
+import { Label } from 'src/components/ui/label';
 import { ScrollArea } from 'src/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'src/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'src/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useSettings } from 'src/hooks/use-settings';
+import { HistoryDataRange, HistoryWindowSize } from 'src/types';
 
 import type { NavItem } from '../config-nav-dashboard';
+
+const HISTORY_RANGE_OPTIONS: { value: HistoryDataRange; label: string }[] = [
+  { value: 60, label: '1 min' },
+  { value: 120, label: '2 min' },
+  { value: 300, label: '5 min' },
+  { value: 600, label: '10 min' },
+  { value: 3600, label: '60 min' },
+  { value: 28800, label: '8 hours' },
+  { value: -1, label: 'All time' },
+];
+
+const WINDOW_SIZE_OPTIONS: { value: HistoryWindowSize; label: string }[] = [
+  { value: 0, label: 'Auto' },
+  { value: 1, label: '1s (Raw)' },
+  { value: 5, label: '5s' },
+  { value: 10, label: '10s' },
+  { value: 30, label: '30s' },
+  { value: 60, label: '1 min' },
+  { value: 300, label: '5 min' },
+];
 
 export type AppSidebarProps = {
   data: NavItem[];
@@ -109,6 +139,7 @@ function NavItemComponent({ item, pathname }: { item: NavItem; pathname: string 
 export function AppSidebar({ data, slots }: AppSidebarProps) {
   const location = useLocation();
   const pathname = location.pathname;
+  const { settings, saveSettings } = useSettings({ reloadEverySecond: false });
 
   const mainItems = data.filter((item) => item.group === 'main');
   const subItems = data.filter((item) => item.group === 'sub');
@@ -127,6 +158,65 @@ export function AppSidebar({ data, slots }: AppSidebarProps) {
                   <NavItemComponent key={item.path || item.title} item={item} pathname={pathname} />
                 ))}
               </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarSeparator />
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <div className="flex items-end justify-between gap-3 px-2 py-2 group-data-[collapsible=icon]:hidden">
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <Label htmlFor="history-range" className="text-xs text-muted-foreground">
+                    History Range
+                  </Label>
+                  <Select
+                    value={String(settings.historyDataRange)}
+                    onValueChange={(value) =>
+                      saveSettings({
+                        ...settings,
+                        historyDataRange: parseInt(value, 10) as HistoryDataRange,
+                      })
+                    }
+                  >
+                    <SelectTrigger id="history-range" className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HISTORY_RANGE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <Label htmlFor="window-size" className="text-xs text-muted-foreground">
+                    Window Size
+                  </Label>
+                  <Select
+                    value={String(settings.historyWindowSize)}
+                    onValueChange={(value) =>
+                      saveSettings({
+                        ...settings,
+                        historyWindowSize: parseInt(value, 10) as HistoryWindowSize,
+                      })
+                    }
+                  >
+                    <SelectTrigger id="window-size" className="h-8 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WINDOW_SIZE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </SidebarGroupContent>
           </SidebarGroup>
 

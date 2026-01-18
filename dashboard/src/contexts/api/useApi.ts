@@ -70,9 +70,7 @@ export type ApiData = {
   schematics: Schematic[];
 };
 
-export type ApiContextType = ApiData & {
-  history: (ApiData & { timestamp: Date })[];
-};
+export type ApiContextType = ApiData;
 
 export const DefaultApiContext: ApiContextType = {
   isLoading: true,
@@ -109,45 +107,6 @@ export const DefaultApiContext: ApiContextType = {
   radarTowers: [],
   resourceNodes: [],
   schematics: [],
-
-  history: [
-    {
-      timestamp: new Date(),
-      isLoading: true,
-      isOnline: false,
-      satisfactoryApiStatus: undefined,
-      circuits: [],
-      factoryStats: {} as FactoryStats,
-      prodStats: {} as ProdStats,
-      sinkStats: {} as SinkStats,
-      players: [],
-      generatorStats: {} as GeneratorStats,
-      machines: [],
-      trains: [],
-      trainStations: [],
-      drones: [],
-      droneStations: [],
-      trucks: [],
-      truckStations: [],
-      belts: [],
-      pipes: [],
-      pipeJunctions: [],
-      trainRails: [],
-      splitterMergers: [],
-      hypertubes: [],
-      hypertubeEntrances: [],
-      cables: [],
-      storages: [],
-      tractors: [],
-      explorers: [],
-      vehiclePaths: [],
-      spaceElevator: undefined,
-      hub: undefined,
-      radarTowers: [],
-      resourceNodes: [],
-      schematics: [],
-    },
-  ] as any,
 };
 
 export const ApiContext = createContext<ApiContextType>(DefaultApiContext);

@@ -10,6 +10,7 @@ const defaultSettings: Settings = {
     showTrend: false,
   },
   historyDataRange: 300,
+  historyWindowSize: 0,
 };
 
 export type SettingsProps = {

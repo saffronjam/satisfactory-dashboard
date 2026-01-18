@@ -3,7 +3,30 @@ import { useContextSelector } from 'use-context-selector';
 import { DataPoint } from 'src/apiTypes';
 import { ApiContext } from 'src/contexts/api/useApi';
 import { historyApi, HistoryDataType } from '@/services/historyApi';
-import { HistoryDataRange } from 'src/types';
+import { HistoryDataRange, HistoryWindowSize } from 'src/types';
+
+function downsampleDataPoints(
+  dataPoints: DataPoint[],
+  historyDataRange: HistoryDataRange,
+  historyWindowSize: HistoryWindowSize
+): DataPoint[] {
+  const windowSize =
+    historyWindowSize > 0
+      ? historyWindowSize
+      : Math.max(1, Math.floor((historyDataRange === -1 ? 3600 : historyDataRange) / 100));
+
+  if (windowSize <= 1 || dataPoints.length === 0) return dataPoints;
+
+  const buckets = new Map<number, DataPoint>();
+  for (const point of dataPoints) {
+    const bucketKey = Math.floor(point.gameTimeId / windowSize) * windowSize;
+    buckets.set(bucketKey, point);
+  }
+
+  return Array.from(buckets.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([bucketKey, point]) => ({ ...point, gameTimeId: bucketKey }));
+}
 
 /**
  * Result of the useHistoryData hook containing historical data points and state.
@@ -31,12 +54,14 @@ export interface UseHistoryDataResult<T> {
  * @param sessionId - The session ID to fetch history for
  * @param dataType - The type of data to fetch (circuits, generatorStats, prodStats, factoryStats, sinkStats)
  * @param historyDataRange - How much historical data to fetch in seconds (-1 for all time)
+ * @param historyWindowSize - Window size for downsampling (0 = auto, 1 = raw, other = fixed bucket size)
  * @param saveName - Optional save name to filter by (uses current save if not provided)
  */
 export function useHistoryData<T>(
   sessionId: string | null,
   dataType: HistoryDataType,
   historyDataRange: HistoryDataRange,
+  historyWindowSize: HistoryWindowSize = 0,
   saveName?: string
 ): UseHistoryDataResult<T> {
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
@@ -87,7 +112,7 @@ export function useHistoryData<T>(
   }, [sessionId, dataType, historyDataRange, saveName]);
 
   const fetchIncrementalHistory = useCallback(async () => {
-    if (!sessionId || isFetchingRef.current || latestIdRef.current === 0) {
+    if (!sessionId || isFetchingRef.current) {
       return;
     }
 
@@ -99,7 +124,7 @@ export function useHistoryData<T>(
         sessionId,
         dataType,
         saveName,
-        since: prevLatestId,
+        since: prevLatestId > 0 ? prevLatestId : undefined,
       });
 
       if (chunk.points && chunk.points.length > 0) {
@@ -141,7 +166,7 @@ export function useHistoryData<T>(
   useEffect(() => {
     latestIdRef.current = 0;
     void fetchInitialHistory();
-  }, [fetchInitialHistory]);
+  }, [fetchInitialHistory, sessionId]);
 
   const contextData = useContextSelector(ApiContext, (v) => {
     switch (dataType) {
@@ -170,10 +195,18 @@ export function useHistoryData<T>(
     void fetchIncrementalHistory();
   }, [contextData, isOnline, isLoading, fetchIncrementalHistory]);
 
-  const data = useMemo(() => dataPoints.map((p) => p.data as T), [dataPoints]);
+  const downsampledDataPoints = useMemo(
+    () => downsampleDataPoints(dataPoints, historyDataRange, historyWindowSize),
+    [dataPoints, historyDataRange, historyWindowSize]
+  );
+
+  const data = useMemo(
+    () => downsampledDataPoints.map((p) => p.data as T),
+    [downsampledDataPoints]
+  );
 
   return {
-    dataPoints,
+    dataPoints: downsampledDataPoints,
     data,
     isLoading,
     error,
