@@ -135,6 +135,8 @@ docker compose logs -f api          # Follow API logs
 - localStorage (map settings persistence) (004-universal-map-selection)
 - Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), React 18, shadcn/ui, Tailwind CSS v4, Lucide React (icons) (005-unlockables)
 - Redis (session-scoped caching via existing infrastructure) (005-unlockables)
+- Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), go-redis/v9, React 18, Material-UI 6 (006-data-history-persistence)
+- Redis (existing infrastructure) (006-data-history-persistence)
 
 ## Recent Changes
 - 001-access-key-auth: Added Go 1.24 (backend), TypeScript 5.6 (frontend) + Gin (HTTP), Redis (session store), React 18, Material-UI 6
