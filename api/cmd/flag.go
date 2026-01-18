@@ -106,7 +106,7 @@ func GetFlags() FlagDefinitionList {
 			ValueType:    "bool",
 			FlagType:     FlagTypeWorker,
 			Description:  "Settings listener worker",
-			DefaultValue: true,
+			DefaultValue: false,
 			Run: func(ctx context.Context, cancel context.CancelFunc) {
 				worker.SettingsListenerWorker(ctx)
 			},

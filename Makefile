@@ -74,7 +74,7 @@ run:
 	@echo "   Press Ctrl+C to stop both servers"
 	@echo ""
 	@trap 'kill 0' SIGINT; \
-		(cd api && SD_MAX_SAMPLE_GAME_DURATION=3600 $(shell go env GOPATH)/bin/air) & \
+		(cd api && $(shell go env GOPATH)/bin/air) & \
 		(cd dashboard && $(BUN) run dev) & \
 		wait
 
@@ -84,32 +84,32 @@ frontend:
 
 backend:
 	@echo "Starting backend server..."
-	cd api && SD_NODE_NAME=dev-backend SD_MAX_SAMPLE_GAME_DURATION=3600 go run main.go -api -publisher
+	cd api && SD_NODE_NAME=dev-backend go run main.go -api -publisher
 
 backend-live:
 	@echo "Starting backend server with hot reload..."
 	@echo "Watching for changes in api/ directory"
-	cd api && SD_NODE_NAME=dev-backend SD_MAX_SAMPLE_GAME_DURATION=3600 $(shell go env GOPATH)/bin/air
+	cd api && SD_NODE_NAME=dev-backend $(shell go env GOPATH)/bin/air
 
 backend-2:
 	@echo "Starting full backend (instance 2, port 8082)..."
-	cd api && SD_API_PORT=8082 SD_NODE_NAME=dev-backend-2 SD_MAX_SAMPLE_GAME_DURATION=3600 go run main.go -api -publisher
+	cd api && SD_API_PORT=8082 SD_NODE_NAME=dev-backend-2 go run main.go -api -publisher
 
 backend-api:
 	@echo "Starting backend API (instance 1)..."
-	cd api && SD_NODE_NAME=dev-api-1 SD_MAX_SAMPLE_GAME_DURATION=3600 go run main.go -api
+	cd api && SD_NODE_NAME=dev-api-1 go run main.go -api
 
 backend-poller:
 	@echo "Starting backend poller (instance 1)..."
-	cd api && SD_NODE_NAME=dev-poller-1 SD_MAX_SAMPLE_GAME_DURATION=3600 go run main.go -publisher
+	cd api && SD_NODE_NAME=dev-poller-1 go run main.go -publisher
 
 backend-api-2:
 	@echo "Starting backend API (instance 2, port 8082)..."
-	cd api && SD_API_PORT=8082 SD_NODE_NAME=dev-api-2 SD_MAX_SAMPLE_GAME_DURATION=3600 go run main.go -api
+	cd api && SD_API_PORT=8082 SD_NODE_NAME=dev-api-2 go run main.go -api
 
 backend-poller-2:
 	@echo "Starting backend poller (instance 2)..."
-	cd api && SD_NODE_NAME=dev-poller-2 SD_MAX_SAMPLE_GAME_DURATION=3600 go run main.go -publisher
+	cd api && SD_NODE_NAME=dev-poller-2 go run main.go -publisher
 
 kill:
 	@echo "Killing all development servers..."
