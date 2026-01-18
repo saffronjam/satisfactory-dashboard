@@ -3,6 +3,7 @@ package v1
 import (
 	"api/models/models"
 	"api/service/session"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,7 +27,18 @@ func ListDrones(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	dronesDto := make([]models.DroneDTO, len(state.Drones))
 	for i, drone := range state.Drones {
@@ -55,7 +67,18 @@ func ListDroneStations(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	droneStationsDto := make([]models.DroneStationDTO, len(state.DroneStations))
 	for i, droneStation := range state.DroneStations {
@@ -84,7 +107,18 @@ func GetDroneSetup(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	droneSetupDto := models.DroneSetupDTO{
 		Drones:        state.Drones,

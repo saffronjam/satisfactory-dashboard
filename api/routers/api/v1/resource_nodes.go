@@ -2,6 +2,7 @@ package v1
 
 import (
 	"api/service/session"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +26,18 @@ func ListResourceNodes(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.ResourceNodes)
 }

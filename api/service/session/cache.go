@@ -6,11 +6,34 @@ import (
 	"api/pkg/log"
 	"encoding/json"
 	"fmt"
+	"time"
 )
+
+const deletedSessionTTL = 24 * time.Hour
+
+// MarkSessionDeleted sets a marker key to prevent pollers from inserting data
+// for a deleted session. The marker has a 24h TTL.
+func MarkSessionDeleted(sessionID string) error {
+	kvClient := key_value.New()
+	return kvClient.Set("deleted-session:"+sessionID, "1", deletedSessionTTL)
+}
+
+// IsSessionDeleted checks if a session has been marked as deleted.
+func IsSessionDeleted(sessionID string) bool {
+	kvClient := key_value.New()
+	exists, _ := kvClient.IsSet("deleted-session:" + sessionID)
+	return exists
+}
+
+// stateKey generates the Redis key for caching state data.
+// Format: state:{sessionID}:{saveName}:{eventType}
+func stateKey(sessionID, saveName string, eventType models.SatisfactoryEventType) string {
+	return fmt.Sprintf("state:%s:%s:%s", sessionID, saveName, eventType)
+}
 
 // GetCachedState retrieves cached state for a session from Redis.
 // Returns a State with whatever data is available in cache (empty fields for cache misses).
-func GetCachedState(sessionID string) *models.State {
+func GetCachedState(sessionID, saveName string) *models.State {
 	kvClient := key_value.New()
 	state := &models.State{
 		// Initialize with empty defaults
@@ -40,7 +63,7 @@ func GetCachedState(sessionID string) *models.State {
 
 	// Helper to get cached data and unmarshal
 	getCached := func(eventType models.SatisfactoryEventType, target interface{}) {
-		key := fmt.Sprintf("state:%s:%s", sessionID, eventType)
+		key := stateKey(sessionID, saveName, eventType)
 		data, err := kvClient.Get(key)
 		if err != nil || data == "" {
 			return // Cache miss - leave as default
@@ -81,50 +104,34 @@ func GetCachedState(sessionID string) *models.State {
 }
 
 // ClearCachedState removes all cached state for a session.
+// Uses pattern matching to clean up all state keys regardless of save name.
 // Call this when a session is deleted.
 func ClearCachedState(sessionID string) {
 	kvClient := key_value.New()
 
-	eventTypes := []models.SatisfactoryEventType{
-		models.SatisfactoryEventApiStatus,
-		models.SatisfactoryEventCircuits,
-		models.SatisfactoryEventFactoryStats,
-		models.SatisfactoryEventProdStats,
-		models.SatisfactoryEventGeneratorStats,
-		models.SatisfactoryEventSinkStats,
-		models.SatisfactoryEventPlayers,
-		models.SatisfactoryEventMachines,
-		models.SatisfactoryEventBelts,
-		models.SatisfactoryEventPipes,
-		models.SatisfactoryEventVehicles,
-		models.SatisfactoryEventVehicleStations,
-		models.SatisfactoryEventTrainRails,
-		models.SatisfactoryEventCables,
-		models.SatisfactoryEventStorages,
-		models.SatisfactoryEventTractors,
-		models.SatisfactoryEventExplorers,
-		models.SatisfactoryEventVehiclePaths,
-		models.SatisfactoryEventSpaceElevator,
-		models.SatisfactoryEventHub,
-		models.SatisfactoryEventRadarTowers,
-		models.SatisfactoryEventResourceNodes,
-		models.SatisfactoryEventHypertubes,
-		models.SatisfactoryEventSchematics,
+	pattern := fmt.Sprintf("state:%s:*", sessionID)
+	keys, err := kvClient.List(pattern)
+	if err != nil {
+		log.Warnf("Failed to list state keys for session %s: %v", sessionID, err)
+		return
 	}
 
-	for _, eventType := range eventTypes {
-		key := fmt.Sprintf("state:%s:%s", sessionID, eventType)
-		kvClient.Del(key)
+	for _, key := range keys {
+		if err := kvClient.Del(key); err != nil {
+			log.Warnf("Failed to delete state key %s: %v", key, err)
+		}
 	}
+
+	log.Infof("Cleared %d state keys for session %s", len(keys), sessionID)
 }
 
 // GetSessionStage computes the stage of a session by checking if all required event types are cached.
 // Returns SessionStageReady if all cache keys exist, otherwise SessionStageInit.
-func GetSessionStage(sessionID string) models.SessionStage {
+func GetSessionStage(sessionID, saveName string) models.SessionStage {
 	kvClient := key_value.New()
 
 	for _, eventType := range models.RequiredEventTypes {
-		key := fmt.Sprintf("state:%s:%s", sessionID, eventType)
+		key := stateKey(sessionID, saveName, eventType)
 		exists, err := kvClient.IsSet(key)
 		if err != nil || !exists {
 			return models.SessionStageInit
@@ -135,8 +142,31 @@ func GetSessionStage(sessionID string) models.SessionStage {
 }
 
 // IsSessionReady is a convenience function to check if a session is ready
-func IsSessionReady(sessionID string) bool {
-	return GetSessionStage(sessionID) == models.SessionStageReady
+func IsSessionReady(sessionID, saveName string) bool {
+	return GetSessionStage(sessionID, saveName) == models.SessionStageReady
+}
+
+// ClearHistoryData removes all historical data for a session.
+// Key patterns:
+//   - history:{sessionID}:{saveName}:{dataType} (sorted set indices)
+//   - history:{sessionID}:{saveName}:{dataType}:data:{gameTimeID} (data points)
+func ClearHistoryData(sessionID string) error {
+	kvClient := key_value.New()
+
+	pattern := fmt.Sprintf("history:%s:*", sessionID)
+	keys, err := kvClient.List(pattern)
+	if err != nil {
+		return fmt.Errorf("failed to list history keys: %w", err)
+	}
+
+	for _, key := range keys {
+		if err := kvClient.Del(key); err != nil {
+			log.Warnf("Failed to delete history key %s: %v", key, err)
+		}
+	}
+
+	log.Infof("Cleared %d history keys for session %s", len(keys), sessionID)
+	return nil
 }
 
 // historyKey generates the Redis key for storing history data.
@@ -154,7 +184,12 @@ func historyMemberKey(gameTimeID int64) string {
 // StoreHistoryPoint stores a data point in the Redis sorted set for historical data.
 // The game time ID is used as both the score (for ordering) and the member key to enable
 // overwrites on save rollbacks. The actual data is stored separately keyed by game-time.
+// Returns early without error if the session has been deleted.
 func StoreHistoryPoint(sessionID, saveName, dataType string, gameTimeID int64, data any) error {
+	if IsSessionDeleted(sessionID) {
+		return nil
+	}
+
 	kvClient := key_value.New()
 
 	dataPoint := models.DataPoint{

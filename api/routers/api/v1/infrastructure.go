@@ -3,6 +3,7 @@ package v1
 import (
 	"api/models/models"
 	"api/service/session"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,7 +27,18 @@ func ListBelts(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	beltsDto := models.BeltsDTO{
 		Belts:           state.Belts,
@@ -55,7 +67,18 @@ func ListPipes(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	pipesDto := models.PipesDTO{
 		Pipes:        state.Pipes,
@@ -84,7 +107,18 @@ func ListCables(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.Cables)
 }
@@ -108,7 +142,18 @@ func ListTrainRails(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	requestContext.Ok(state.TrainRails)
 }
@@ -132,7 +177,18 @@ func ListHypertubes(ginContext *gin.Context) {
 		return
 	}
 
-	state := session.GetCachedState(sessionID)
+	store := session.NewStore()
+	sess, err := store.Get(sessionID)
+	if err != nil {
+		requestContext.ServerError(fmt.Errorf("failed to get session: %w", err), err)
+		return
+	}
+	if sess == nil {
+		requestContext.NotFound("Session not found")
+		return
+	}
+
+	state := session.GetCachedState(sessionID, sess.SessionName)
 
 	hypertubesDto := models.Hypertubes{
 		Hypertubes:         state.Hypertubes,

@@ -265,6 +265,11 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session,
 	var apiClient client.Client = frmClient
 
 	handler := func(event *models.SatisfactoryEvent) {
+		// Check if session was deleted before processing
+		if session.IsSessionDeleted(sess.ID) {
+			return
+		}
+
 		// Check lease ownership before processing each poll result
 		if !sm.leaseManager.IsOwned(sess.ID) {
 			// Lease is not owned. Check if it's uncertain or lost entirely.
@@ -322,11 +327,15 @@ func (sm *SessionManager) publishLoop(ctx context.Context, sess *models.Session,
 			}
 
 			// Cache the event data for /state endpoint (no expiration - updated by polling)
-			cacheKey := fmt.Sprintf("state:%s:%s", sess.ID, e.Type)
-			eventData, cacheErr := json.Marshal(e.Data)
-			if cacheErr == nil {
-				if setErr := sm.kvClient.Set(cacheKey, string(eventData), 0); setErr != nil {
-					log.Warnf("Failed to cache event %s for session %s: %v", e.Type, sess.ID, setErr)
+			// Only cache if we have a save name
+			saveName := state.GetSaveName()
+			if saveName != "" {
+				cacheKey := fmt.Sprintf("state:%s:%s:%s", sess.ID, saveName, e.Type)
+				eventData, cacheErr := json.Marshal(e.Data)
+				if cacheErr == nil {
+					if setErr := sm.kvClient.Set(cacheKey, string(eventData), 0); setErr != nil {
+						log.Warnf("Failed to cache event %s for session %s: %v", e.Type, sess.ID, setErr)
+					}
 				}
 			}
 
