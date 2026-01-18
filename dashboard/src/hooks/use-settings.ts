@@ -9,6 +9,7 @@ const defaultSettings: Settings = {
     includeItems: true,
     showTrend: false,
   },
+  historyDataRange: 300,
 };
 
 export type SettingsProps = {

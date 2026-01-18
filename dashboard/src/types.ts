@@ -111,6 +111,22 @@ export interface Selection {
   hasInventory: boolean;
 }
 
+/**
+ * Predefined values for history data range in seconds.
+ * -1 represents "all time" (no limit).
+ */
+export type HistoryDataRangePreset = 60 | 120 | 180 | 240 | 300 | 600 | 3600 | 28800 | -1;
+
+/**
+ * History data range configuration.
+ * Either a predefined preset value or a custom number of seconds.
+ * -1 indicates "all time" (fetch all available history).
+ */
+export type HistoryDataRange = HistoryDataRangePreset | number;
+
+/**
+ * User settings persisted to localStorage.
+ */
 export type Settings = {
   apiUrl: string;
   productionView: {
@@ -118,6 +134,8 @@ export type Settings = {
     includeItems: boolean;
     showTrend: boolean;
   };
+  /** How much historical data to fetch and maintain in memory (in seconds). -1 for all time. */
+  historyDataRange: HistoryDataRange;
 };
 
 // Types for map selection
