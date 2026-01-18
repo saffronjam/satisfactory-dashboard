@@ -52,5 +52,20 @@ func SetupEnvironment(appMode string) error {
 		fmt.Printf("Using custom API port from SD_API_PORT: %d\n", port)
 	}
 
+	// Load max sample game duration from environment (required)
+	maxSampleDurationStr, ok := os.LookupEnv("SD_MAX_SAMPLE_GAME_DURATION")
+	if !ok || maxSampleDurationStr == "" {
+		return makeError(fmt.Errorf("SD_MAX_SAMPLE_GAME_DURATION environment variable is required but not set"))
+	}
+	maxSampleDuration, err := strconv.ParseInt(maxSampleDurationStr, 10, 64)
+	if err != nil {
+		return makeError(fmt.Errorf("invalid SD_MAX_SAMPLE_GAME_DURATION: %w", err))
+	}
+	if maxSampleDuration <= 0 {
+		return makeError(fmt.Errorf("SD_MAX_SAMPLE_GAME_DURATION must be a positive integer, got: %d", maxSampleDuration))
+	}
+	Config.MaxSampleGameDuration = maxSampleDuration
+	fmt.Printf("Using max sample game duration from SD_MAX_SAMPLE_GAME_DURATION: %d seconds\n", maxSampleDuration)
+
 	return nil
 }
