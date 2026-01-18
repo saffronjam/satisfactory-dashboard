@@ -28,7 +28,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { ApiContext, ApiContextType } from 'src/contexts/api/useApi';
+import { ProdStats } from 'src/apiTypes';
+import { ApiContext } from 'src/contexts/api/useApi';
+import { useSession } from 'src/contexts/sessions';
+import { useHistoryData } from 'src/hooks/useHistoryData';
 import { useSettings } from 'src/hooks/use-settings';
 import { fShortenNumber, MetricUnits, PerMinuteMetricUnits } from 'src/utils/format-number';
 
@@ -48,7 +51,7 @@ type Column = {
   align?: 'left' | 'right' | 'center';
   format?: (value: number) => string;
   severity?: (value: number | string) => Severity;
-  trend?: (row: RowData, history: ApiContextType['history']) => number;
+  trend?: (row: RowData, history: ProdStats[]) => number;
 };
 
 type RowData = {
@@ -98,13 +101,13 @@ const columns: readonly Column[] = [
     align: 'center',
     format: (value) => fShortenNumber(value, MetricUnits, { decimals: 2 }),
     severity: () => Severity.none,
-    trend: (row: RowData, history: ApiContextType['history']) => {
+    trend: (row: RowData, history: ProdStats[]) => {
       if (history.length < 10) {
         return 0;
       }
 
-      const itemProdHistory = history.map((dataPoint) =>
-        dataPoint.prodStats.items.find((i) => i.name === row.name)
+      const itemProdHistory = history.map((prodStats) =>
+        prodStats.items?.find((i) => i.name === row.name)
       );
 
       const itemProdHistoryCount = itemProdHistory
@@ -130,13 +133,13 @@ const columns: readonly Column[] = [
     align: 'center',
     format: (value: number) => `${fShortenNumber(value, PerMinuteMetricUnits, { decimals: 2 })}`,
     severity: () => Severity.none,
-    trend: (row: RowData, history: ApiContextType['history']) => {
+    trend: (row: RowData, history: ProdStats[]) => {
       if (history.length < 10) {
         return 0;
       }
 
-      const itemProdHistory = history.map((dataPoint) =>
-        dataPoint.prodStats.items.find((i) => i.name === row.name)
+      const itemProdHistory = history.map((prodStats) =>
+        prodStats.items?.find((i) => i.name === row.name)
       );
 
       const itemValues = itemProdHistory
@@ -153,13 +156,13 @@ const columns: readonly Column[] = [
     align: 'center',
     format: (value: number) => `${fShortenNumber(value, PerMinuteMetricUnits, { decimals: 2 })}`,
     severity: () => Severity.none,
-    trend: (row: RowData, history: ApiContextType['history']) => {
+    trend: (row: RowData, history: ProdStats[]) => {
       if (history.length < 10) {
         return 0;
       }
 
-      const itemProdHistory = history.map((dataPoint) =>
-        dataPoint.prodStats.items.find((i) => i.name === row.name)
+      const itemProdHistory = history.map((prodStats) =>
+        prodStats.items?.find((i) => i.name === row.name)
       );
 
       const itemValues = itemProdHistory
@@ -251,17 +254,24 @@ export function ProductionView() {
       prodStats: v.prodStats,
       isLoading: v.isLoading,
       isOnline: v.isOnline,
-      history: v.history,
     };
   });
+
+  const { selectedSession } = useSession();
+  const { settings, saveSettings } = useSettings();
+
+  // Fetch historical production stats using historyDataRange from settings
+  const { data: prodStatsHistory } = useHistoryData<ProdStats>(
+    selectedSession?.id ?? null,
+    'prodStats',
+    settings.historyDataRange
+  );
 
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [sortColumn, setSortColumn] = React.useState<Column['id'] | null>(null);
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
   const [searchQuery, setSearchQuery] = React.useState('');
-
-  const { settings, saveSettings } = useSettings();
 
   const handleChangePage = (newPage: number) => {
     setPage(newPage);
@@ -346,12 +356,12 @@ export function ProductionView() {
       for (const column of columns) {
         if (column.trend) {
           const key = `${row.id}-${column.id}`;
-          trends.set(key, column.trend(row, api.history));
+          trends.set(key, column.trend(row, prodStatsHistory));
         }
       }
     }
     return trends;
-  }, [sortedRows, api.history, settings.productionView.showTrend]);
+  }, [sortedRows, prodStatsHistory, settings.productionView.showTrend]);
 
   const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
   const paginatedRows = filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
