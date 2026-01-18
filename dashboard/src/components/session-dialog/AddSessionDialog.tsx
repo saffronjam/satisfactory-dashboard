@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Loader2, Network, Plus, TestTube } from 'lucide-react';
+import { AlertCircle, Loader2, Network, Plus } from 'lucide-react';
 import { SessionInfo } from '@/apiTypes';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/sessions';
 
@@ -24,10 +23,10 @@ interface AddSessionDialogProps {
 
 /**
  * AddSessionDialog provides a modal form for adding new sessions to the dashboard.
- * Users can connect to a real Satisfactory FRM server or create a demo session with mock data.
+ * Users can connect to a Satisfactory FRM server.
  */
 export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClose }) => {
-  const { createSession, createMockSession, previewSession, mockExists } = useSession();
+  const { createSession, previewSession } = useSession();
 
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -95,20 +94,6 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
       handleClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create session');
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const handleCreateMock = async () => {
-    setIsCreating(true);
-    setError(null);
-
-    try {
-      await createMockSession('Demo Session');
-      handleClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create mock session');
     } finally {
       setIsCreating(false);
     }
@@ -201,35 +186,6 @@ export const AddSessionDialog: React.FC<AddSessionDialogProps> = ({ open, onClos
               </Card>
             </div>
           </div>
-
-          {!mockExists && (
-            <>
-              <div className="relative my-1">
-                <Separator />
-                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
-                  OR
-                </span>
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={handleCreateMock}
-                disabled={isCreating}
-                className="w-full"
-              >
-                {isCreating ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <TestTube className="size-4" />
-                )}
-                Add Demo Session
-              </Button>
-
-              <p className="text-center text-xs text-muted-foreground">
-                Try Satisfactory Dashboard with simulated data
-              </p>
-            </>
-          )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">

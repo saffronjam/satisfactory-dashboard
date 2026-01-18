@@ -13,15 +13,7 @@ interface WelcomeScreenProps {
  * Welcome screen displayed when no sessions exist, prompting user to add their first session.
  */
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
-  const { createMockSession, mockExists, isLoading } = useSession();
-
-  const handleTryDemo = async () => {
-    try {
-      await createMockSession('Demo Session');
-    } catch (err) {
-      console.error('Failed to create mock session:', err);
-    }
-  };
+  const { isLoading } = useSession();
 
   if (isLoading) {
     return null;
@@ -47,13 +39,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAddSession }) => {
               <Icon icon="mdi:plus" className="size-5" />
               Add Your First Session
             </Button>
-
-            {!mockExists && (
-              <Button variant="outline" size="lg" onClick={handleTryDemo}>
-                <Icon icon="mdi:test-tube" className="size-5" />
-                Try Demo Mode
-              </Button>
-            )}
           </div>
 
           <p className="mt-6 text-xs text-muted-foreground">

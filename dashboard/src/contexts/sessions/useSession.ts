@@ -6,10 +6,8 @@ export function useSession(): SessionContextType {
   const selectedSession = useContextSelector(SessionContext, (ctx) => ctx.selectedSession);
   const isLoading = useContextSelector(SessionContext, (ctx) => ctx.isLoading);
   const error = useContextSelector(SessionContext, (ctx) => ctx.error);
-  const mockExists = useContextSelector(SessionContext, (ctx) => ctx.mockExists);
   const selectSession = useContextSelector(SessionContext, (ctx) => ctx.selectSession);
   const createSession = useContextSelector(SessionContext, (ctx) => ctx.createSession);
-  const createMockSession = useContextSelector(SessionContext, (ctx) => ctx.createMockSession);
   const updateSession = useContextSelector(SessionContext, (ctx) => ctx.updateSession);
   const updateSessionFromEvent = useContextSelector(
     SessionContext,
@@ -24,10 +22,8 @@ export function useSession(): SessionContextType {
     selectedSession,
     isLoading,
     error,
-    mockExists,
     selectSession,
     createSession,
-    createMockSession,
     updateSession,
     updateSessionFromEvent,
     deleteSession,

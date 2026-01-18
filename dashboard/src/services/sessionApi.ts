@@ -40,10 +40,10 @@ export const sessionApi = {
   },
 
   /**
-   * Create a new session (real server)
+   * Create a new session
    */
   create: async (name: string, address: string): Promise<SessionDTO> => {
-    const body: CreateSessionRequest = { name, address, isMock: false };
+    const body: CreateSessionRequest = { name, address };
     const response = await fetch(`${API_URL}/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,20 +51,6 @@ export const sessionApi = {
       credentials: 'include',
     });
     return handleResponse<SessionDTO>(response, 'Failed to create session');
-  },
-
-  /**
-   * Create a mock session
-   */
-  createMock: async (name: string): Promise<SessionDTO> => {
-    const body: CreateSessionRequest = { name, address: '', isMock: true };
-    const response = await fetch(`${API_URL}/sessions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      credentials: 'include',
-    });
-    return handleResponse<SessionDTO>(response, 'Failed to create mock session');
   },
 
   /**

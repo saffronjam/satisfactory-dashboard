@@ -122,6 +122,19 @@ export interface CircuitIDs {
 }
 
 //////////
+// source: data_point.go
+
+/**
+ * DataPoint represents a single measurement at a point in game time.
+ * Used for storing historical data points in Redis sorted sets.
+ */
+export interface DataPoint {
+  gameTimeId: number /* int64 */; // Game time in seconds when data was captured
+  dataType: string; // One of: circuits, generatorStats, prodStats, factoryStats, sinkStats
+  data: any; // The actual data payload (type depends on DataType)
+}
+
+//////////
 // source: drone.go
 
 export type DroneStatus = string;
@@ -264,6 +277,18 @@ export interface Fuel {
 }
 
 //////////
+// source: game_time.go
+
+/**
+ * GameTimeOffset stores a cached reference point for calculating game time.
+ * One instance per active session, stored in memory.
+ */
+export interface GameTimeOffset {
+  offsetSeconds: number /* int64 */; // TotalPlayDuration from last getSessionInfo call
+  probedAt: string; // Wall-clock timestamp when offset was captured
+}
+
+//////////
 // source: generator_stats.go
 
 export type PowerType = string;
@@ -279,6 +304,27 @@ export interface PowerSource {
 }
 export interface GeneratorStats {
   sources: { [key: PowerType]: PowerSource };
+}
+
+//////////
+// source: history_chunk.go
+
+/**
+ * HistoryChunk is an API response containing a batch of historical data points.
+ * Returned by the history endpoint to provide clients with time-series data.
+ */
+export interface HistoryChunk {
+  dataType: string; // The data type requested
+  saveName: string; // The save name these points belong to
+  latestId: number /* int64 */; // Highest GameTimeID in the chunk (for client tracking)
+  points: DataPoint[]; // Array of data points, ordered by GameTimeID ascending
+}
+/**
+ * HistorySavesResponse is an API response listing all save names with historical data.
+ */
+export interface HistorySavesResponse {
+  saveNames: string[]; // List of save names that have history data
+  currentSave: string; // Currently active save name for the session
 }
 
 //////////
@@ -640,6 +686,7 @@ export const SatisfactoryEventKey: string = 'satisfactory_events';
 export interface SatisfactoryEvent {
   type: SatisfactoryEventType;
   data: any;
+  gameTimeId: number /* int64 */; // Game time when event was captured (0 for non-history types)
 }
 export interface SseSatisfactoryEvent extends SatisfactoryEvent {
   clientId: number /* int64 */;
@@ -681,7 +728,6 @@ export interface Session {
   name: string; // User-provided display name
   address: string; // IP:port (e.g., "192.168.1.100:8080")
   sessionName: string; // From getSessionInfo API
-  isMock: boolean; // True for mock session
   isOnline: boolean; // Current connection status
   isPaused: boolean; // True if polling is paused by user
   isDisconnected: boolean; // True if session has failed to connect multiple times
@@ -726,8 +772,7 @@ export interface SessionInfo {
  */
 export interface CreateSessionRequest {
   name: string;
-  address: string; // Required for non-mock sessions
-  isMock: boolean;
+  address: string;
 }
 /**
  * UpdateSessionRequest is the request body for updating a session (all fields optional)
@@ -745,7 +790,6 @@ export interface SessionDTO {
   name: string;
   address: string;
   sessionName: string;
-  isMock: boolean;
   isOnline: boolean;
   isPaused: boolean;
   isDisconnected: boolean; // True if session is in disconnected state

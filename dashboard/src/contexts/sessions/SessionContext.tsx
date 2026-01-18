@@ -6,11 +6,9 @@ export interface SessionContextType {
   selectedSession: SessionDTO | null;
   isLoading: boolean;
   error: string | null;
-  mockExists: boolean;
 
   selectSession: (id: string) => void;
   createSession: (name: string, address: string) => Promise<SessionDTO>;
-  createMockSession: (name: string) => Promise<SessionDTO>;
   updateSession: (
     id: string,
     updates: { name?: string; isPaused?: boolean; address?: string }
@@ -26,13 +24,9 @@ export const defaultSessionContext: SessionContextType = {
   selectedSession: null,
   isLoading: true,
   error: null,
-  mockExists: false,
 
   selectSession: () => {},
   createSession: async () => {
-    throw new Error('SessionProvider not initialized');
-  },
-  createMockSession: async () => {
     throw new Error('SessionProvider not initialized');
   },
   updateSession: async () => {
