@@ -64,7 +64,7 @@
 
 ### Frontend Implementation for User Story 1
 
-- [x] T016 [P] [US1] Create auth service in `dashboard/src/services/auth.ts` (login, getStatus API calls)
+- [x] T016 [P] [US1] Create auth service in `dashboard/src/services/authApi.ts` (login, getStatus API calls)
 - [x] T017 [P] [US1] Create AuthContext in `dashboard/src/contexts/auth/AuthContext.tsx` (authenticated state, usedDefaultPassword flag)
 - [x] T018 [US1] Create useAuth hook in `dashboard/src/contexts/auth/useAuth.ts`
 - [x] T019 [US1] Create login page in `dashboard/src/pages/login.tsx` (password input, submit button, error display)
@@ -109,7 +109,7 @@
 
 ### Frontend Implementation for User Story 3
 
-- [x] T029 [P] [US3] Add changePassword function to auth service in `dashboard/src/services/auth.ts`
+- [x] T029 [P] [US3] Add changePassword function to auth service in `dashboard/src/services/authApi.ts`
 - [x] T030 [US3] Add password change form to Settings page in `dashboard/src/sections/settings/view/settings-view.tsx` (current password, new password, confirm, submit)
 
 **Checkpoint**: User Story 3 complete - users can change the password
@@ -130,7 +130,7 @@
 
 ### Frontend Implementation for User Story 4
 
-- [x] T034 [P] [US4] Add logout function to auth service in `dashboard/src/services/auth.ts`
+- [x] T034 [P] [US4] Add logout function to auth service in `dashboard/src/services/authApi.ts`
 - [x] T035 [US4] Update AuthContext in `dashboard/src/contexts/auth/AuthContext.tsx` to handle 401 responses (clear state, show expiration notification, redirect to login)
 - [x] T036 [US4] Add logout button to dashboard header or settings in `dashboard/src/components/` or sidebar
 
@@ -196,7 +196,7 @@ Task: "Create rate limiter in api/service/auth/rate_limiter.go"
 
 ```bash
 # After backend handlers complete:
-Task: "Create auth service in dashboard/src/services/auth.ts"
+Task: "Create auth service in dashboard/src/services/authApi.ts"
 Task: "Create AuthContext in dashboard/src/contexts/auth/AuthContext.tsx"
 # These can run in parallel - different files
 ```

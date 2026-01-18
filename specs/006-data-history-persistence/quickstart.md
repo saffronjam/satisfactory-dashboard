@@ -116,9 +116,15 @@ Existing SSE events now include a `gameTimeId` field:
 
 ```typescript
 import { useHistoryData } from '@/hooks/useHistoryData';
+import { useSettings } from '@/hooks/use-settings';
 
 function ProductionChart({ sessionId }) {
-  const { data, loading, error } = useHistoryData(sessionId, 'prodStats');
+  const { settings } = useSettings();
+  const { data, loading, error } = useHistoryData(
+    sessionId,
+    'prodStats',
+    settings.historyDataRange
+  );
 
   if (loading) return <Loading />;
   if (error) return <Error message={error} />;
@@ -127,6 +133,90 @@ function ProductionChart({ sessionId }) {
   return <TimeSeriesChart data={data} />;
 }
 ```
+
+## History Data Range Settings (User Story 5)
+
+Users can configure how much historical data to fetch and maintain in memory via the Settings page.
+
+### Available Presets
+
+| Option    | Value (seconds) | Description                           |
+|-----------|-----------------|---------------------------------------|
+| 1 min     | 60              | Very short window for quick testing   |
+| 2 min     | 120             | Short monitoring window               |
+| 3 min     | 180             | Brief analysis window                 |
+| 4 min     | 240             | Short analysis window                 |
+| 5 min     | 300             | Default - good balance                |
+| 10 min    | 600             | Medium analysis window                |
+| 60 min    | 3600            | Longer trend analysis                 |
+| 8 hours   | 28800           | Extended session monitoring           |
+| All time  | -1              | Fetch all available history           |
+| Custom    | 1-31536000      | User-specified range in seconds       |
+
+### Configuration via Settings UI
+
+1. Navigate to **Settings** page
+2. Find the **Data History** card
+3. Select a preset from the dropdown or choose "Custom"
+4. For custom values, enter the number of seconds and click "Apply"
+
+### Behavior
+
+- **Initial Fetch**: When a session loads, the hook fetches history from the server, then applies client-side pruning based on the configured range
+- **SSE Updates**: As new data arrives via SSE, old data is automatically pruned to maintain the configured range
+- **Setting Change**: Changing the history range triggers a refetch with the new configuration
+- **Persistence**: Settings are stored in localStorage and persist across browser sessions
+
+### Manual Validation Scenarios
+
+#### Scenario 1: Basic Range Restriction
+1. Open Settings → Data History
+2. Set history range to "1 min" (60 seconds)
+3. Navigate to a page using historical data (e.g., Production view)
+4. Verify the displayed data spans approximately 1 minute of game time
+5. Wait for SSE events to arrive
+6. Verify old data is pruned to maintain the ~1 minute window
+
+#### Scenario 2: All Time Mode
+1. Open Settings → Data History
+2. Set history range to "All time"
+3. Navigate to a page using historical data
+4. Verify all available historical data is fetched (no pruning)
+5. Wait for SSE events to arrive
+6. Verify no data is pruned (all history maintained)
+
+#### Scenario 3: Custom Value
+1. Open Settings → Data History
+2. Select "Custom" from dropdown
+3. Enter a custom value (e.g., 45 seconds)
+4. Click "Apply"
+5. Verify the custom value is saved and applied
+6. Navigate to a page using historical data
+7. Verify data spans approximately 45 seconds
+
+#### Scenario 4: Custom Value Validation
+1. Open Settings → Data History
+2. Select "Custom" from dropdown
+3. Try entering invalid values:
+   - Empty value → Should show error
+   - 0 → Should show "Minimum value is 1 second"
+   - Negative number → Should show error
+   - Very large number (>31536000) → Should show "Maximum value is 31,536,000 seconds (1 year)"
+4. Verify error messages display correctly
+
+#### Scenario 5: Persistence
+1. Set history range to a non-default value (e.g., "10 min")
+2. Close and reopen the browser tab
+3. Navigate to Settings
+4. Verify the "10 min" option is still selected
+
+#### Scenario 6: Range Change Triggers Refetch
+1. Load a session with history data using "5 min" setting
+2. Note the current data range
+3. Change setting to "All time"
+4. Verify data is refetched and more history appears
+5. Change setting back to "1 min"
+6. Verify data is refetched and range is restricted
 
 ## Development Testing
 

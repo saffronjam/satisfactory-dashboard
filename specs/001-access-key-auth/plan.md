@@ -85,7 +85,7 @@ dashboard/src/
 │       └── view/
 │           └── settings-view.tsx  # Add password change form
 └── services/
-    └── auth.ts                    # Auth API calls
+    └── authApi.ts                    # Auth API calls
 ```
 
 **Structure Decision**: Web application structure using existing `api/` and `dashboard/` directories. Auth components integrate with existing patterns (RoutingGroup, RequestContext, React Context).
