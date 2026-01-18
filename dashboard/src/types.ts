@@ -125,6 +125,20 @@ export type HistoryDataRangePreset = 60 | 120 | 180 | 240 | 300 | 600 | 3600 | 2
 export type HistoryDataRange = HistoryDataRangePreset | number;
 
 /**
+ * Predefined values for history window size (data sampling interval) in seconds.
+ * 0 represents "auto" mode where window size is calculated dynamically.
+ */
+export type HistoryWindowSizePreset = 0 | 1 | 5 | 10 | 30 | 60 | 300;
+
+/**
+ * History window size configuration for data downsampling.
+ * 0 = Auto (dynamically calculated to target ~100 data points)
+ * 1 = Raw (no downsampling)
+ * Other values = fixed bucket size in seconds
+ */
+export type HistoryWindowSize = HistoryWindowSizePreset | number;
+
+/**
  * User settings persisted to localStorage.
  */
 export type Settings = {
@@ -136,6 +150,8 @@ export type Settings = {
   };
   /** How much historical data to fetch and maintain in memory (in seconds). -1 for all time. */
   historyDataRange: HistoryDataRange;
+  /** Data sampling window size in seconds. 0 = auto, 1 = raw, other = fixed bucket size. */
+  historyWindowSize: HistoryWindowSize;
 };
 
 // Types for map selection

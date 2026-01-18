@@ -1,4 +1,5 @@
 import { Icon } from '@iconify/react';
+import { Database } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
@@ -239,7 +240,7 @@ function DataRoot({
     <Card className="py-0">
       <CardContent className="p-4">
         <div className="flex items-center mb-2 pb-2 border-b border-border">
-          <Icon icon="mdi:database" className="size-5 mr-2 text-primary" />
+          <Database className="size-5 mr-2 text-primary" />
           <span className="font-semibold">{name}</span>
           {changedPaths.size > 0 && (
             <Chip variant="warning" className="ml-2">

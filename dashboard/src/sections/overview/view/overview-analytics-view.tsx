@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { Iconify } from '@/components/iconify';
 import { ApiContext } from '@/contexts/api/useApi';
@@ -6,6 +7,10 @@ import { WattUnits } from 'src/utils/format-number';
 import { AnalyticsPieChart } from '../analytics-pie-chart';
 import { AnalyticsProgressAlternating } from '../analytics-progress-alternating';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
+import { useSession } from 'src/contexts/sessions';
+import { useSettings } from 'src/hooks/use-settings';
+import { useHistoryData } from 'src/hooks/useHistoryData';
+import { Circuit, ProdStats, SinkStats } from 'src/apiTypes';
 
 /**
  * Overview analytics view component that displays factory statistics dashboard.
@@ -22,11 +27,81 @@ export function OverviewAnalyticsView() {
       factoryStats: v.factoryStats,
       spaceElevator: v.spaceElevator,
       hub: v.hub,
-      history: v.history,
       isLoading: v.isLoading,
       isOnline: v.isOnline,
     };
   });
+
+  const { selectedSession } = useSession();
+  const { settings } = useSettings();
+
+  const { dataPoints: circuitsHistory } = useHistoryData<Circuit[]>(
+    selectedSession?.id ?? null,
+    'circuits',
+    settings.historyDataRange,
+    settings.historyWindowSize
+  );
+
+  const { dataPoints: prodStatsHistory } = useHistoryData<ProdStats>(
+    selectedSession?.id ?? null,
+    'prodStats',
+    settings.historyDataRange,
+    settings.historyWindowSize
+  );
+
+  const { dataPoints: sinkStatsHistory } = useHistoryData<SinkStats>(
+    selectedSession?.id ?? null,
+    'sinkStats',
+    settings.historyDataRange,
+    settings.historyWindowSize
+  );
+
+  const energyChartData = useMemo(
+    () => ({
+      categories: circuitsHistory.map((p) => p.gameTimeId.toString()),
+      series: [
+        circuitsHistory.map((p) => {
+          const circuits = p.data as Circuit[];
+          return circuits.reduce((acc, c) => acc + c.production.total, 0);
+        }),
+        circuitsHistory.map((p) => {
+          const circuits = p.data as Circuit[];
+          return circuits.reduce((acc, c) => acc + c.consumption.total, 0);
+        }),
+      ] as [number[], number[]],
+    }),
+    [circuitsHistory]
+  );
+
+  const minedResourcesChartData = useMemo(
+    () => ({
+      categories: prodStatsHistory.map((p) => p.gameTimeId.toString()),
+      series: [
+        prodStatsHistory.map((p) => (p.data as ProdStats).minableProducedPerMinute),
+        prodStatsHistory.map((p) => (p.data as ProdStats).minableConsumedPerMinute),
+      ] as [number[], number[]],
+    }),
+    [prodStatsHistory]
+  );
+
+  const producedResourcesChartData = useMemo(
+    () => ({
+      categories: prodStatsHistory.map((p) => p.gameTimeId.toString()),
+      series: [
+        prodStatsHistory.map((p) => (p.data as ProdStats).itemsProducedPerMinute),
+        prodStatsHistory.map((p) => (p.data as ProdStats).itemsConsumedPerMinute),
+      ] as [number[], number[]],
+    }),
+    [prodStatsHistory]
+  );
+
+  const sinkPointsChartData = useMemo(
+    () => ({
+      categories: sinkStatsHistory.map((p) => p.gameTimeId.toString()),
+      series: sinkStatsHistory.map((p) => (p.data as SinkStats).pointsPerMinute),
+    }),
+    [sinkStatsHistory]
+  );
 
   const mPerMinUnits = ['/min', 'k/min', 'M/min', 'B/min', 'T/min'];
   const wUnits = ['W', 'kW', 'MW', 'GW', 'TW', 'PW'];
@@ -58,17 +133,7 @@ export function OverviewAnalyticsView() {
           title="Energy Consumption (P/C)"
           total={[totalEnergyProduced(), totalEnergyConsumed()]}
           icon={<Iconify icon="bi:lightning-charge-fill" className="size-full" />}
-          chart={{
-            categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
-            series: [
-              api.history.map((data) =>
-                data.circuits.reduce((acc, circuit) => acc + circuit.production.total, 0)
-              ) || [],
-              api.history.map((data) =>
-                data.circuits.reduce((acc, circuit) => acc + circuit.consumption.total, 0)
-              ) || [],
-            ],
-          }}
+          chart={energyChartData}
           units={wUnits}
           color="1"
         />
@@ -79,13 +144,7 @@ export function OverviewAnalyticsView() {
           title="Mined Resources (P/C)"
           total={[totalMinableProduced(), totalMinableConsumed()]}
           icon={<Iconify icon="bi:gem" className="size-full" />}
-          chart={{
-            categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
-            series: [
-              api.history.map((data) => data.prodStats.minableProducedPerMinute) || [],
-              api.history.map((data) => data.prodStats.minableConsumedPerMinute) || [],
-            ],
-          }}
+          chart={minedResourcesChartData}
           units={mPerMinUnits}
           color="2"
         />
@@ -96,13 +155,7 @@ export function OverviewAnalyticsView() {
           title="Produced Resources (P/C)"
           total={[totalItemsProduced(), totalItemsConsumed()]}
           icon={<Iconify icon="material-symbols:factory" className="size-full" />}
-          chart={{
-            categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
-            series: [
-              api.history.map((data) => data.prodStats.itemsProducedPerMinute) || [],
-              api.history.map((data) => data.prodStats.itemsConsumedPerMinute) || [],
-            ],
-          }}
+          chart={producedResourcesChartData}
           units={mPerMinUnits}
           color="3"
         />
@@ -113,10 +166,7 @@ export function OverviewAnalyticsView() {
           title="Sink Points (Total/Rate)"
           total={[api.sinkStats?.totalPoints || 0, api.sinkStats?.pointsPerMinute || 0]}
           icon={<Iconify icon="hugeicons:black-hole-01" className="size-full" />}
-          chart={{
-            categories: api.history.map((data) => data.timestamp.toLocaleTimeString()) || [],
-            series: api.history.map((data) => data.sinkStats.pointsPerMinute) || [],
-          }}
+          chart={sinkPointsChartData}
           units={[
             ['', 'k', 'M', 'B', 'T'],
             ['/min', 'k/min', 'M/min', 'B/min', 'T/min'],

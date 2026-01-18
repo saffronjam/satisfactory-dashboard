@@ -46,10 +46,23 @@ export function MilestonesView() {
     return activeMilestone.techTier;
   }, [activeMilestone]);
 
-  useEffect(() => {
-    if (hasScrolled.current || api.isLoading || activeTier === null) return;
+  const firstIncompleteTier = useMemo(() => {
+    for (const tier of sortedTiers) {
+      const milestones = tierGroups[tier];
+      const hasIncomplete = milestones.some((m) => !m.purchased);
+      if (hasIncomplete) {
+        return tier;
+      }
+    }
+    return null;
+  }, [sortedTiers, tierGroups]);
 
-    const tierId = `tier-${activeTier}`;
+  const scrollTargetTier = activeTier ?? firstIncompleteTier;
+
+  useEffect(() => {
+    if (hasScrolled.current || api.isLoading || scrollTargetTier === null) return;
+
+    const tierId = `tier-${scrollTargetTier}`;
     const element = document.getElementById(tierId);
     if (element) {
       setTimeout(() => {
@@ -57,7 +70,7 @@ export function MilestonesView() {
         hasScrolled.current = true;
       }, 100);
     }
-  }, [activeTier, api.isLoading]);
+  }, [scrollTargetTier, api.isLoading]);
 
   if (api.isLoading) {
     return (

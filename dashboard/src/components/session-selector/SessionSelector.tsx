@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react';
 import { SessionDTO } from '@/apiTypes';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -32,7 +42,7 @@ interface SessionSelectorProps {
 export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }) => {
   const { sessions, selectedSession, selectSession, updateSession, deleteSession } = useSession();
   const [open, setOpen] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteDialogSession, setDeleteDialogSession] = useState<SessionDTO | null>(null);
   const [editingSession, setEditingSession] = useState<SessionDTO | null>(null);
   const [editName, setEditName] = useState('');
   const [editAddress, setEditAddress] = useState('');
@@ -42,7 +52,6 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
   const handleSelectSession = (sessionId: string) => {
     selectSession(sessionId);
     setOpen(false);
-    setDeleteConfirm(null);
   };
 
   const handleEditClick = (e: React.MouseEvent, session: SessionDTO) => {
@@ -73,14 +82,16 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
     }
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, sessionId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, session: SessionDTO) => {
     e.stopPropagation();
     e.preventDefault();
-    if (deleteConfirm === sessionId) {
-      void deleteSession(sessionId);
-      setDeleteConfirm(null);
-    } else {
-      setDeleteConfirm(sessionId);
+    setDeleteDialogSession(session);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteDialogSession) {
+      void deleteSession(deleteDialogSession.id);
+      setDeleteDialogSession(null);
     }
   };
 
@@ -168,11 +179,8 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
               </button>
               <button
                 type="button"
-                onClick={(e) => handleDeleteClick(e, session.id)}
-                className={cn(
-                  'rounded p-1 hover:bg-red-500/10 hover:text-red-500',
-                  deleteConfirm === session.id ? 'text-red-500' : 'text-muted-foreground'
-                )}
+                onClick={(e) => handleDeleteClick(e, session)}
+                className="rounded p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
               >
                 <Trash2 className="size-4" />
               </button>
@@ -236,6 +244,30 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!deleteDialogSession}
+        onOpenChange={(isOpen) => !isOpen && setDeleteDialogSession(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Session</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteDialogSession?.name}"? This will permanently
+              remove all historical data associated with this session. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

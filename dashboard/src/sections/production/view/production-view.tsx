@@ -264,7 +264,8 @@ export function ProductionView() {
   const { data: prodStatsHistory } = useHistoryData<ProdStats>(
     selectedSession?.id ?? null,
     'prodStats',
-    settings.historyDataRange
+    settings.historyDataRange,
+    settings.historyWindowSize
   );
 
   const [page, setPage] = React.useState(0);
