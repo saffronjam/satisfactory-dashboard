@@ -33,8 +33,9 @@ const (
 )
 
 type SatisfactoryEvent struct {
-	Type SatisfactoryEventType `json:"type"`
-	Data any                   `json:"data"`
+	Type       SatisfactoryEventType `json:"type"`
+	Data       any                   `json:"data"`
+	GameTimeID int64                 `json:"gameTimeId"` // Game time when event was captured (0 for non-history types)
 }
 
 type SseSatisfactoryEvent struct {
