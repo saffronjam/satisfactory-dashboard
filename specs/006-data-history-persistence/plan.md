@@ -75,7 +75,7 @@ api/
 
 dashboard/src/
 ├── services/
-│   └── historyService.ts      # NEW: Fetch history, track last ID
+│   └── history.ts      # NEW: Fetch history, track last ID
 ├── hooks/
 │   └── useHistoryData.ts      # NEW: Hook for history with SSE updates
 └── apiTypes.ts                # AUTO-GENERATED via make generate
