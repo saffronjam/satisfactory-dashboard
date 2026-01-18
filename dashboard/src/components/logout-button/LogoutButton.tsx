@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/contexts/auth/useAuth';
-import { authApi } from '@/services/auth';
+import { authApi } from '@/services/authApi';
 
 /**
  * Logout button component for the sidebar navigation.

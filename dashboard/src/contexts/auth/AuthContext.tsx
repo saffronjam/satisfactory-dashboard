@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { authApi } from 'src/services/auth';
+import { authApi } from '@/services/authApi';
 import { createContext } from 'use-context-selector';
 
 /**
