@@ -23,8 +23,6 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     [sessions, selectedSessionId]
   );
 
-  const mockExists = useMemo(() => sessions.some((s) => s.isMock), [sessions]);
-
   const refreshSessions = useCallback(async () => {
     try {
       setError(null);
@@ -109,22 +107,6 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     [selectedSessionId]
   );
 
-  const createMockSession = useCallback(
-    async (name: string): Promise<SessionDTO> => {
-      const newSession = await sessionApi.createMock(name);
-      setSessions((prev) => [...prev, newSession]);
-
-      // Auto-select if first session
-      if (!selectedSessionId) {
-        setSelectedSessionId(newSession.id);
-        localStorage.setItem(SELECTED_SESSION_KEY, newSession.id);
-      }
-
-      return newSession;
-    },
-    [selectedSessionId]
-  );
-
   const updateSession = useCallback(
     async (
       id: string,
@@ -172,10 +154,8 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       selectedSession,
       isLoading,
       error,
-      mockExists,
       selectSession,
       createSession,
-      createMockSession,
       updateSession,
       updateSessionFromEvent,
       deleteSession,
@@ -187,10 +167,8 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       selectedSession,
       isLoading,
       error,
-      mockExists,
       selectSession,
       createSession,
-      createMockSession,
       updateSession,
       updateSessionFromEvent,
       deleteSession,

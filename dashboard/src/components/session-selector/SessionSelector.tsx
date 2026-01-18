@@ -61,17 +61,11 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
   };
 
   const handleEditSave = async () => {
-    if (!editingSession || !editName.trim()) return;
-    // For non-mock sessions, require a valid address
-    if (!editingSession.isMock && !editAddress.trim()) return;
+    if (!editingSession || !editName.trim() || !editAddress.trim()) return;
 
     setIsUpdating(true);
     try {
-      const updates: { name: string; address?: string } = { name: editName.trim() };
-      // Only include address for non-mock sessions
-      if (!editingSession.isMock) {
-        updates.address = editAddress.trim();
-      }
+      const updates = { name: editName.trim(), address: editAddress.trim() };
       await updateSession(editingSession.id, updates);
       handleEditClose();
     } finally {
@@ -207,33 +201,27 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (
-                    e.key === 'Enter' &&
-                    editName.trim() &&
-                    (editingSession?.isMock || editAddress.trim())
-                  ) {
+                  if (e.key === 'Enter' && editName.trim() && editAddress.trim()) {
                     void handleEditSave();
                   }
                 }}
                 autoFocus
               />
             </div>
-            {editingSession && !editingSession.isMock && (
-              <div className="grid gap-2">
-                <Label htmlFor="session-address">Server URL</Label>
-                <Input
-                  id="session-address"
-                  value={editAddress}
-                  onChange={(e) => setEditAddress(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && editName.trim() && editAddress.trim()) {
-                      void handleEditSave();
-                    }
-                  }}
-                  placeholder="192.168.1.100:8080"
-                />
-              </div>
-            )}
+            <div className="grid gap-2">
+              <Label htmlFor="session-address">Server URL</Label>
+              <Input
+                id="session-address"
+                value={editAddress}
+                onChange={(e) => setEditAddress(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && editName.trim() && editAddress.trim()) {
+                    void handleEditSave();
+                  }
+                }}
+                placeholder="192.168.1.100:8080"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleEditClose}>
@@ -241,9 +229,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({ onAddSession }
             </Button>
             <Button
               onClick={handleEditSave}
-              disabled={
-                isUpdating || !editName.trim() || (!editingSession?.isMock && !editAddress.trim())
-              }
+              disabled={isUpdating || !editName.trim() || !editAddress.trim()}
             >
               {isUpdating ? 'Saving...' : 'Save'}
             </Button>
